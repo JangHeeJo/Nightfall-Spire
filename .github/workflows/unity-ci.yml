@@ -1,0 +1,136 @@
+name: Unity CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  repository-check:
+    name: Repository check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Unity project folders
+        shell: bash
+        run: |
+          test -d Assets
+          test -d Packages
+          test -d ProjectSettings
+
+      - name: Block Unity generated folders
+        shell: bash
+        run: |
+          if git ls-files | grep -E '^(Library|Temp|Obj|obj|Logs|UserSettings)/'; then
+            echo "Unity generated folders must not be committed."
+            exit 1
+          fi
+
+      - name: Block oversized files
+        shell: bash
+        run: |
+          oversized="$(git ls-files | xargs -r du -b | awk '$1 > 100000000 { print $2 " " $1 }')"
+          if [ -n "$oversized" ]; then
+            echo "Files over 100MB are not allowed:"
+            echo "$oversized"
+            exit 1
+          fi
+
+      - name: Block unitypackage files
+        shell: bash
+        run: |
+          if git ls-files | grep -E '\.unitypackage$'; then
+            echo ".unitypackage files should not be committed."
+            exit 1
+          fi
+
+  unity-tests:
+    name: Unity ${{ matrix.testMode }} tests
+    runs-on: ubuntu-latest
+    needs: repository-check
+    strategy:
+      fail-fast: false
+      matrix:
+        testMode:
+          - editmode
+          - playmode
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ matrix.testMode }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ matrix.testMode }}-
+            Library-${{ runner.os }}-
+
+      - name: Run Unity tests
+        uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: .
+          unityVersion: auto
+          testMode: ${{ matrix.testMode }}
+          artifactsPath: ${{ matrix.testMode }}-test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Unity ${{ matrix.testMode }} tests
+
+      - name: Upload Unity test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.testMode }}-test-results
+          path: ${{ steps.tests.outputs.artifactsPath }}
+
+  android-build:
+    name: Android build
+    runs-on: ubuntu-latest
+    needs: unity-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-Android-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-Android-
+            Library-${{ runner.os }}-
+
+      - name: Build Android
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: .
+          unityVersion: auto
+          targetPlatform: Android
+          buildsPath: build
+
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-build
+          path: build
