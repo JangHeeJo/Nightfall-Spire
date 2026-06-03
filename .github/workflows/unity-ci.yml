@@ -123,7 +123,8 @@ jobs:
         if: always()
         with:
           name: ${{ matrix.testMode }}-test-results
-          path: ${{ steps.tests.outputs.artifactsPath }}
+          path: ${{ matrix.testMode }}-test-results
+          if-no-files-found: warn
 
   android-build:
     name: Android build
