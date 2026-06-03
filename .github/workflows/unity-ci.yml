@@ -26,26 +26,54 @@ jobs:
       - name: Block Unity generated folders
         shell: bash
         run: |
-          if git ls-files | grep -E '^(Library|Temp|Obj|obj|Logs|UserSettings)/'; then
-            echo "Unity generated folders must not be committed."
+          failed=0
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              Library/*|Temp/*|Obj/*|obj/*|Logs/*|UserSettings/*)
+                echo "Unity generated folder file must not be committed: $file"
+                failed=1
+                ;;
+            esac
+          done < <(git ls-files -z)
+
+          if [ "$failed" -ne 0 ]; then
             exit 1
           fi
 
       - name: Block oversized files
         shell: bash
         run: |
-          oversized="$(git ls-files | xargs -r du -b | awk '$1 > 100000000 { print $2 " " $1 }')"
-          if [ -n "$oversized" ]; then
-            echo "Files over 100MB are not allowed:"
-            echo "$oversized"
+          failed=0
+          while IFS= read -r -d '' file; do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+
+            size="$(stat -c%s "$file")"
+            if [ "$size" -gt 100000000 ]; then
+              echo "File over 100MB is not allowed: $file ($size bytes)"
+              failed=1
+            fi
+          done < <(git ls-files -z)
+
+          if [ "$failed" -ne 0 ]; then
             exit 1
           fi
 
       - name: Block unitypackage files
         shell: bash
         run: |
-          if git ls-files | grep -E '\.unitypackage$'; then
-            echo ".unitypackage files should not be committed."
+          failed=0
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.unitypackage)
+                echo ".unitypackage file should not be committed: $file"
+                failed=1
+                ;;
+            esac
+          done < <(git ls-files -z)
+
+          if [ "$failed" -ne 0 ]; then
             exit 1
           fi
 
