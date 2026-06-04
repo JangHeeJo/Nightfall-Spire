@@ -135,6 +135,17 @@ jobs:
     needs: unity-tests
 
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
