@@ -37,6 +37,7 @@
   - `Add Codex project summary`
   - `Connect scene root components`
   - `Add popup layer registration`
+  - `Add popup lifecycle foundation`
 
 ## CI 구성 상태
 
@@ -264,6 +265,55 @@ while(left < right)
 이번 단계에서는 실제 팝업 Prefab 생성까지 가지 않았다.
 먼저 레이어 등록/해제 책임을 고정해두면, 다음 단계에서 `BasePopup`, 닫기 연출, 딤 처리, 중복 팝업 정책을 붙일 때 구조가 흔들리지 않는다.
 
+## 완료된 작업 7: Popup 생명주기 기초 구현
+
+커밋: `Add popup lifecycle foundation`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/UI/BasePopup.cs`
+- `Assets/_Project/01_Script/UI/PopupManager.cs`
+- `Assets/_Project/01_Script/UI/PopupTweenManager.cs`
+- `Assets/_Project/01_Script/Model/CurrencyProgress.cs`
+
+### 주요 변경
+
+- `BasePopup`에 공통 초기화, 열기, 닫기, 닫기 요청 생명주기를 추가했다.
+- 팝업 프리팹에 `CanvasGroup`이 없으면 자동으로 추가하게 했다.
+- `PopupManager.OpenAsync()`를 추가해 현재 씬의 `PopupLayer` 아래에 팝업 프리팹을 생성할 수 있게 했다.
+- `PopupManager.CloseAsync()`, `CloseTopAsync()`, `CloseAllAsync()`를 추가했다.
+- 팝업이 하나 이상 열려 있으면 `DimLayer`를 켜고 뒤쪽 UI 입력을 막도록 했다.
+- 팝업이 모두 닫히면 `DimLayer`를 다시 숨기고 입력 차단을 해제하도록 했다.
+- `PopupProgress.OpenPopupCount`와 실제 열린 팝업 수가 함께 움직이도록 연결했다.
+- `PopupTweenManager`를 순수 C# 클래스로 정리하고, DOTween을 붙이기 전까지는 즉시 표시/숨김만 담당하게 했다.
+- `CurrencyProgress.cs`의 깨진 한국어 주석을 UTF-8 기준으로 복구했다.
+
+### 왜 이렇게 했는지
+
+팝업은 이후 성장, 보상, 설정, 확인/취소, 경고, 오프라인 보상 등 여러 곳에서 반복해서 쓰인다.
+그래서 개별 팝업마다 생성/닫기/딤 처리 규칙을 따로 만들면 유지보수가 어려워진다.
+
+이번 변경으로 팝업 공통 흐름은 아래처럼 고정했다.
+
+```text
+PopupManager.OpenAsync(prefab)
+→ 현재 씬 PopupLayer 아래에 생성
+→ BasePopup.Initialize()
+→ DimLayer 표시
+→ BasePopup.OpenAsync()
+
+BasePopup.RequestCloseAsync()
+→ PopupManager.CloseAsync()
+→ BasePopup.CloseAsync()
+→ PopupProgress 갱신
+→ 필요하면 DimLayer 숨김
+→ Destroy
+```
+
+DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 추가하지 않았다.
+나중에 DOTween을 설치하면 `PopupTweenManager` 내부만 교체해서 열기/닫기 연출을 붙이면 된다.
+
 ## 현재 검증 상태
 
 로컬 검증 명령:
@@ -312,35 +362,26 @@ dotnet build "Nightfall Spire.sln"
 
 ## 다음 작업 계획
 
-### 1순위: PopupManager 실제 팝업 흐름
-
-- `BasePopup`의 기본 열기/닫기 생명주기 정의
-- `PopupManager.OpenAsync()` 형태의 팝업 생성 API 추가
-- 팝업 Prefab을 현재 씬 `PopupLayer` 아래에 생성
-- 팝업이 열릴 때 `DimLayer` 표시 및 입력 차단
-- 팝업이 닫힐 때 `DimLayer` 복구
-- 팝업 닫기 시 R3 구독 정리와 Destroy 흐름 정리
-- DOTween 설치 여부 확인 후 열기/닫기 연출 적용
-
-### 2순위: Battle Dynamic UI 보조 레이어
-
-- 전투 `FloatingTextLayer`, `UnitHpBarLayer` 실제 오브젝트 추가 또는 기존 오브젝트 지정
-- Unity 에디터에서 Inspector 연결 상태 확인
-- GitHub Actions로 PlayMode 테스트 확인
-
-### 3순위: ScreenFadeView 추가
+### 1순위: ScreenFadeView 추가
 
 - 각 씬의 `Canvas_DynamicUI` 아래에 `ScreenFadeView`를 둔다.
 - `GameRoot`에는 Fade Canvas를 두지 않는다.
-- DOTween과 UniTask를 이용해 `FadeOutAsync`, `FadeInAsync` 구조를 만든다.
+- DOTween이 없으므로 우선 UniTask 기반 즉시/시간 보간 구조를 만든다.
+- DOTween 설치 후에는 내부 연출만 DOTween으로 교체할 수 있게 분리한다.
 
-### 4순위: UI 바인딩 기초
+### 2순위: UI 바인딩 기초
 
 - `CurrencyHud`가 `GameContext.CurrencyProgress`를 구독하도록 변경
 - R3 구독 해제 생명주기 정리
 - 로비 HUD가 `LobbyDynamicUIRoot` 초기화 시 Context를 받는 구조로 연결
 
-### 5순위: DataTable 방향 확정
+### 3순위: Battle Dynamic UI 보조 레이어
+
+- 전투 `FloatingTextLayer`, `UnitHpBarLayer` 실제 오브젝트 추가 또는 기존 오브젝트 지정
+- Unity 에디터에서 Inspector 연결 상태 확인
+- GitHub Actions로 PlayMode 테스트 확인
+
+### 4순위: DataTable 방향 확정
 
 `Assets/_Project/05_Data` 아래 구조를 만든다.
 
@@ -361,7 +402,7 @@ Assets/_Project/05_Data
 
 밸런스 수치 데이터는 TSV/CSV가 적합하고, Prefab/Audio/Addressables 참조는 ScriptableObject가 적합하다.
 
-### 6순위: 정리 후보
+### 5순위: 정리 후보
 
 - `Assets/_Recovery`는 Unity 자동 복구 씬처럼 보이므로 정리 후보다.
 - `Assets/_Project/01_Script/Test`는 연습용 코드이므로 추후 삭제하거나 `99_Test` 아래로 옮기는 것이 좋다.

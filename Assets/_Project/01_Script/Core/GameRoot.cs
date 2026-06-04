@@ -44,6 +44,7 @@ public sealed class GameRoot : MonoBehaviour
 
         // 저장 데이터를 기반으로 현재 게임 진행 Context를 생성합니다.
         Context = new GameContext(saveData);
+        PopupManager.SetContext(Context);
 
         // 현재 상태를 Boot로 설정합니다.
         Context.GameProgress.ChangeState(GameState.Boot);

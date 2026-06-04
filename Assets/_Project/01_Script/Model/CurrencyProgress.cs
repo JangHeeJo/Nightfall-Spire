@@ -1,28 +1,29 @@
-using R3;
+ï»¿using R3;
 
-// ÇöÀç ÀçÈ­ »óÅÂ¸¦ °ü¸®ÇÏ´Â ÁøÇà ¸ğµ¨ÀÔ´Ï´Ù.
-// UI´Â ÀÌ ¸ğµ¨À» ±¸µ¶ÇØ¼­ °ñµå, Áª Ç¥½Ã¸¦ ÀÚµ¿À¸·Î °»½ÅÇÕ´Ï´Ù.
+// í˜„ì¬ ì¬í™” ìƒíƒœë¥¼ ê´€ë¦¬í•˜ëŠ” ì§„í–‰ ëª¨ë¸ì…ë‹ˆë‹¤.
+// UIëŠ” ì´ ê°’ì„ êµ¬ë…í•´ì„œ ê³¨ë“œ, ì ¬ í‘œì‹œë¥¼ ìë™ìœ¼ë¡œ ê°±ì‹ í•©ë‹ˆë‹¤.
 public sealed class CurrencyProgress
 {
-    private readonly SaveData saveData; // ½ÇÁ¦ ÀúÀå µ¥ÀÌÅÍ ÂüÁ¶
+    private readonly SaveData saveData; // ì‹¤ì œ ì €ì¥ ë°ì´í„° ì°¸ì¡°
 
-    public ReactiveProperty<long> Gold { get; } // ÇöÀç °ñµå
-    public ReactiveProperty<long> Gem { get; } // ÇöÀç Áª
+    public ReactiveProperty<long> Gold { get; } // í˜„ì¬ ê³¨ë“œ
+    public ReactiveProperty<long> Gem { get; } // í˜„ì¬ ì ¬
 
     public CurrencyProgress(SaveData saveData)
     {
         this.saveData = saveData;
 
-        // SaveData °ªÀ» ±âÁØÀ¸·Î ·±Å¸ÀÓ ÀçÈ­ »óÅÂ¸¦ »ı¼ºÇÕ´Ï´Ù.
+        // SaveDataì— ì €ì¥ëœ ê°’ìœ¼ë¡œ ëŸ°íƒ€ì„ ì¬í™” ìƒíƒœë¥¼ ë§Œë“­ë‹ˆë‹¤.
         Gold = new ReactiveProperty<long>(saveData.Currency.Gold);
         Gem = new ReactiveProperty<long>(saveData.Currency.Gem);
 
-        // ReactiveProperty °ªÀÌ ¹Ù²î¸é SaveDataµµ °°ÀÌ °»½ÅÇÕ´Ï´Ù.
+        // ReactiveProperty ê°’ì´ ë°”ë€Œë©´ SaveDataì—ë„ ê°™ì€ ê°’ì„ ë°˜ì˜í•©ë‹ˆë‹¤.
         Gold.Subscribe(value => this.saveData.Currency.Gold = value);
         Gem.Subscribe(value => this.saveData.Currency.Gem = value);
     }
 
-    // °ñµå¸¦ Ãß°¡ÇÕ´Ï´Ù.
+    // ê³¨ë“œë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤.
+    // 0 ì´í•˜ ê°’ì€ ì˜ëª»ëœ ì§€ê¸‰ ìš”ì²­ìœ¼ë¡œ ë³´ê³  ë¬´ì‹œí•©ë‹ˆë‹¤.
     public void AddGold(long amount)
     {
         if (amount <= 0)
@@ -31,7 +32,8 @@ public sealed class CurrencyProgress
         Gold.Value += amount;
     }
 
-    // °ñµå »ç¿ëÀ» ½ÃµµÇÕ´Ï´Ù. ºÎÁ·ÇÏ¸é false¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+    // ê³¨ë“œ ì‚¬ìš©ì„ ì‹œë„í•©ë‹ˆë‹¤.
+    // ë³´ìœ ëŸ‰ì´ ë¶€ì¡±í•˜ë©´ ê°’ì„ ë°”ê¾¸ì§€ ì•Šê³  falseë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
     public bool TrySpendGold(long amount)
     {
         if (amount <= 0)
@@ -44,7 +46,8 @@ public sealed class CurrencyProgress
         return true;
     }
 
-    // ÁªÀ» Ãß°¡ÇÕ´Ï´Ù.
+    // ì ¬ì„ ì¶”ê°€í•©ë‹ˆë‹¤.
+    // 0 ì´í•˜ ê°’ì€ ì˜ëª»ëœ ì§€ê¸‰ ìš”ì²­ìœ¼ë¡œ ë³´ê³  ë¬´ì‹œí•©ë‹ˆë‹¤.
     public void AddGem(long amount)
     {
         if (amount <= 0)
@@ -53,7 +56,8 @@ public sealed class CurrencyProgress
         Gem.Value += amount;
     }
 
-    // Áª »ç¿ëÀ» ½ÃµµÇÕ´Ï´Ù. ºÎÁ·ÇÏ¸é false¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+    // ì ¬ ì‚¬ìš©ì„ ì‹œë„í•©ë‹ˆë‹¤.
+    // ë³´ìœ ëŸ‰ì´ ë¶€ì¡±í•˜ë©´ ê°’ì„ ë°”ê¾¸ì§€ ì•Šê³  falseë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
     public bool TrySpendGem(long amount)
     {
         if (amount <= 0)
