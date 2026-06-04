@@ -1,5 +1,15 @@
 ﻿using R3;
 
+// 밤 방어전 결과입니다.
+// 결과 보상, 다음 낮 진입, 재도전 정책은 이 값을 기준으로 결정합니다.
+public enum DefenseOutcome
+{
+    None, // 아직 결과가 정해지지 않은 상태
+    Victory, // 밤 방어 성공
+    Defeat, // 방어 실패
+    Abandoned // 사용자가 중간에 포기하거나 세션이 중단된 상태
+}
+
 // 밤 방어전 한 판의 런타임 진행 상태를 관리합니다.
 // 이 모델은 일반 Battle이 아니라 웨이브, 보스, 드래프트 선택이 섞인 Defense Session을 표현합니다.
 public sealed class NightDefenseProgress
@@ -9,6 +19,7 @@ public sealed class NightDefenseProgress
     public ReactiveProperty<int> CurrentWaveIndex { get; } = new(0); // 현재 웨이브 번호
     public ReactiveProperty<bool> IsBossWave { get; } = new(false); // 현재 웨이브가 보스 웨이브인지 여부
     public ReactiveProperty<float> ElapsedSeconds { get; } = new(0f); // 방어 세션 경과 시간
+    public ReactiveProperty<DefenseOutcome> LastOutcome { get; } = new(DefenseOutcome.None); // 마지막 방어 결과
 
     // 밤 방어 세션을 시작합니다.
     public void BeginDefenseSession(int defenseSessionId)
@@ -20,6 +31,7 @@ public sealed class NightDefenseProgress
         CurrentWaveIndex.Value = 0;
         IsBossWave.Value = false;
         ElapsedSeconds.Value = 0f;
+        LastOutcome.Value = DefenseOutcome.None;
         IsDefenseActive.Value = true;
     }
 
@@ -43,9 +55,10 @@ public sealed class NightDefenseProgress
     }
 
     // 밤 방어 세션을 종료합니다.
-    public void EndDefenseSession()
+    public void EndDefenseSession(DefenseOutcome outcome)
     {
         IsDefenseActive.Value = false;
         IsBossWave.Value = false;
+        LastOutcome.Value = outcome;
     }
 }

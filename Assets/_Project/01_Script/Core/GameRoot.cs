@@ -14,6 +14,7 @@ public sealed class GameRoot : MonoBehaviour
     public ServiceRegistry ServiceRegistry { get; private set; } // 외부 서비스 등록소
     public PopupManager PopupManager { get; private set; } // 현재 씬 팝업 레이어 관리자
     public ScreenFadeManager ScreenFadeManager { get; private set; } // 현재 씬 화면 페이드 관리자
+    public GameCycleDirector GameCycleDirector { get; private set; } // 낮/밤 루프 진행 지휘자
 
     private void Awake()
     {
@@ -43,8 +44,9 @@ public sealed class GameRoot : MonoBehaviour
         // 저장 데이터를 먼저 불러옵니다.
         SaveData saveData = await SaveManager.LoadAsync();
 
-        // 저장 데이터를 기반으로 현재 게임 진행 Context를 생성합니다.
+        // 저장 데이터를 기반으로 현재 게임 진행 Context와 루프 지휘자를 생성합니다.
         Context = new GameContext(saveData);
+        GameCycleDirector = new GameCycleDirector(Context, SceneLoadManager);
         PopupManager.SetContext(Context);
 
         // 현재 상태를 Boot로 설정합니다.
@@ -56,8 +58,8 @@ public sealed class GameRoot : MonoBehaviour
         // BootScene에서 LobbyScene으로 이동합니다. LobbyScene은 낮 준비 화면 역할을 먼저 맡습니다.
         await SceneLoadManager.LoadLobbySceneAsync();
 
-        // 로비 씬 로드 완료 후 상태를 낮 준비 단계로 변경합니다.
-        Context.GameProgress.ChangeState(GameState.DayPreparation);
+        // 로비 씬 로드 완료 후 낮 준비 상태로 진입합니다.
+        GameCycleDirector.EnterDayPreparation();
 
         Debug.Log("[GameRoot] 초기화 완료");
     }

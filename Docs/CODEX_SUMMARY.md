@@ -603,3 +603,31 @@ Nightfall Spire 계열은 단순 스테이지 전투보다 낮 준비와 밤 방
 `BattleProgress`, `BattleScene`, `BattleStaticUIRoot`, `BattleDynamicUIRoot` 이름은 아직 남겨뒀다.
 Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는 내부 모델 중심만 바로잡았다.
 나중에 씬 파일까지 안정적으로 다룰 때 `NightDefenseSceneRoot` 계열로 이름을 정리하는 것이 좋다.
+
+## 완료된 작업 12: GameCycleDirector 추가
+
+커밋: `Add game cycle director`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameCycleDirector.cs`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/Model/NightDefenseProgress.cs`
+- `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 낮 준비, 밤 방어전 시작, 드래프트 선택, 방어 결과, 낮 복귀 흐름을 관리하는 `GameCycleDirector`를 추가했다.
+- `GameRoot`가 `GameCycleDirector`를 생성하고 전역에서 접근할 수 있게 했다.
+- `BattleSceneRoot`가 직접 `NightDefenseProgress`를 시작하지 않고 `GameCycleDirector.BeginLoadedNightDefenseSession()`을 호출하게 바꿨다.
+- `NightDefenseProgress`에 `DefenseOutcome`과 `LastOutcome`을 추가해 밤 방어 성공/실패/중단 결과를 보관하게 했다.
+- 기준 문서에 `GameCycleDirector`를 상태 전환의 단일 진입점으로 명시했다.
+
+### 왜 이렇게 바꿨는지
+
+이전 수정은 모델 이름은 바로잡았지만, 상태 전환을 누가 책임지는지 부족했다.
+게임 루프가 복잡해질수록 UI 버튼, 전투 컨트롤러, 팝업이 각각 Progress를 직접 바꾸면 상태가 꼬인다.
+
+그래서 낮/밤 루프의 흐름은 `GameCycleDirector`가 지휘하고, Progress 모델은 현재 값을 담는 역할에 집중하게 분리했다.
