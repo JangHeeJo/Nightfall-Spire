@@ -631,3 +631,46 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 게임 루프가 복잡해질수록 UI 버튼, 전투 컨트롤러, 팝업이 각각 Progress를 직접 바꾸면 상태가 꼬인다.
 
 그래서 낮/밤 루프의 흐름은 `GameFlowController`가 지휘하고, Progress 모델은 현재 값을 담는 역할에 집중하게 분리했다.
+
+## 완료된 작업 13: MVP 데이터 테이블 로더 추가
+
+커밋 예정: `Add MVP data table loader`
+
+### 변경된 파일
+
+- `Assets/_Project/05_Data/Tables/*.tsv`
+- `Assets/_Project/01_Script/Data/Enums/GameDataEnums.cs`
+- `Assets/_Project/01_Script/Data/Core/ITableRow.cs`
+- `Assets/_Project/01_Script/Data/Core/DataTable.cs`
+- `Assets/_Project/01_Script/Data/Core/TsvParser.cs`
+- `Assets/_Project/01_Script/Data/Core/TsvRow.cs`
+- `Assets/_Project/01_Script/Data/Core/IntPair.cs`
+- `Assets/_Project/01_Script/Data/Rows/GameDataRows.cs`
+- `Assets/_Project/01_Script/Core/DataTableManager.cs`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Docs/DATA_TABLE_ARCHITECTURE.md`
+- `Docs/CODEX_DATA_TABLE_TASK.md`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- ChatGPT에서 받아온 MVP TSV 테이블을 프로젝트 데이터 폴더에 반영했다.
+- TSV를 런타임 Row 객체로 바꾸는 `TsvParser`, `TsvRow`, `DataTable<T>` 구조를 추가했다.
+- 모든 MVP 테이블에 대응하는 Row 클래스를 추가했다.
+- `DataTableManager`가 게임 시작 시 모든 TSV를 읽고 조회 인덱스를 구성하게 바꿨다.
+- 밤 방어전 핵심 연결인 세션, 웨이브, 드래프트 카드 효과, 보상, 슬롯 업그레이드 조회 함수를 추가했다.
+- `GameRoot` 초기화 흐름에서 저장 데이터를 읽기 전에 데이터 테이블을 먼저 로드하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+기존 구조는 게임 진행 모델과 UI/씬 전환의 뼈대는 있었지만, 실제 Nightfall Spire식 루프를 움직일 기준 데이터가 없었다.
+이번 작업으로 `DefenseSessionData -> WaveGroupData -> WaveData -> EnemyData`, `DraftCardData -> DraftCardEffectData`, `RewardData` 흐름을 코드에서 바로 조회할 수 있게 했다.
+
+이제 다음 전투 런타임은 하드코딩된 웨이브나 카드가 아니라 테이블 기준으로 붙일 수 있다.
+테이블 파일은 밸런스와 콘텐츠 담당이 바꾸고, 런타임 코드는 `DataTableManager`를 통해 같은 기준을 읽는 구조로 간다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.

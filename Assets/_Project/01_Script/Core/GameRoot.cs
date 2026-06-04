@@ -42,6 +42,9 @@ public sealed class GameRoot : MonoBehaviour
 
         CreateCoreSystems();
 
+        // 밸런스 테이블을 먼저 읽어야 저장 데이터와 런타임 시스템이 같은 기준 데이터를 참조할 수 있습니다.
+        await DataTableManager.LoadAllAsync();
+
         // 저장 데이터를 먼저 불러옵니다.
         SaveData saveData = await SaveManager.LoadAsync();
 

@@ -1,0 +1,5 @@
+FloorId	NameKey	RequiredSessionId	UnlockCostCurrencyId	UnlockCostAmount	ModuleSlotCount	UnlockFeatureType	UnlockFeatureId	VisualKey
+1	floor_gate	0	1	0	1	CombatSlot	2001	floor_gate_visual
+2	floor_workshop	101	1	150	1	BuildingModule	5001	floor_workshop_visual
+3	floor_library	102	1	400	2	DraftPool	7002	floor_library_visual
+4	floor_mine_core	103	1	800	2	MiningNode	10002	floor_mine_core_visual

@@ -1,0 +1,5 @@
+ModuleId	NameKey	ModuleType	FloorId	RequiredFloorId	EffectType	EffectValue	TargetScope	UpgradeGroupId	ModuleTagList	PrefabKey
+5001	module_arrow_tower	DefenseTower	1	1	AttackPercent	10	AllSlots	6001	Projectile|Physical	module_arrow_tower
+5002	module_mana_library	Library	3	3	DraftRareWeight	15	DraftPool	6002	Magic|Library	module_mana_library
+5003	module_mining_core	Mining	2	2	MiningYieldPercent	20	Mining	6003	Resource|Mining	module_mining_core
+5004	module_workbench	Workshop	2	2	CraftSpeedPercent	15	Crafting	6004	Craft|Workshop	module_workbench

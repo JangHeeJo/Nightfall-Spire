@@ -1,0 +1,8 @@
+RewardRowId	RewardGroupId	RewardItemType	RewardItemId	Amount	ChancePermille	FirstClearOnly	PreviewOrder
+900101	9001	Currency	1	100	1000	FALSE	1
+900102	9001	Material	20001	5	1000	FALSE	2
+900201	9002	Currency	1	180	1000	FALSE	1
+900202	9002	Material	20003	4	1000	FALSE	2
+900301	9003	Currency	2	10	1000	TRUE	1
+900302	9003	Material	20002	2	800	FALSE	2
+900401	9004	Currency	1	260	1000	FALSE	1

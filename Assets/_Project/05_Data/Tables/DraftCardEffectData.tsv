@@ -1,0 +1,6 @@
+EffectRowId	CardId	EffectType	TargetScope	TargetTagFilter	ValueType	Value	DurationType	StackRule	TriggerType
+720101	7101	AttackPercent	AllSlots		Percent	20	Battle	Additive	OnPick
+720201	7102	ProjectileCountAdd	AllSlots	Projectile	Flat	1	Battle	Additive	OnPick
+720301	7103	OnHitExplosionDamage	AllSlots	Fire	Percent	35	Battle	Additive	OnHit
+720401	7104	ChainLightningCount	AllSlots	Lightning	Flat	2	Battle	Additive	OnHit
+720501	7105	AttackPercent	AllSlots	BossKiller	Percent	30	Battle	Additive	OnPick

@@ -1,0 +1,4 @@
+DraftPoolId	NameKey	IncludeTagList	ExcludeTagList	GradeWeightCommon	GradeWeightRare	GradeWeightEpic	PickCount	RerollCostCurrencyId	RerollCostAmount
+7001	draft_pool_early	Attack|Projectile|Element		80	18	2	3	0	0
+7002	draft_pool_library	Attack|Projectile|Element|Chain|Burn		65	28	7	3	2	5
+7003	draft_pool_boss	Attack|Projectile|Element|BossKiller	Utility	55	35	10	3	2	10

@@ -1,0 +1,7 @@
+UpgradeId	UpgradeGroupId	Level	UpgradeCategory	RequiredFloorId	CostCurrencyId	CostAmount	EffectType	EffectValue	DependencyUpgradeId
+600101	6001	1	Module	1	1	0	AttackPercent	10	0
+600102	6001	2	Module	1	1	150	AttackPercent	18	600101
+600201	6002	1	Library	3	1	300	DraftRareWeight	15	0
+600202	6002	2	Library	3	1	700	DraftRareWeight	25	600201
+600301	6003	1	Mining	2	1	200	MiningYieldPercent	20	0
+600401	6004	1	Crafting	2	1	200	CraftSpeedPercent	15	0

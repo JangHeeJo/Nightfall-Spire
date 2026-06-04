@@ -1,0 +1,9 @@
+UpgradeId	UpgradeGroupId	Level	CostCurrencyId	CostAmount	AttackBonusPct	AttackSpeedBonusPct	RangeBonusPct	SkillChargeBonusPct	UnlockModuleSocket
+210101	2101	1	1	0	0	0	0	0	0
+210102	2101	2	1	100	10	0	0	0	0
+210103	2101	3	1	250	20	3	0	0	1
+210104	2101	4	1	500	35	5	5	3	1
+210201	2102	1	1	0	0	0	0	0	0
+210202	2102	2	1	150	8	5	0	0	0
+210301	2103	1	1	0	0	0	0	0	0
+210302	2103	2	1	200	12	0	5	0	1

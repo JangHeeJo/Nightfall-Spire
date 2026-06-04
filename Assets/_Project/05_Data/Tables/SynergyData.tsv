@@ -1,0 +1,5 @@
+SynergyId	NameKey	RequiredCardTagList	RequiredHeroTagList	RequiredModuleTagList	SynergyLevel	EffectType	EffectValue	TargetScope	IconKey
+7301	synergy_fire_core	Fire:3			1	BurnDamagePercent	30	AllSlots	icon_synergy_fire
+7302	synergy_projectile_storm	Projectile:3			1	ProjectileCountAdd	1	AllSlots	icon_synergy_projectile
+7303	synergy_arc_chain	Lightning:2|Chain:1	Lightning:1		1	ChainLightningCount	1	AllSlots	icon_synergy_lightning
+7304	synergy_library_overload	Magic:2		Library:1	1	DraftRareWeight	10	DraftPool	icon_synergy_library

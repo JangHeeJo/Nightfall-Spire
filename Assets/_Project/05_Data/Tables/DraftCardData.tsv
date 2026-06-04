@@ -1,0 +1,6 @@
+CardId	NameKey	DescKey	CardGrade	CardTagList	ElementType	MaxStack	IsUnique	Weight	RequiredUnlockId	IconKey
+7101	card_attack_up	card_attack_up_desc	Common	Attack	None	5	FALSE	100	0	icon_card_attack
+7102	card_multi_shot	card_multi_shot_desc	Rare	Projectile|Attack	None	3	FALSE	40	0	icon_card_multishot
+7103	card_fire_burst	card_fire_burst_desc	Rare	Fire|Explosion	Fire	3	FALSE	35	600201	icon_card_fire
+7104	card_chain_spark	card_chain_spark_desc	Epic	Lightning|Chain	Lightning	2	FALSE	15	600201	icon_card_chain
+7105	card_boss_breaker	card_boss_breaker_desc	Rare	BossKiller|Attack	None	2	FALSE	20	0	icon_card_boss

@@ -1,0 +1,5 @@
+CurrencyId	NameKey	CurrencyType	IsPremium	MaxAmount	IconKey
+1	currency_gold	Soft	FALSE	0	icon_gold
+2	currency_gem	Premium	TRUE	0	icon_gem
+3	currency_stone	Material	FALSE	999999	icon_stone
+4	currency_essence	Meta	FALSE	999999	icon_essence

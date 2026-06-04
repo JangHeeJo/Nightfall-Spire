@@ -138,6 +138,20 @@ GameRoot
 - `MiningNodeData`
 - `RewardData`
 
+현재 데이터 테이블은 `Assets/_Project/05_Data/Tables`의 TSV를 기준으로 로드합니다.
+`DataTableManager`가 앱 시작 시 모든 테이블을 읽고, 런타임 로직은 TSV 파일을 직접 읽지 않고 Row 객체와 조회 함수만 사용합니다.
+
+핵심 조회:
+
+- `DefenseSessionData`로 현재 밤 방어 세션의 웨이브 그룹, 드래프트 풀, 보상 그룹을 찾습니다.
+- `GetWaveRows(waveGroupId, waveIndex)`로 해당 웨이브의 스폰 구성을 찾습니다.
+- `GetCombatSlotUpgrade(upgradeGroupId, level)`로 슬롯 성장 수치와 비용을 찾습니다.
+- `GetRewardRows(rewardGroupId)`로 방어 결과 보상 목록을 찾습니다.
+- `GetDraftCardEffects(cardId)`로 선택한 카드의 적용 효과를 찾습니다.
+
+이 구조가 필요한 이유는 밤 방어전, 드래프트, 낮 성장 시스템이 서로 같은 테이블 기준을 봐야 하기 때문입니다.
+전투 시스템이나 UI가 TSV를 직접 파싱하면 같은 데이터가 여러 방식으로 해석될 수 있으므로, 테이블 파싱은 `DataTableManager` 한 곳에 묶습니다.
+
 ### 2순위: 밤 방어 런타임
 
 - 웨이브 진행기

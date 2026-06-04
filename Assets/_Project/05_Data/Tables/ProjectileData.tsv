@@ -1,0 +1,4 @@
+ProjectileId	NameKey	ProjectileType	Speed	HitRadius	LifeTimeSec	EffectKey	PrefabKey
+3101	projectile_fire_bolt	Homing	8.0	0.25	3.0	effect_fire_hit	projectile_fire_bolt
+3102	projectile_arc_spark	Homing	9.0	0.20	3.0	effect_lightning_hit	projectile_arc_spark
+3103	projectile_frost_arrow	Straight	10.0	0.18	2.5	effect_ice_hit	projectile_frost_arrow

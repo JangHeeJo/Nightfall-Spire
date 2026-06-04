@@ -1,0 +1,4 @@
+NodeId	NameKey	FloorId	MaterialId	BaseYield	RespawnSec	RequiredUpgradeId	NodeTier	PrefabKey
+10001	node_stone_vein	2	20001	3	10.0	0	1	node_stone_vein
+10002	node_arc_crystal	3	20002	1	20.0	600201	2	node_arc_crystal
+10003	node_iron_deposit	2	20003	2	15.0	0	1	node_iron_deposit

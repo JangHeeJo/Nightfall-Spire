@@ -1,0 +1,5 @@
+AttackPatternId	PatternType	ProjectileId	ProjectileCount	SpreadAngle	ChainCount	PierceCount	AreaRadius
+3001	Single	3101	1	0	0	0	0
+3002	Chain	3102	1	0	2	0	0
+3003	Pierce	3103	1	0	0	2	0
+3004	Spread	3101	3	25	0	0	0

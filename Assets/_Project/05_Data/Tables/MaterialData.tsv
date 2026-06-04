@@ -1,0 +1,6 @@
+MaterialId	NameKey	MaterialType	Rarity	MaxStack	IconKey
+20001	material_stone	Ore	Common	999	icon_stone
+20002	material_arc_crystal	Crystal	Rare	999	icon_arc_crystal
+20003	material_iron	Ore	Common	999	icon_iron
+20004	material_stone_plate	Component	Common	999	icon_stone_plate
+20005	material_arc_core	Component	Rare	999	icon_arc_core

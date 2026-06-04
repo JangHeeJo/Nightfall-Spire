@@ -1,0 +1,5 @@
+SessionId	DayIndex	NightIndex	NameKey	WaveGroupId	DraftPoolId	RewardGroupId	RequiredFloorId	ClearConditionType	TimeLimitSec	BossEnemyId	EnvironmentTagList
+101	1	1	session_night_01	8001	7001	9001	1	ClearAllWaves	0	0	Forest|Early
+102	2	2	session_night_02	8002	7001	9002	1	ClearAllWaves	0	0	Forest|Early
+103	3	3	session_night_03	8003	7002	9003	2	DefeatBoss	0	1301	Forest|Boss
+104	4	4	session_night_04	8004	7002	9004	3	SurviveTime	180	0	Ruins|Swarm

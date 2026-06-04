@@ -1,0 +1,4 @@
+GearId	NameKey	GearType	EquipScope	Rarity	EffectType	EffectValue	CraftRecipeId	IconKey
+40001	gear_guard_charm	Charm	CombatSlot	Common	MaxHpPercent	10	30003	icon_gear_charm
+40002	gear_spark_ring	Ring	Hero	Rare	AttackSpeedPercent	5	0	icon_gear_ring
+40003	gear_mining_glove	Tool	Account	Common	MiningYieldPercent	10	0	icon_gear_glove
