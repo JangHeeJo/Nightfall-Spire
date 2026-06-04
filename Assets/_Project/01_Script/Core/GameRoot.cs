@@ -14,8 +14,9 @@ public sealed class GameRoot : MonoBehaviour
     public ServiceRegistry ServiceRegistry { get; private set; } // 외부 서비스 등록소
     public PopupManager PopupManager { get; private set; } // 현재 씬 팝업 레이어 관리자
     public ScreenFadeManager ScreenFadeManager { get; private set; } // 현재 씬 화면 페이드 관리자
-    public GameCycleDirector GameCycleDirector { get; private set; } // 낮/밤 루프 진행 지휘자
+    public GameFlowController GameFlowController { get; private set; } // 낮/밤 흐름 제어자
 
+    // 앱 시작 시 GameRoot 단일 인스턴스를 만들고 전체 초기화 흐름을 시작합니다.
     private void Awake()
     {
         // 중복 GameRoot 생성을 방지합니다.
@@ -46,7 +47,7 @@ public sealed class GameRoot : MonoBehaviour
 
         // 저장 데이터를 기반으로 현재 게임 진행 Context와 루프 지휘자를 생성합니다.
         Context = new GameContext(saveData);
-        GameCycleDirector = new GameCycleDirector(Context, SceneLoadManager);
+        GameFlowController = new GameFlowController(Context, SceneLoadManager);
         PopupManager.SetContext(Context);
 
         // 현재 상태를 Boot로 설정합니다.
@@ -59,7 +60,7 @@ public sealed class GameRoot : MonoBehaviour
         await SceneLoadManager.LoadLobbySceneAsync();
 
         // 로비 씬 로드 완료 후 낮 준비 상태로 진입합니다.
-        GameCycleDirector.EnterDayPreparation();
+        GameFlowController.EnterDayPreparation();
 
         Debug.Log("[GameRoot] 초기화 완료");
     }
@@ -76,6 +77,7 @@ public sealed class GameRoot : MonoBehaviour
         ScreenFadeManager = new ScreenFadeManager();
     }
 
+    // 앱이 백그라운드로 내려가거나 돌아올 때 저장과 상태 복구를 처리합니다.
     private void OnApplicationPause(bool pauseStatus)
     {
         if (Context == null)
@@ -94,6 +96,7 @@ public sealed class GameRoot : MonoBehaviour
         Context.GameProgress.RestorePreviousState();
     }
 
+    // 앱 종료 직전에 현재 저장 데이터를 즉시 파일로 남깁니다.
     private void OnApplicationQuit()
     {
         // 앱 종료 시점에는 비동기 저장이 끝나기 전에 앱이 닫힐 수 있으므로 즉시 저장을 사용합니다.

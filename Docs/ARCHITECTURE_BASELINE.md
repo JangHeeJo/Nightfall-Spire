@@ -1,4 +1,4 @@
-﻿# Nightfall Spire 아키텍처 기준
+# Nightfall Spire 아키텍처 기준
 
 이 문서는 현재 프로젝트가 일반 자동전투 RPG로 흐르지 않도록 잡아두는 기준 문서입니다.
 레퍼런스 게임을 그대로 복제하지 않고, 공개 설명에서 확인되는 장르 구조를 바탕으로 독자 게임 구조를 설계합니다.
@@ -168,9 +168,9 @@ GameRoot
 - 레퍼런스의 고유 캐릭터, 카드명, 수치, 아트는 복제하지 않는다.
 - 구조는 참고하되, 플레이 감각과 콘텐츠는 독자적으로 설계한다.
 
-## GameCycleDirector 기준
+## GameFlowController 기준
 
-`GameCycleDirector`는 낮/밤 루프의 상태 전환 진입점입니다.
+`GameFlowController`는 낮/밤 루프의 상태 전환 진입점입니다.
 앞으로 UI 버튼, 전투 컨트롤러, 결과 팝업은 `GameProgress`, `NightDefenseProgress`, `DraftProgress`를 직접 조합해서 상태를 바꾸지 않고 이 클래스를 통해 요청합니다.
 
 주요 책임:

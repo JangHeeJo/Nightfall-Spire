@@ -4,11 +4,15 @@ public sealed class BattleProgress
 {
     public bool IsBattleActive { get; private set; } // 이전 전투 진행 중 여부
 
+    // 이전 구조에서 전투 시작을 표시하던 호환 메서드입니다.
+    // 새 코드에서는 NightDefenseProgress.BeginDefenseSession을 사용합니다.
     public void BeginBattle()
     {
         IsBattleActive = true;
     }
 
+    // 이전 구조에서 전투 종료를 표시하던 호환 메서드입니다.
+    // 새 코드에서는 NightDefenseProgress.EndDefenseSession을 사용합니다.
     public void EndBattle()
     {
         IsBattleActive = false;

@@ -9,6 +9,7 @@ public sealed class CurrencyProgress
     public ReactiveProperty<long> Gold { get; } // 현재 골드
     public ReactiveProperty<long> Gem { get; } // 현재 젬
 
+    // 저장된 재화 값을 런타임에서 구독 가능한 상태로 변환합니다.
     public CurrencyProgress(SaveData saveData)
     {
         this.saveData = saveData;

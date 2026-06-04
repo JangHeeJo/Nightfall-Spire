@@ -11,6 +11,7 @@ public sealed class GameProgress
     public ReactiveProperty<int> CurrentDefenseSessionId { get; } // 다음에 도전할 밤 방어 세션 ID
     public ReactiveProperty<int> CompletedDayCount { get; } // 완료한 낮/밤 루프 수
 
+    // 저장된 전체 진행 값을 런타임에서 구독 가능한 상태로 변환합니다.
     public GameProgress(SaveData saveData)
     {
         this.saveData = saveData;

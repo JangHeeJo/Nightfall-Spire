@@ -11,6 +11,7 @@ public sealed class DayProgress
     public ReactiveProperty<int> MiningDepth { get; } // 채굴 진행 단계
     public ReactiveProperty<bool> MagicLibraryUnlocked { get; } // 마법 도서관 해금 여부
 
+    // 저장된 낮 성장 값을 런타임에서 구독 가능한 상태로 변환합니다.
     public DayProgress(SaveData saveData)
     {
         this.saveData = saveData;

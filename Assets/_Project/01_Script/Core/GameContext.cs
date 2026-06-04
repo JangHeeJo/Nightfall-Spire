@@ -13,6 +13,7 @@ public sealed class GameContext
     public RewardProgress RewardProgress { get; } // 보상 런타임 상태
     public PopupProgress PopupProgress { get; } // 팝업 런타임 상태
 
+    // 저장 데이터를 기반으로 게임 전체에서 공유할 런타임 모델 묶음을 만듭니다.
     public GameContext(SaveData saveData)
     {
         SaveData = saveData;

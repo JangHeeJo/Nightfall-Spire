@@ -11,6 +11,7 @@ public sealed class CombatSlotProgress
 
     public IReadOnlyDictionary<int, CombatSlotRuntimeState> SlotsByIndex => slotsByIndex; // 외부 조회용 슬롯 목록
 
+    // 저장된 전투 슬롯 목록을 런타임에서 구독 가능한 슬롯 상태로 변환합니다.
     public CombatSlotProgress(SaveData saveData)
     {
         this.saveData = saveData;
@@ -100,6 +101,7 @@ public sealed class CombatSlotRuntimeState
     public ReactiveProperty<int> EquippedHeroId { get; } // 배치된 영웅 ID
     public ReactiveProperty<bool> IsUnlocked { get; } // 슬롯 해금 여부
 
+    // 저장 슬롯 하나를 ReactiveProperty 기반 런타임 슬롯으로 감쌉니다.
     public CombatSlotRuntimeState(CombatSlotSaveData saveData)
     {
         this.saveData = saveData;

@@ -2,12 +2,13 @@
 using UnityEngine;
 
 // BattleScene의 진입점입니다.
-// 씬 이름은 기존 연결을 유지하지만, 실제 런타임 모델은 GameCycleDirector가 시작하는 밤 방어 세션입니다.
+// 씬 이름은 기존 연결을 유지하지만, 실제 런타임 모델은 GameFlowController가 시작하는 밤 방어 세션입니다.
 public sealed class BattleSceneRoot : MonoBehaviour
 {
     [SerializeField] private BattleStaticUIRoot staticUIRoot; // 밤 방어전 고정 UI 묶음
     [SerializeField] private BattleDynamicUIRoot dynamicUIRoot; // 밤 방어전 동적 UI 묶음
 
+    // 씬 오브젝트가 준비되면 GameRoot 초기화를 기다린 뒤 밤 방어 세션을 시작합니다.
     private void Start()
     {
         InitializeAsync().Forget();
@@ -18,12 +19,13 @@ public sealed class BattleSceneRoot : MonoBehaviour
     {
         GameContext context = await WaitForContextAsync();
 
-        GameRoot.Instance.GameCycleDirector.BeginLoadedNightDefenseSession();
+        GameRoot.Instance.GameFlowController.BeginLoadedNightDefenseSession();
 
         staticUIRoot?.Initialize(context);
         dynamicUIRoot?.Initialize(context);
     }
 
+    // 씬이 사라질 때 진행 중인 밤 방어 세션을 중단 상태로 정리합니다.
     private void OnDestroy()
     {
         GameContext context = GameRoot.Instance?.Context;
@@ -38,7 +40,7 @@ public sealed class BattleSceneRoot : MonoBehaviour
     // Boot/DayPreparation에서 BattleScene으로 넘어오는 타이밍 차이를 흡수합니다.
     private async UniTask<GameContext> WaitForContextAsync()
     {
-        await UniTask.WaitUntil(() => GameRoot.Instance != null && GameRoot.Instance.Context != null && GameRoot.Instance.GameCycleDirector != null);
+        await UniTask.WaitUntil(() => GameRoot.Instance != null && GameRoot.Instance.Context != null && GameRoot.Instance.GameFlowController != null);
         return GameRoot.Instance.Context;
     }
 }
