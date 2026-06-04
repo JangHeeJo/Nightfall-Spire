@@ -558,3 +558,48 @@ Assets/_Project/05_Data
 - 변경 후 `dotnet build "Nightfall Spire.sln"`을 실행한다.
 - 가능한 경우 GitHub Actions PR 체크까지 확인한다.
 
+
+## 완료된 작업 11: 낮/밤 방어전 중심 아키텍처 재정렬
+
+커밋: `Realign architecture around night defense loop`
+
+### 변경된 파일
+
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Assets/_Project/01_Script/Core/GameContext.cs`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/Core/GameState.cs`
+- `Assets/_Project/01_Script/Model/SaveData.cs`
+- `Assets/_Project/01_Script/Model/GameProgress.cs`
+- `Assets/_Project/01_Script/Model/DayProgress.cs`
+- `Assets/_Project/01_Script/Model/CombatSlotProgress.cs`
+- `Assets/_Project/01_Script/Model/NightDefenseProgress.cs`
+- `Assets/_Project/01_Script/Model/DraftProgress.cs`
+- `Assets/_Project/01_Script/Model/RewardProgress.cs`
+- `Assets/_Project/01_Script/Model/BattleProgress.cs`
+- `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+
+### 주요 변경
+
+- 프로젝트 기준 문서 `Docs/ARCHITECTURE_BASELINE.md`를 추가했다.
+- `GameContext`의 중심 모델을 일반 Battle이 아니라 낮/밤 방어전 루프 기준으로 재정렬했다.
+- `DayProgress`를 추가해 낮 준비 단계의 스파이어, 성채 층, 채굴, 마법 도서관 해금 상태를 관리하게 했다.
+- `CombatSlotProgress`를 추가해 영웅 개별 레벨보다 전투 슬롯 성장과 배치를 우선 구조로 잡았다.
+- `NightDefenseProgress`를 추가해 밤 방어 세션, 웨이브, 보스 웨이브, 경과 시간을 관리하게 했다.
+- `DraftProgress`를 추가해 전투 중 1-of-3 로그라이트 카드 선택 상태를 관리하게 했다.
+- `SaveData`를 `CurrentStageId`, `BattleSlot` 중심에서 `CurrentDefenseSessionId`, `DayCycle`, `CombatSlot` 중심으로 바꿨다.
+- `GameState`를 `BattlePlaying` 중심에서 `DayPreparation`, `NightDefensePlaying`, `DraftSelection`, `NightDefenseResult` 중심으로 바꿨다.
+- `BattleSceneRoot`가 `BattleProgress` 대신 `NightDefenseProgress`를 시작/종료하게 바꿨다.
+
+### 왜 이렇게 바꿨는지
+
+기존 구조는 UI, 씬 전환, 팝업 같은 공통 기반은 괜찮았지만 게임 핵심이 일반 자동전투 RPG처럼 보이는 문제가 있었다.
+Nightfall Spire 계열은 단순 스테이지 전투보다 낮 준비와 밤 방어 세션, 전투 슬롯 성장, 로그라이트 카드 선택이 중심이다.
+
+따라서 코드의 1급 모델 이름부터 `DayProgress`, `CombatSlotProgress`, `NightDefenseProgress`, `DraftProgress`로 바꿔야 이후 데이터 테이블과 전투 시스템이 엉뚱한 방향으로 가지 않는다.
+
+### 현재 남겨둔 것
+
+`BattleProgress`, `BattleScene`, `BattleStaticUIRoot`, `BattleDynamicUIRoot` 이름은 아직 남겨뒀다.
+Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는 내부 모델 중심만 바로잡았다.
+나중에 씬 파일까지 안정적으로 다룰 때 `NightDefenseSceneRoot` 계열로 이름을 정리하는 것이 좋다.

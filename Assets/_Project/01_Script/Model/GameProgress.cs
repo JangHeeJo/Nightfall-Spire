@@ -1,24 +1,27 @@
 ﻿using R3;
 
 // 게임의 현재 진행 상태를 담는 모델입니다.
-// 상태 변경, 이전 상태 복구, 현재 스테이지 같은 런타임 진행 값을 관리합니다.
+// 일반 스테이지가 아니라 다음 밤 방어 세션과 낮/밤 루프 진행 값을 관리합니다.
 public sealed class GameProgress
 {
     private readonly SaveData saveData; // 실제 저장 데이터 참조
 
     public ReactiveProperty<GameState> CurrentState { get; } = new(GameState.None); // 현재 게임 상태
     public ReactiveProperty<GameState> PreviousState { get; } = new(GameState.None); // AppBackground 진입 전 상태
-    public ReactiveProperty<int> CurrentStageId { get; } // 현재 진행 중인 스테이지 ID
+    public ReactiveProperty<int> CurrentDefenseSessionId { get; } // 다음에 도전할 밤 방어 세션 ID
+    public ReactiveProperty<int> CompletedDayCount { get; } // 완료한 낮/밤 루프 수
 
     public GameProgress(SaveData saveData)
     {
         this.saveData = saveData;
 
-        // SaveData에 저장된 현재 스테이지를 런타임 상태로 가져옵니다.
-        CurrentStageId = new ReactiveProperty<int>(saveData.Progress.CurrentStageId);
+        // SaveData에 저장된 진행 값을 런타임 상태로 가져옵니다.
+        CurrentDefenseSessionId = new ReactiveProperty<int>(saveData.Progress.CurrentDefenseSessionId);
+        CompletedDayCount = new ReactiveProperty<int>(saveData.Progress.CompletedDayCount);
 
-        // CurrentStageId가 바뀌면 SaveData에도 반영합니다.
-        CurrentStageId.Subscribe(stageId => this.saveData.Progress.CurrentStageId = stageId);
+        // 진행 값이 바뀌면 SaveData에도 반영합니다.
+        CurrentDefenseSessionId.Subscribe(sessionId => this.saveData.Progress.CurrentDefenseSessionId = sessionId);
+        CompletedDayCount.Subscribe(dayCount => this.saveData.Progress.CompletedDayCount = dayCount);
     }
 
     // 게임 상태를 변경합니다.
@@ -41,19 +44,38 @@ public sealed class GameProgress
             return;
 
         GameState restoreState = PreviousState.Value == GameState.None
-            ? GameState.Lobby
+            ? GameState.DayPreparation
             : PreviousState.Value;
 
         ChangeState(restoreState);
         PreviousState.Value = GameState.None;
     }
 
-    // 현재 진행 스테이지를 변경합니다.
-    public void SetCurrentStage(int stageId)
+    // 다음에 도전할 밤 방어 세션을 변경합니다.
+    public void SetCurrentDefenseSession(int sessionId)
     {
-        if (stageId <= 0)
+        if (sessionId <= 0)
             return;
 
-        CurrentStageId.Value = stageId;
+        CurrentDefenseSessionId.Value = sessionId;
+    }
+
+    // 낮/밤 루프 1회를 완료 처리합니다.
+    public void CompleteDayCycle()
+    {
+        CompletedDayCount.Value += 1;
+    }
+
+    // 방어 성공 시 최고 클리어 기록과 다음 세션을 갱신합니다.
+    public void CompleteDefenseSession(int clearedSessionId)
+    {
+        if (clearedSessionId <= 0)
+            return;
+
+        if (saveData.Progress.HighestClearedDefenseSessionId < clearedSessionId)
+            saveData.Progress.HighestClearedDefenseSessionId = clearedSessionId;
+
+        if (CurrentDefenseSessionId.Value <= clearedSessionId)
+            CurrentDefenseSessionId.Value = clearedSessionId + 1;
     }
 }

@@ -1,18 +1,19 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 
-// ½ÇÁ¦ ÆÄÀÏ·Î ÀúÀåµÇ´Â ¿µ±¸ µ¥ÀÌÅÍÀÔ´Ï´Ù.
-// ¾ÛÀ» ²°´Ù ÄÑµµ À¯ÁöµÇ¾î¾ß ÇÏ´Â °ªµéÀÌ ¿©±â¿¡ µé¾î°©´Ï´Ù.
+// ì €ì¥ íŒŒì¼ë¡œ ë‚¨ëŠ” ì „ì²´ ë°ì´í„°ì…ë‹ˆë‹¤.
+// ëŸ°íƒ€ì„ ëª¨ë¸ì€ ì´ ë°ì´í„°ë¥¼ ê°ì‹¸ì„œ UIì™€ ì‹œìŠ¤í…œì´ êµ¬ë…í•˜ê¸° ì‰¬ìš´ í˜•íƒœë¡œ ë°”ê¿‰ë‹ˆë‹¤.
 [Serializable]
 public sealed class SaveData
 {
-    public int Version = 1; // ÀúÀå µ¥ÀÌÅÍ ¹öÀü. ³ªÁß¿¡ ¸¶ÀÌ±×·¹ÀÌ¼Ç ±âÁØÀ¸·Î »ç¿ë
+    public int Version = 2; // ì €ì¥ ë°ì´í„° ë²„ì „. êµ¬ì¡° ë³€ê²½ì´ë‚˜ ë§ˆì´ê·¸ë ˆì´ì…˜ íŒë‹¨ì— ì‚¬ìš©í•©ë‹ˆë‹¤.
 
-    public CurrencySaveData Currency = new(); // °ñµå, Áª °°Àº ÀçÈ­ ÀúÀå µ¥ÀÌÅÍ
-    public PlayerProgressSaveData Progress = new(); // ÇöÀç ½ºÅ×ÀÌÁö, Å¬¸®¾î ÁøÇàµµ ÀúÀå µ¥ÀÌÅÍ
-    public BattleSlotSaveDataContainer BattleSlot = new(); // ÀüÅõ ½½·Ô ÀúÀå µ¥ÀÌÅÍ
+    public CurrencySaveData Currency = new(); // ê³¨ë“œ, ì ¬ ê°™ì€ ê³µí†µ ì¬í™” ì €ì¥ ë°ì´í„°
+    public PlayerProgressSaveData Progress = new(); // í˜„ì¬ ë°©ì–´ ì„¸ì…˜ê³¼ ë‚®/ë°¤ ì§„í–‰ ì €ì¥ ë°ì´í„°
+    public DayCycleSaveData DayCycle = new(); // ë‚® ì¤€ë¹„ ë‹¨ê³„ì—ì„œ ì„±ì¥ì‹œí‚¤ëŠ” ìŠ¤íŒŒì´ì–´/ì„±ì±„ ì €ì¥ ë°ì´í„°
+    public CombatSlotSaveDataContainer CombatSlot = new(); // ì˜ì›… ê°œë³„ ì„±ì¥ë³´ë‹¤ ìš°ì„ ë˜ëŠ” ì „íˆ¬ ìŠ¬ë¡¯ ì €ì¥ ë°ì´í„°
 
-    // »õ °ÔÀÓÀ» ½ÃÀÛÇÒ ¶§ »ç¿ëÇÒ ±âº» ÀúÀå µ¥ÀÌÅÍ¸¦ »ı¼ºÇÕ´Ï´Ù.
+    // ìƒˆ ê²Œì„ì„ ì‹œì‘í•  ë•Œ ì‚¬ìš©í•  ê¸°ë³¸ ì €ì¥ ë°ì´í„°ë¥¼ ë§Œë“­ë‹ˆë‹¤.
     public static SaveData CreateDefault()
     {
         SaveData saveData = new SaveData();
@@ -20,50 +21,69 @@ public sealed class SaveData
         saveData.Currency.Gold = 0;
         saveData.Currency.Gem = 0;
 
-        saveData.Progress.CurrentStageId = 1;
-        saveData.Progress.HighestClearedStageId = 0;
+        saveData.Progress.CurrentDefenseSessionId = 1;
+        saveData.Progress.HighestClearedDefenseSessionId = 0;
+        saveData.Progress.CompletedDayCount = 0;
 
-        // ±âº» ÀüÅõ ½½·Ô 1°³ »ı¼º
-        saveData.BattleSlot.Slots.Add(new BattleSlotSaveData
+        saveData.DayCycle.SpireLevel = 1;
+        saveData.DayCycle.CitadelFloorCount = 1;
+        saveData.DayCycle.MiningDepth = 0;
+        saveData.DayCycle.MagicLibraryUnlocked = false;
+
+        // ê¸°ë³¸ ì „íˆ¬ ìŠ¬ë¡¯ 1ê°œë¥¼ ì—´ì–´ ì²« ë°¤ ë°©ì–´ì „ì„ ì‹œì‘í•  ìˆ˜ ìˆê²Œ í•©ë‹ˆë‹¤.
+        saveData.CombatSlot.Slots.Add(new CombatSlotSaveData
         {
             SlotIndex = 0,
             Level = 1,
-            EquippedHeroId = 1
+            EquippedHeroId = 1,
+            IsUnlocked = true
         });
 
         return saveData;
     }
 }
 
-// ÀúÀåµÇ´Â ÀçÈ­ µ¥ÀÌÅÍÀÔ´Ï´Ù.
+// ì €ì¥ë˜ëŠ” ì¬í™” ë°ì´í„°ì…ë‹ˆë‹¤.
 [Serializable]
 public sealed class CurrencySaveData
 {
-    public long Gold; // °ñµå
-    public long Gem; // Áª
+    public long Gold; // ë‚® ì„±ì¥ê³¼ ë³´ìƒ ì§€ê¸‰ì— ì“°ëŠ” ê¸°ë³¸ ì¬í™”
+    public long Gem; // í”„ë¦¬ë¯¸ì—„ ë˜ëŠ” íŠ¹ìˆ˜ í•´ê¸ˆ ì¬í™”
 }
 
-// ÀúÀåµÇ´Â ÇÃ·¹ÀÌ¾î ÁøÇà µ¥ÀÌÅÍÀÔ´Ï´Ù.
+// ì €ì¥ë˜ëŠ” í”Œë ˆì´ì–´ ì§„í–‰ ë°ì´í„°ì…ë‹ˆë‹¤.
 [Serializable]
 public sealed class PlayerProgressSaveData
 {
-    public int CurrentStageId = 1; // ÇöÀç ÁøÇà ÁßÀÎ ½ºÅ×ÀÌÁö
-    public int HighestClearedStageId = 0; // °¡Àå ³ô°Ô Å¬¸®¾îÇÑ ½ºÅ×ÀÌÁö
+    public int CurrentDefenseSessionId = 1; // ë‹¤ìŒì— ë„ì „í•  ë°¤ ë°©ì–´ ì„¸ì…˜ ID
+    public int HighestClearedDefenseSessionId = 0; // ê°€ì¥ ë©€ë¦¬ í´ë¦¬ì–´í•œ ë°¤ ë°©ì–´ ì„¸ì…˜ ID
+    public int CompletedDayCount = 0; // ë‚®/ë°¤ ë£¨í”„ë¥¼ ëª‡ ë²ˆ ì™„ë£Œí–ˆëŠ”ì§€ ì¶”ì í•©ë‹ˆë‹¤.
 }
 
-// ÀüÅõ ½½·Ô ÀúÀå µ¥ÀÌÅÍ ¹­À½ÀÔ´Ï´Ù.
+// ë‚® ì¤€ë¹„ ë‹¨ê³„ì—ì„œ ì„±ì¥ì‹œí‚¤ëŠ” ìŠ¤íŒŒì´ì–´/ì„±ì±„ ì €ì¥ ë°ì´í„°ì…ë‹ˆë‹¤.
 [Serializable]
-public sealed class BattleSlotSaveDataContainer
+public sealed class DayCycleSaveData
 {
-    public List<BattleSlotSaveData> Slots = new(); // ½½·Ô ¸ñ·Ï
+    public int SpireLevel = 1; // ìŠ¤íŒŒì´ì–´ ì „ì²´ ì„±ì¥ ë ˆë²¨
+    public int CitadelFloorCount = 1; // ê±´ì„¤ëœ ì„±ì±„ ì¸µ ìˆ˜
+    public int MiningDepth = 0; // ì±„êµ´ ì§„í–‰ ê¹Šì´ ë˜ëŠ” êµ¬ì—­ ë‹¨ê³„
+    public bool MagicLibraryUnlocked; // ë§ˆë²• ë„ì„œê´€ ê¸°ëŠ¥ í•´ê¸ˆ ì—¬ë¶€
 }
 
-// °³º° ÀüÅõ ½½·Ô ÀúÀå µ¥ÀÌÅÍÀÔ´Ï´Ù.
-// ¿µ¿õ ¼ºÀå°ú ½½·Ô ¼ºÀåÀ» ºĞ¸®ÇÏ±â À§ÇØ ½½·Ô ·¹º§°ú ÀåÂø ¿µ¿õÀ» µû·Î ÀúÀåÇÕ´Ï´Ù.
+// ì „íˆ¬ ìŠ¬ë¡¯ ì €ì¥ ë°ì´í„° ë¬¶ìŒì…ë‹ˆë‹¤.
 [Serializable]
-public sealed class BattleSlotSaveData
+public sealed class CombatSlotSaveDataContainer
 {
-    public int SlotIndex; // ½½·Ô ¹øÈ£
-    public int Level; // ½½·Ô ·¹º§
-    public int EquippedHeroId; // ÀåÂøµÈ ¿µ¿õ ID
+    public List<CombatSlotSaveData> Slots = new(); // ë³´ìœ  ì¤‘ì¸ ì „íˆ¬ ìŠ¬ë¡¯ ëª©ë¡
+}
+
+// ì „íˆ¬ ìŠ¬ë¡¯ í•˜ë‚˜ì˜ ì €ì¥ ë°ì´í„°ì…ë‹ˆë‹¤.
+// ì˜ì›…ì´ ì•„ë‹ˆë¼ ìŠ¬ë¡¯ì„ ì„±ì¥ì‹œí‚¤ë©´ ìƒˆ ì˜ì›…ë„ ì¦‰ì‹œ ì „ë ¥í™”ë  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+[Serializable]
+public sealed class CombatSlotSaveData
+{
+    public int SlotIndex; // ìŠ¬ë¡¯ ë²ˆí˜¸
+    public int Level; // ìŠ¬ë¡¯ ì„±ì¥ ë ˆë²¨
+    public int EquippedHeroId; // ì´ ìŠ¬ë¡¯ì— ë°°ì¹˜ëœ ì˜ì›… ID
+    public bool IsUnlocked; // ìŠ¬ë¡¯ ì‚¬ìš© ê°€ëŠ¥ ì—¬ë¶€
 }

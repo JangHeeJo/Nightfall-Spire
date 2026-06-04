@@ -50,14 +50,14 @@ public sealed class GameRoot : MonoBehaviour
         // 현재 상태를 Boot로 설정합니다.
         Context.GameProgress.ChangeState(GameState.Boot);
 
-        // 로비 씬 로딩 상태로 변경합니다.
-        Context.GameProgress.ChangeState(GameState.LobbyLoading);
+        // 낮 준비 씬 로딩 상태로 변경합니다.
+        Context.GameProgress.ChangeState(GameState.DayPreparationLoading);
 
-        // BootScene에서 LobbyScene으로 이동합니다.
+        // BootScene에서 LobbyScene으로 이동합니다. LobbyScene은 낮 준비 화면 역할을 먼저 맡습니다.
         await SceneLoadManager.LoadLobbySceneAsync();
 
-        // 로비 씬 로드 완료 후 상태를 Lobby로 변경합니다.
-        Context.GameProgress.ChangeState(GameState.Lobby);
+        // 로비 씬 로드 완료 후 상태를 낮 준비 단계로 변경합니다.
+        Context.GameProgress.ChangeState(GameState.DayPreparation);
 
         Debug.Log("[GameRoot] 초기화 완료");
     }
@@ -88,7 +88,7 @@ public sealed class GameRoot : MonoBehaviour
         }
 
         // 앱 복귀 시에는 이전 상태로 돌아갑니다.
-        // 전투 중 복귀 정책은 추후 BattlePaused나 ResumePopup이 생기면 여기서 확장합니다.
+        // 밤 방어전 중 복귀 정책은 추후 일시정지 팝업과 세션 복구 규칙이 생기면 여기서 확장합니다.
         Context.GameProgress.RestorePreviousState();
     }
 
