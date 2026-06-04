@@ -163,6 +163,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 750622506}
+  - component: {fileID: 920100002}
   m_Layer: 5
   m_Name: BattleStaticUIRoot
   m_TagString: Untagged
@@ -409,6 +410,7 @@ GameObject:
   - component: {fileID: 1673274014}
   - component: {fileID: 1673274013}
   - component: {fileID: 1673274012}
+  - component: {fileID: 920100003}
   m_Layer: 5
   m_Name: Canvas_DynamicUI
   m_TagString: Untagged
@@ -749,6 +751,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1894928771}
+  - component: {fileID: 920100001}
   m_Layer: 0
   m_Name: BattleSceneRoot
   m_TagString: Untagged
@@ -780,6 +783,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1996788407}
+  - component: {fileID: 920100004}
   m_Layer: 5
   m_Name: DimLayer
   m_TagString: Untagged
@@ -816,3 +820,58 @@ SceneRoots:
   - {fileID: 913920461}
   - {fileID: 1673274015}
   - {fileID: 1818618357}
+--- !u!114 &920100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894928770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b45491ec58024962b7e87021f876ba6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  staticUIRoot: {fileID: 920100002}
+  dynamicUIRoot: {fileID: 920100003}
+--- !u!114 &920100002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 750622505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd502aff6ef7405a98ae530bbea0bd59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier:
+--- !u!114 &920100003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1673274011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f2a7c5fcfe749e985322fe41798adad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  popupLayer: {fileID: 631262737}
+  dimLayer: {fileID: 920100004}
+  toastLayer: {fileID: 1633152629}
+  floatingTextLayer: {fileID: 0}
+  unitHpBarLayer: {fileID: 0}
+--- !u!225 &920100004
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1996788406}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
