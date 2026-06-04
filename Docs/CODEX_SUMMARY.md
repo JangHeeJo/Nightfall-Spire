@@ -38,6 +38,7 @@
   - `Connect scene root components`
   - `Add popup layer registration`
   - `Add popup lifecycle foundation`
+  - `Add currency HUD binder`
 
 ## CI 구성 상태
 
@@ -314,6 +315,51 @@ BasePopup.RequestCloseAsync()
 DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 추가하지 않았다.
 나중에 DOTween을 설치하면 `PopupTweenManager` 내부만 교체해서 열기/닫기 연출을 붙이면 된다.
 
+## 완료된 작업 8: Currency HUD Binder 샘플 추가
+
+커밋: `Add currency HUD binder`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/UI/CurrencyHud.cs`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudBinder.cs`
+- `Assets/_Project/01_Script/Presenter.meta`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudBinder.cs.meta`
+- `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
+- `Assets/_Project/00_Scenes/LobbyScene.unity`
+
+### 주요 변경
+
+- `CurrencyHud`를 재화 표시만 담당하는 View로 정리했다.
+- `CurrencyHudBinder`를 추가해 `CurrencyProgress`와 `CurrencyHud`를 연결하게 했다.
+- `CurrencyHudBinder`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
+- 값이 바뀌면 Binder가 `CurrencyHud.SetGold()`, `CurrencyHud.SetGem()`을 호출한다.
+- `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudBinder`를 생성한다.
+- `LobbyStaticUIRoot.OnDestroy()`에서 Binder 구독을 해제한다.
+- `LobbyScene`의 `TopCurrencyHud` 오브젝트에 `CurrencyHud` 컴포넌트를 연결했다.
+
+### 왜 이렇게 했는지
+
+이 프로젝트는 전통 MVC를 그대로 쓰기보다 Unity식 MV(P) + R3 Binder 구조가 더 적합하다.
+Unity View는 씬/프리팹과 Inspector 참조를 가져야 하므로, View가 Model을 직접 구독하기 시작하면 UI 코드가 점점 무거워진다.
+
+이번 변경으로 첫 UI 바인딩 기준을 아래처럼 잡았다.
+
+```text
+CurrencyProgress
+= Model. 골드/젬 상태와 변경 규칙을 가진다.
+
+CurrencyHud
+= View. 골드/젬 표시 함수만 가진다.
+
+CurrencyHudBinder
+= Binder. Model을 구독하고 View 표시 함수를 호출한다.
+```
+
+현재 `TopCurrencyHud`에는 아직 실제 골드/젬 텍스트 자식이 없다.
+그래서 `CurrencyHud`의 `goldText`, `gemText` 참조는 비워둔 상태다.
+나중에 UI 배치 단계에서 텍스트 오브젝트를 만든 뒤 Inspector에 연결하면 된다.
+
 ## 현재 검증 상태
 
 로컬 검증 명령:
@@ -359,6 +405,7 @@ dotnet build "Nightfall Spire.sln"
 
 현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
 각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
+`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHud` View가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudBinder`를 통해 `CurrencyProgress`와 연결한다.
 
 ## 다음 작업 계획
 
@@ -369,11 +416,11 @@ dotnet build "Nightfall Spire.sln"
 - DOTween이 없으므로 우선 UniTask 기반 즉시/시간 보간 구조를 만든다.
 - DOTween 설치 후에는 내부 연출만 DOTween으로 교체할 수 있게 분리한다.
 
-### 2순위: UI 바인딩 기초
+### 2순위: Currency HUD 실제 표시 오브젝트 구성
 
-- `CurrencyHud`가 `GameContext.CurrencyProgress`를 구독하도록 변경
-- R3 구독 해제 생명주기 정리
-- 로비 HUD가 `LobbyDynamicUIRoot` 초기화 시 Context를 받는 구조로 연결
+- `TopCurrencyHud` 아래에 골드/젬 텍스트 오브젝트를 추가한다.
+- `CurrencyHud.goldText`, `CurrencyHud.gemText` Inspector 참조를 연결한다.
+- 모바일 해상도 기준으로 상단 HUD 위치와 크기를 정리한다.
 
 ### 3순위: Battle Dynamic UI 보조 레이어
 
