@@ -14,7 +14,7 @@
 - 팝업은 씬에 미리 배치하지 않고 Prefab으로 생성하고 닫으면 파괴한다.
 - 비동기 흐름은 `UniTask`를 사용한다.
 - 상태와 UI 구독은 `R3`를 사용한다.
-- UI 연출은 `DOTween`을 사용할 예정이다.
+- UI 연출은 `DOTween`을 사용한다.
 - Coroutine 사용은 금지한다.
 - 불필요한 `MonoBehaviour` 매니저를 늘리지 않는다.
 - 코드 주석은 한국어로 작성한다.
@@ -40,6 +40,7 @@
   - `Add popup lifecycle foundation`
   - `Add currency HUD binder`
   - `Add screen fade foundation`
+  - `Add DOTween package and UI tweens`
 
 ## CI 구성 상태
 
@@ -382,7 +383,7 @@ CurrencyHudBinder
 - `ScreenFadeManager`를 추가해 현재 씬의 `ScreenFadeView` 참조를 전역에서 사용할 수 있게 했다.
 - `GameRoot`가 `ScreenFadeManager`를 생성하도록 했다.
 - `ScreenFadeView`를 추가해 `CanvasGroup` 기반 페이드 알파와 입력 차단을 제어하게 했다.
-- DOTween 의존성 없이 UniTask 기반 시간 보간으로 `FadeToAsync()`를 구현했다.
+- `ScreenFadeView`가 DOTween 기반으로 `FadeToAsync()`를 처리할 수 있는 기반을 만들었다.
 - `ScreenFadeManager.FadeOutAsync()`, `FadeInAsync()`를 추가했다.
 - `LobbyDynamicUIRoot`, `BattleDynamicUIRoot`가 현재 씬의 `ScreenFadeView`를 등록/해제하도록 했다.
 - `LobbyScene`의 기존 `ScreenFade` 오브젝트에 `CanvasGroup`과 `ScreenFadeView`를 연결했다.
@@ -404,6 +405,36 @@ GameRoot.ScreenFadeManager
 
 현재 `ScreenFade` 오브젝트는 `CanvasGroup`과 스크립트만 갖고 있다.
 실제 검은 화면을 보이게 하려면 다음 UI 배치 단계에서 `Image` 또는 전용 그래픽 오브젝트를 추가해야 한다.
+
+## 완료된 작업 10: DOTween 로컬 패키지 설치와 UI 연출 전환
+
+커밋: `Add DOTween package and UI tweens`
+
+### 변경된 파일
+
+- `Packages/manifest.json`
+- `Packages/com.demigiant.dotween`
+- `Assets/_Project/01_Script/UI/PopupTweenManager.cs`
+- `Assets/_Project/01_Script/UI/ScreenFadeView.cs`
+
+### 주요 변경
+
+- `Packages/com.demigiant.dotween` 로컬 패키지를 추가했다.
+- `Packages/manifest.json`에 `com.demigiant.dotween` 의존성을 추가했다.
+- `PopupTweenManager`의 팝업 열기/닫기 연출을 DOTween 기반으로 바꿨다.
+- `ScreenFadeView`의 화면 페이드 보간을 DOTween 기반으로 바꿨다.
+- DOTween 완료/중단 콜백을 `UniTask`로 기다릴 수 있도록 변환 함수를 추가했다.
+
+### 왜 이렇게 했는지
+
+팝업, 페이드, 전투 데미지 텍스트, HUD 숫자 변화처럼 화면 연출은 앞으로 계속 늘어난다.
+이를 직접 `Time.deltaTime`으로 구현하면 연출마다 반복 코드가 생기고, 일시정지 중에도 돌아야 하는 UI 연출 처리가 복잡해진다.
+
+그래서 UI 연출은 DOTween으로 통일했다.
+다만 DOTween DLL을 그대로 참조하면 현재 로컬 C# 프로젝트 타깃과 맞지 않아 `dotnet build`가 깨졌다.
+그래서 DLL 방식이 아니라 DOTween 소스를 `Packages/com.demigiant.dotween` 로컬 패키지에 넣는 방식으로 정리했다.
+
+이 방식은 Unity Package Manager가 프로젝트 의존성으로 인식할 수 있고, 로컬 컴파일도 통과한다.
 
 ## 현재 검증 상태
 

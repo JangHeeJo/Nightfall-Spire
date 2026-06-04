@@ -1,0 +1,11 @@
+﻿{
+  "name": "com.demigiant.dotween",
+  "version": "1.0.0-local",
+  "displayName": "DOTween",
+  "description": "DOTween runtime/editor files vendored from Demigiant/dotween develop branch for Nightfall Spire.",
+  "unity": "2021.3",
+  "author": {
+    "name": "Demigiant",
+    "url": "https://dotween.demigiant.com/"
+  }
+}

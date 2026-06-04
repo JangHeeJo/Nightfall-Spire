@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using UnityEngine;
 
 // 씬 Canvas 아래에서 화면 전체 페이드를 담당하는 View입니다.
@@ -8,6 +9,7 @@ public sealed class ScreenFadeView : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup; // 페이드 알파와 입력 차단을 제어합니다.
 
     private float currentAlpha; // 현재 페이드 알파 값
+    private Tween currentTween; // 현재 실행 중인 페이드 Tween
 
     // View가 생성될 때 필요한 CanvasGroup을 준비하고 기본 투명 상태로 맞춥니다.
     // 씬에 CanvasGroup이 빠져 있어도 실행 중 자동으로 보강해서 기본 동작이 깨지지 않게 합니다.
@@ -31,12 +33,11 @@ public sealed class ScreenFadeView : MonoBehaviour
     }
 
     // 목표 알파까지 시간 보간으로 페이드합니다.
-    // DOTween을 아직 의존성으로 넣지 않았기 때문에 UniTask.Yield 기반으로 프레임마다 직접 보간합니다.
+    // 화면 전환은 Time.timeScale이 0이어도 진행되어야 하므로 DOTween의 독립 업데이트를 사용합니다.
     public async UniTask FadeToAsync(float targetAlpha, float duration, bool blockInputAfterFade)
     {
         EnsureCanvasGroup();
 
-        float startAlpha = currentAlpha;
         float endAlpha = Mathf.Clamp01(targetAlpha);
 
         if (duration <= 0f)
@@ -47,15 +48,14 @@ public sealed class ScreenFadeView : MonoBehaviour
         }
 
         SetInputBlock(true);
+        currentTween?.Kill();
 
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
-            SetFadeAlpha(Mathf.Lerp(startAlpha, endAlpha, t));
-            await UniTask.Yield();
-        }
+        currentTween = canvasGroup
+            .DOFade(endAlpha, duration)
+            .SetEase(Ease.Linear)
+            .SetUpdate(true);
+
+        await WaitForTweenAsync(currentTween);
 
         SetFadeAlpha(endAlpha);
         SetInputBlock(blockInputAfterFade);
@@ -83,5 +83,27 @@ public sealed class ScreenFadeView : MonoBehaviour
 
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
+    }
+
+    // DOTween 완료/중단을 UniTask로 기다릴 수 있게 변환합니다.
+    // 새 페이드 요청이 이전 Tween을 Kill해도 기존 await가 멈추지 않도록 OnKill도 완료로 처리합니다.
+    private UniTask WaitForTweenAsync(Tween tween)
+    {
+        UniTaskCompletionSource completionSource = new();
+        bool completed = false;
+
+        void Complete()
+        {
+            if (completed)
+                return;
+
+            completed = true;
+            completionSource.TrySetResult();
+        }
+
+        tween.OnComplete(Complete);
+        tween.OnKill(Complete);
+
+        return completionSource.Task;
     }
 }
