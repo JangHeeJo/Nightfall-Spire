@@ -1,20 +1,23 @@
+ï»¿using System;
 using System.IO;
 using Cysharp.Threading.Tasks;
-using Unity.VisualScripting;
 using UnityEngine;
 
-// SaveData¸¦ ÆÄÀÏ·Î ÀúÀåÇÏ°í ºÒ·¯¿À´Â ¸Å´ÏÀúÀÔ´Ï´Ù.
-// ÇöÀç´Â Json ÆÄÀÏ ÀúÀåÀ¸·Î ½ÃÀÛÇÏ°í, ³ªÁß¿¡ ¾ÏÈ£È­³ª Å¬¶ó¿ìµå ÀúÀåÀ¸·Î È®ÀåÇÒ ¼ö ÀÖ½À´Ï´Ù.
+// SaveDataë¥¼ íŒŒì¼ë¡œ ì €ì¥í•˜ê³  ë¶ˆëŸ¬ì˜¤ëŠ” ë§¤ë‹ˆì €ì…ë‹ˆë‹¤.
+// tmp íŒŒì¼ê³¼ backup íŒŒì¼ì„ ì‚¬ìš©í•´ ì €ì¥ ì¤‘ ì•±ì´ ì¢…ë£Œë˜ì–´ë„ ì›ë³¸ ì†ìƒ ê°€ëŠ¥ì„±ì„ ì¤„ì…ë‹ˆë‹¤.
 public sealed class SaveManager
 {
-    private const string SaveFileName = "save_data.json"; // ÀúÀå ÆÄÀÏ ÀÌ¸§
+    private const string SaveFileName = "save_data.json"; // ì €ì¥ íŒŒì¼ ì´ë¦„
+    private const string TempFileName = "save_data.tmp"; // ì €ì¥ ì¤‘ ì‚¬ìš©í•  ì„ì‹œ íŒŒì¼ ì´ë¦„
+    private const string BackupFileName = "save_data.backup.json"; // ë§ˆì§€ë§‰ ì •ìƒ ì €ì¥ ë°±ì—… íŒŒì¼ ì´ë¦„
 
-    public SaveData CurrentSaveData { get; private set; } // ÇöÀç ·ÎµåµÈ ÀúÀå µ¥ÀÌÅÍ
+    public SaveData CurrentSaveData { get; private set; } // í˜„ì¬ ë¡œë“œëœ ì €ì¥ ë°ì´í„°
 
-    // ÀúÀå ÆÄÀÏ ÀüÃ¼ °æ·ÎÀÔ´Ï´Ù.
-    private string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+    private string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName); // ì €ì¥ íŒŒì¼ ì „ì²´ ê²½ë¡œ
+    private string TempFilePath => Path.Combine(Application.persistentDataPath, TempFileName); // ì„ì‹œ íŒŒì¼ ì „ì²´ ê²½ë¡œ
+    private string BackupFilePath => Path.Combine(Application.persistentDataPath, BackupFileName); // ë°±ì—… íŒŒì¼ ì „ì²´ ê²½ë¡œ
 
-    // ÀúÀå µ¥ÀÌÅÍ¸¦ ºñµ¿±â·Î ºÒ·¯¿É´Ï´Ù.
+    // ì €ì¥ ë°ì´í„°ë¥¼ ë¹„ë™ê¸°ë¡œ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
     public async UniTask<SaveData> LoadAsync()
     {
         if (!File.Exists(SaveFilePath))
@@ -22,67 +25,114 @@ public sealed class SaveManager
             CurrentSaveData = SaveData.CreateDefault();
             await SaveAsync(CurrentSaveData);
 
-            Debug.Log("[SaveManager] ÀúÀå ÆÄÀÏÀÌ ¾ø¾î ±âº» ÀúÀå µ¥ÀÌÅÍ¸¦ »ı¼ºÇß½À´Ï´Ù.");
+            Debug.Log("[SaveManager] ì €ì¥ íŒŒì¼ì´ ì—†ì–´ ê¸°ë³¸ ì €ì¥ ë°ì´í„°ë¥¼ ìƒì„±í–ˆìŠµë‹ˆë‹¤.");
             return CurrentSaveData;
         }
 
         string json = await File.ReadAllTextAsync(SaveFilePath);
+        CurrentSaveData = CreateSaveDataFromJson(json);
 
-        if (string.IsNullOrWhiteSpace(json))
+        if (CurrentSaveData == null)
         {
-            CurrentSaveData = SaveData.CreateDefault();
-            await SaveAsync(CurrentSaveData);
-
-            Debug.LogWarning("[SaveManager] ÀúÀå ÆÄÀÏÀÌ ºñ¾î ÀÖ¾î ±âº» ÀúÀå µ¥ÀÌÅÍ¸¦ »ı¼ºÇß½À´Ï´Ù.");
-            return CurrentSaveData;
+            CurrentSaveData = await TryLoadBackupAsync();
         }
-
-        CurrentSaveData = JsonUtility.FromJson<SaveData>(json);
 
         if (CurrentSaveData == null)
         {
             CurrentSaveData = SaveData.CreateDefault();
             await SaveAsync(CurrentSaveData);
 
-            Debug.LogWarning("[SaveManager] ÀúÀå µ¥ÀÌÅÍ ÆÄ½Ì¿¡ ½ÇÆĞÇØ ±âº» ÀúÀå µ¥ÀÌÅÍ¸¦ »ı¼ºÇß½À´Ï´Ù.");
+            Debug.LogWarning("[SaveManager] ì €ì¥ ë°ì´í„° ë³µêµ¬ì— ì‹¤íŒ¨í•´ ê¸°ë³¸ ì €ì¥ ë°ì´í„°ë¥¼ ìƒì„±í–ˆìŠµë‹ˆë‹¤.");
         }
 
-        Debug.Log("[SaveManager] ÀúÀå µ¥ÀÌÅÍ¸¦ ºÒ·¯¿Ô½À´Ï´Ù.");
+        Debug.Log("[SaveManager] ì €ì¥ ë°ì´í„°ë¥¼ ë¶ˆëŸ¬ì™”ìŠµë‹ˆë‹¤.");
 
         return CurrentSaveData;
     }
 
-    // ÇöÀç ÀúÀå µ¥ÀÌÅÍ¸¦ ºñµ¿±â·Î ÀúÀåÇÕ´Ï´Ù.
+    // í˜„ì¬ ì €ì¥ ë°ì´í„°ë¥¼ ë¹„ë™ê¸°ë¡œ ì €ì¥í•©ë‹ˆë‹¤.
     public UniTask SaveCurrentAsync()
     {
         if (CurrentSaveData == null)
         {
-            Debug.LogWarning("[SaveManager] CurrentSaveData°¡ nullÀÌ¶ó ÀúÀåÀ» °Ç³Ê¶İ´Ï´Ù.");
+            Debug.LogWarning("[SaveManager] CurrentSaveDataê°€ nullì´ë¼ ì €ì¥ì„ ê±´ë„ˆëœë‹ˆë‹¤.");
             return UniTask.CompletedTask;
         }
 
         return SaveAsync(CurrentSaveData);
     }
 
-    // ¾Û Á¾·á ½ÃÁ¡Ã³·³ ºñµ¿±â¸¦ ±â´Ù¸®±â ¾Ö¸ÅÇÑ »óÈ²¿¡¼­ Áï½Ã ÀúÀåÇÕ´Ï´Ù.
+    // ì•± ì¢…ë£Œ ì‹œì ì²˜ëŸ¼ ë¹„ë™ê¸°ë¥¼ ê¸°ë‹¤ë¦¬ê¸° ì• ë§¤í•œ ìƒí™©ì—ì„œ ì¦‰ì‹œ ì €ì¥í•©ë‹ˆë‹¤.
     public void SaveCurrentImmediate()
     {
         if (CurrentSaveData == null)
             return;
 
         string json = JsonUtility.ToJson(CurrentSaveData, true);
-        File.WriteAllText(SaveFilePath, json);
+        SaveJsonImmediate(json);
 
-        Debug.Log("[SaveManager] ÀúÀå µ¥ÀÌÅÍ¸¦ Áï½Ã ÀúÀåÇß½À´Ï´Ù.");
+        Debug.Log("[SaveManager] ì €ì¥ ë°ì´í„°ë¥¼ ì¦‰ì‹œ ì €ì¥í–ˆìŠµë‹ˆë‹¤.");
     }
 
-    // Àü´Ş¹ŞÀº SaveData¸¦ Json ÆÄÀÏ·Î ÀúÀåÇÕ´Ï´Ù.
+    // ì „ë‹¬ë°›ì€ SaveDataë¥¼ ì•ˆì „ ì €ì¥ ë°©ì‹ìœ¼ë¡œ íŒŒì¼ì— ê¸°ë¡í•©ë‹ˆë‹¤.
     private async UniTask SaveAsync(SaveData saveData)
     {
         string json = JsonUtility.ToJson(saveData, true);
 
-        await File.WriteAllTextAsync(SaveFilePath, json);
+        await File.WriteAllTextAsync(TempFilePath, json);
+        ReplaceSaveFileWithTemp();
 
-        Debug.Log($"[SaveManager] ÀúÀå ¿Ï·á. Path: {SaveFilePath}");
+        Debug.Log($"[SaveManager] ì €ì¥ ì™„ë£Œ. Path: {SaveFilePath}");
+    }
+
+    // Json ë¬¸ìì—´ì„ SaveDataë¡œ ë³€í™˜í•©ë‹ˆë‹¤. ì‹¤íŒ¨í•˜ë©´ nullì„ ë°˜í™˜í•©ë‹ˆë‹¤.
+    private SaveData CreateSaveDataFromJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonUtility.FromJson<SaveData>(json);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning($"[SaveManager] ì €ì¥ ë°ì´í„° íŒŒì‹± ì‹¤íŒ¨: {exception.Message}");
+            return null;
+        }
+    }
+
+    // ì›ë³¸ ì €ì¥ íŒŒì¼ì´ ê¹¨ì¡Œì„ ë•Œ ë°±ì—… ì €ì¥ íŒŒì¼ì—ì„œ ë³µêµ¬ë¥¼ ì‹œë„í•©ë‹ˆë‹¤.
+    private async UniTask<SaveData> TryLoadBackupAsync()
+    {
+        if (!File.Exists(BackupFilePath))
+            return null;
+
+        string backupJson = await File.ReadAllTextAsync(BackupFilePath);
+        SaveData backupSaveData = CreateSaveDataFromJson(backupJson);
+
+        if (backupSaveData != null)
+            Debug.LogWarning("[SaveManager] ë°±ì—… ì €ì¥ ë°ì´í„°ë¥¼ ì‚¬ìš©í•´ ë³µêµ¬í–ˆìŠµë‹ˆë‹¤.");
+
+        return backupSaveData;
+    }
+
+    // ì„ì‹œ íŒŒì¼ ì €ì¥ì´ ëë‚œ ë’¤ ê¸°ì¡´ ì €ì¥ íŒŒì¼ì„ ë°±ì—…í•˜ê³  êµì²´í•©ë‹ˆë‹¤.
+    private void ReplaceSaveFileWithTemp()
+    {
+        if (File.Exists(BackupFilePath))
+            File.Delete(BackupFilePath);
+
+        if (File.Exists(SaveFilePath))
+            File.Move(SaveFilePath, BackupFilePath);
+
+        File.Move(TempFilePath, SaveFilePath);
+    }
+
+    // ì¦‰ì‹œ ì €ì¥ë„ ê°™ì€ êµì²´ ê·œì¹™ì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
+    private void SaveJsonImmediate(string json)
+    {
+        File.WriteAllText(TempFilePath, json);
+        ReplaceSaveFileWithTemp();
     }
 }

@@ -1,16 +1,16 @@
-using UnityEngine;
-
-public class BattleProgress : MonoBehaviour
+﻿// 전투 런타임 진행 상태를 관리하는 모델입니다.
+// 실제 전투 시스템이 붙기 전까지는 전투 진입 여부만 보관합니다.
+public sealed class BattleProgress
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public bool IsBattleActive { get; private set; } // 전투 진행 중 여부
+
+    public void BeginBattle()
     {
-        
+        IsBattleActive = true;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void EndBattle()
     {
-        
+        IsBattleActive = false;
     }
 }

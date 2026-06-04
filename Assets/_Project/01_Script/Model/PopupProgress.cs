@@ -1,16 +1,19 @@
-using UnityEngine;
-
-public class PopupProgress : MonoBehaviour
+﻿// 현재 팝업 표시 상태를 관리하는 모델입니다.
+// PopupManager가 실제 스택을 갖기 전까지 전역 상태 구독용으로 사용합니다.
+public sealed class PopupProgress
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public int OpenPopupCount { get; private set; } // 열려 있는 팝업 수
+
+    public void IncreaseOpenCount()
     {
-        
+        OpenPopupCount++;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void DecreaseOpenCount()
     {
-        
+        if (OpenPopupCount <= 0)
+            return;
+
+        OpenPopupCount--;
     }
 }

@@ -1,39 +1,38 @@
-using Cysharp.Threading.Tasks;
-using Unity.VisualScripting;
+ï»¿using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// ¾À ÀüÈ¯À» ´ã´çÇÏ´Â ¸Å´ÏÀúÀÔ´Ï´Ù.
-// ÄÚ·çÆ¾À» »ç¿ëÇÏÁö ¾Ê°í UniTask ±â¹İÀ¸·Î ¾À ·ÎµùÀ» Ã³¸®ÇÕ´Ï´Ù.
+// ì”¬ ì „í™˜ì„ ë‹´ë‹¹í•˜ëŠ” ë§¤ë‹ˆì €ì…ë‹ˆë‹¤.
+// ì½”ë£¨í‹´ì„ ì‚¬ìš©í•˜ì§€ ì•Šê³  UniTask ê¸°ë°˜ìœ¼ë¡œ ì”¬ ë¡œë”©ì„ ì²˜ë¦¬í•©ë‹ˆë‹¤.
 public sealed class SceneLoadManager
 {
-    public const string LobbySceneName = "LobbyScene"; // ·Îºñ ¾À ÀÌ¸§
-    public const string BattleSceneName = "BattleScene"; // ÀüÅõ ¾À ÀÌ¸§
+    public const string LobbySceneName = "LobbyScene"; // ë¡œë¹„ ì”¬ ì´ë¦„
+    public const string BattleSceneName = "BattleScene"; // ì „íˆ¬ ì”¬ ì´ë¦„
 
-    // ÁöÁ¤ÇÑ ¾ÀÀ» ºñµ¿±â·Î ·ÎµåÇÕ´Ï´Ù.
+    // ì§€ì •í•œ ì”¬ì„ ë¹„ë™ê¸°ë¡œ ë¡œë“œí•©ë‹ˆë‹¤.
     public async UniTask LoadSceneAsync(string sceneName)
     {
         if (string.IsNullOrWhiteSpace(sceneName))
         {
-            Debug.LogError("[SceneLoadManager] ¾À ÀÌ¸§ÀÌ ºñ¾î ÀÖ½À´Ï´Ù.");
+            Debug.LogError("[SceneLoadManager] ì”¬ ì´ë¦„ì´ ë¹„ì–´ ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
-        Debug.Log($"[SceneLoadManager] ¾À ·Îµå ½ÃÀÛ: {sceneName}");
+        Debug.Log($"[SceneLoadManager] ì”¬ ë¡œë“œ ì‹œì‘: {sceneName}");
 
-        // Unity AsyncOperationÀ» UniTask·Î º¯È¯ÇØ¼­ ´ë±âÇÕ´Ï´Ù.
+        // Unity AsyncOperationì„ UniTaskë¡œ ë³€í™˜í•´ì„œ ëŒ€ê¸°í•©ë‹ˆë‹¤.
         await SceneManager.LoadSceneAsync(sceneName).ToUniTask();
 
-        Debug.Log($"[SceneLoadManager] ¾À ·Îµå ¿Ï·á: {sceneName}");
+        Debug.Log($"[SceneLoadManager] ì”¬ ë¡œë“œ ì™„ë£Œ: {sceneName}");
     }
 
-    // ·Îºñ ¾ÀÀ¸·Î ÀÌµ¿ÇÕ´Ï´Ù.
+    // ë¡œë¹„ ì”¬ìœ¼ë¡œ ì´ë™í•©ë‹ˆë‹¤.
     public UniTask LoadLobbySceneAsync()
     {
         return LoadSceneAsync(LobbySceneName);
     }
 
-    // ÀüÅõ ¾ÀÀ¸·Î ÀÌµ¿ÇÕ´Ï´Ù.
+    // ì „íˆ¬ ì”¬ìœ¼ë¡œ ì´ë™í•©ë‹ˆë‹¤.
     public UniTask LoadBattleSceneAsync()
     {
         return LoadSceneAsync(BattleSceneName);

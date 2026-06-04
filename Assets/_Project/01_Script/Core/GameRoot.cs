@@ -1,20 +1,21 @@
-using Cysharp.Threading.Tasks;
-using Unity.VisualScripting;
+ï»¿using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-// °ÔÀÓ ÀüÃ¼ÀÇ ½ÃÀÛÁ¡ÀÔ´Ï´Ù.
-// BootSceneÀÇ GameObject ÀÌ¸§µµ GameRoot·Î ¸ÂÃä´Ï´Ù.
+// ê²Œì„ ì „ì²´ì˜ ì‹œì‘ì ì…ë‹ˆë‹¤.
+// BootSceneì˜ GameObject ì´ë¦„ë„ GameRootë¡œ ë§ì¶¥ë‹ˆë‹¤.
 public sealed class GameRoot : MonoBehaviour
 {
-    public static GameRoot Instance { get; private set; } // Àü¿ª Á¢±Ù¿ë ÀÎ½ºÅÏ½º
+    public static GameRoot Instance { get; private set; } // ì „ì—­ ì ‘ê·¼ìš© ì¸ìŠ¤í„´ìŠ¤
 
-    public GameContext Context { get; private set; } // ÇöÀç °ÔÀÓ ÁøÇà µ¥ÀÌÅÍ ¹­À½
-    public SaveManager SaveManager { get; private set; } // ÀúÀå ¸Å´ÏÀú
-    public SceneLoadManager SceneLoadManager { get; private set; } // ¾À ·Îµå ¸Å´ÏÀú
+    public GameContext Context { get; private set; } // í˜„ì¬ ê²Œì„ ì§„í–‰ ë°ì´í„° ë¬¶ìŒ
+    public SaveManager SaveManager { get; private set; } // ì €ì¥ ë§¤ë‹ˆì €
+    public SceneLoadManager SceneLoadManager { get; private set; } // ì”¬ ë¡œë“œ ë§¤ë‹ˆì €
+    public DataTableManager DataTableManager { get; private set; } // í…Œì´ë¸” ë°ì´í„° ë§¤ë‹ˆì €
+    public ServiceRegistry ServiceRegistry { get; private set; } // ì™¸ë¶€ ì„œë¹„ìŠ¤ ë“±ë¡ì†Œ
 
     private void Awake()
     {
-        // Áßº¹ GameRoot »ı¼ºÀ» ¹æÁöÇÕ´Ï´Ù.
+        // ì¤‘ë³µ GameRoot ìƒì„±ì„ ë°©ì§€í•©ë‹ˆë‹¤.
         if (Instance != null)
         {
             Destroy(gameObject);
@@ -23,47 +24,49 @@ public sealed class GameRoot : MonoBehaviour
 
         Instance = this;
 
-        // GameRoot´Â ¾À ÀüÈ¯ ÈÄ¿¡µµ À¯ÁöÇÕ´Ï´Ù.
+        // GameRootëŠ” ì”¬ ì „í™˜ í›„ì—ë„ ìœ ì§€í•©ë‹ˆë‹¤.
         DontDestroyOnLoad(gameObject);
 
-        // Unity »ı¸íÁÖ±â ÇÔ¼ö¿¡¼­ async Èå¸§À» ½ÃÀÛÇÏ±â À§ÇØ ForgetÀ» »ç¿ëÇÕ´Ï´Ù.
+        // Unity ìƒëª…ì£¼ê¸° í•¨ìˆ˜ì—ì„œ async íë¦„ì„ ì‹œì‘í•˜ê¸° ìœ„í•´ Forgetì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
         InitializeAsync().Forget();
     }
 
-    // °ÔÀÓ ½ÃÀÛ¿¡ ÇÊ¿äÇÑ ÇÙ½É ½Ã½ºÅÛÀ» ¼ø¼­´ë·Î ÃÊ±âÈ­ÇÕ´Ï´Ù.
+    // ê²Œì„ ì‹œì‘ì— í•„ìš”í•œ í•µì‹¬ ì‹œìŠ¤í…œì„ ìˆœì„œëŒ€ë¡œ ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
     private async UniTask InitializeAsync()
     {
-        Debug.Log("[GameRoot] ÃÊ±âÈ­ ½ÃÀÛ");
+        Debug.Log("[GameRoot] ì´ˆê¸°í™” ì‹œì‘");
 
         CreateCoreSystems();
 
-        // ÀúÀå µ¥ÀÌÅÍ¸¦ ¸ÕÀú ºÒ·¯¿É´Ï´Ù.
+        // ì €ì¥ ë°ì´í„°ë¥¼ ë¨¼ì € ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
         SaveData saveData = await SaveManager.LoadAsync();
 
-        // ÀúÀå µ¥ÀÌÅÍ¸¦ ±â¹İÀ¸·Î ÇöÀç °ÔÀÓ ÁøÇà Context¸¦ »ı¼ºÇÕ´Ï´Ù.
+        // ì €ì¥ ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ í˜„ì¬ ê²Œì„ ì§„í–‰ Contextë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
         Context = new GameContext(saveData);
 
-        // ÇöÀç »óÅÂ¸¦ Boot·Î ¼³Á¤ÇÕ´Ï´Ù.
+        // í˜„ì¬ ìƒíƒœë¥¼ Bootë¡œ ì„¤ì •í•©ë‹ˆë‹¤.
         Context.GameProgress.ChangeState(GameState.Boot);
 
-        // ·Îºñ ¾À ·Îµù »óÅÂ·Î º¯°æÇÕ´Ï´Ù.
+        // ë¡œë¹„ ì”¬ ë¡œë”© ìƒíƒœë¡œ ë³€ê²½í•©ë‹ˆë‹¤.
         Context.GameProgress.ChangeState(GameState.LobbyLoading);
 
-        // BootScene¿¡¼­ LobbySceneÀ¸·Î ÀÌµ¿ÇÕ´Ï´Ù.
+        // BootSceneì—ì„œ LobbySceneìœ¼ë¡œ ì´ë™í•©ë‹ˆë‹¤.
         await SceneLoadManager.LoadLobbySceneAsync();
 
-        // ·Îºñ ¾À ·Îµå ¿Ï·á ÈÄ »óÅÂ¸¦ Lobby·Î º¯°æÇÕ´Ï´Ù.
+        // ë¡œë¹„ ì”¬ ë¡œë“œ ì™„ë£Œ í›„ ìƒíƒœë¥¼ Lobbyë¡œ ë³€ê²½í•©ë‹ˆë‹¤.
         Context.GameProgress.ChangeState(GameState.Lobby);
 
-        Debug.Log("[GameRoot] ÃÊ±âÈ­ ¿Ï·á");
+        Debug.Log("[GameRoot] ì´ˆê¸°í™” ì™„ë£Œ");
     }
 
-    // Core ½Ã½ºÅÛµéÀ» »ı¼ºÇÕ´Ï´Ù.
-    // MonoBehaviour°¡ ÇÊ¿ä ¾ø´Â ½Ã½ºÅÛÀº ¼ø¼ö C# Å¬·¡½º·Î À¯ÁöÇÕ´Ï´Ù.
+    // Core ì‹œìŠ¤í…œë“¤ì„ ìƒì„±í•©ë‹ˆë‹¤.
+    // MonoBehaviourê°€ í•„ìš” ì—†ëŠ” ì‹œìŠ¤í…œì€ ìˆœìˆ˜ C# í´ë˜ìŠ¤ë¡œ ìœ ì§€í•©ë‹ˆë‹¤.
     private void CreateCoreSystems()
     {
         SaveManager = new SaveManager();
         SceneLoadManager = new SceneLoadManager();
+        DataTableManager = new DataTableManager();
+        ServiceRegistry = new ServiceRegistry();
     }
 
     private void OnApplicationPause(bool pauseStatus)
@@ -73,15 +76,20 @@ public sealed class GameRoot : MonoBehaviour
 
         if (pauseStatus)
         {
-            // ¾ÛÀÌ ¹é±×¶ó¿îµå·Î ³»·Á°¥ ¶§ »óÅÂ¸¦ º¯°æÇÏ°í ÀúÀåÇÕ´Ï´Ù.
+            // ì•±ì´ ë°±ê·¸ë¼ìš´ë“œë¡œ ë‚´ë ¤ê°ˆ ë•Œ ìƒíƒœë¥¼ ë³€ê²½í•˜ê³  ì €ì¥í•©ë‹ˆë‹¤.
             Context.GameProgress.ChangeState(GameState.AppBackground);
             SaveManager.SaveCurrentAsync().Forget();
+            return;
         }
+
+        // ì•± ë³µê·€ ì‹œì—ëŠ” ì´ì „ ìƒíƒœë¡œ ëŒì•„ê°‘ë‹ˆë‹¤.
+        // ì „íˆ¬ ì¤‘ ë³µê·€ ì •ì±…ì€ ì¶”í›„ BattlePausedë‚˜ ResumePopupì´ ìƒê¸°ë©´ ì—¬ê¸°ì„œ í™•ì¥í•©ë‹ˆë‹¤.
+        Context.GameProgress.RestorePreviousState();
     }
 
     private void OnApplicationQuit()
     {
-        // ¾Û Á¾·á ½ÃÁ¡¿¡´Â ºñµ¿±â ÀúÀåÀÌ ³¡³ª±â Àü¿¡ ¾ÛÀÌ ´İÈú ¼ö ÀÖÀ¸¹Ç·Î Áï½Ã ÀúÀåÀ» »ç¿ëÇÕ´Ï´Ù.
+        // ì•± ì¢…ë£Œ ì‹œì ì—ëŠ” ë¹„ë™ê¸° ì €ì¥ì´ ëë‚˜ê¸° ì „ì— ì•±ì´ ë‹«í ìˆ˜ ìˆìœ¼ë¯€ë¡œ ì¦‰ì‹œ ì €ì¥ì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
         SaveManager?.SaveCurrentImmediate();
     }
 }

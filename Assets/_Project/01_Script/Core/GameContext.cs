@@ -1,18 +1,24 @@
-// °ÔÀÓ ÀüÃ¼¿¡¼­ °øÀ¯ÇÏ´Â ÇöÀç µ¥ÀÌÅÍ ¹­À½ÀÔ´Ï´Ù.
-// Popup, HUD, Lobby, Battle ÂÊ ½Ã½ºÅÛµéÀº ÀÌ Context¸¦ ÅëÇØ ÇöÀç ÁøÇà »óÅÂ¸¦ ÂüÁ¶ÇÕ´Ï´Ù.
+ï»¿// ê²Œì„ ì „ì²´ì—ì„œ ê³µìœ í•˜ëŠ” í˜„ì¬ ë°ì´í„° ë¬¶ìŒì…ë‹ˆë‹¤.
+// Popup, HUD, Lobby, Battle ìª½ ì‹œìŠ¤í…œë“¤ì€ ì´ Contextë¥¼ í†µí•´ í˜„ì¬ ì§„í–‰ ìƒíƒœë¥¼ ì°¸ì¡°í•©ë‹ˆë‹¤.
 public sealed class GameContext
 {
-    public SaveData SaveData { get; } // ½ÇÁ¦ ÆÄÀÏ·Î ÀúÀåµÇ´Â ¿øº» µ¥ÀÌÅÍ
+    public SaveData SaveData { get; } // ì‹¤ì œ íŒŒì¼ë¡œ ì €ì¥ë˜ëŠ” ì›ë³¸ ë°ì´í„°
 
-    public GameProgress GameProgress { get; } // °ÔÀÓ ÀüÃ¼ ÁøÇà »óÅÂ
-    public CurrencyProgress CurrencyProgress { get; } // ÀçÈ­ ÁøÇà »óÅÂ
+    public GameProgress GameProgress { get; } // ê²Œì„ ì „ì²´ ì§„í–‰ ìƒíƒœ
+    public CurrencyProgress CurrencyProgress { get; } // ì¬í™” ì§„í–‰ ìƒíƒœ
+    public BattleProgress BattleProgress { get; } // ì „íˆ¬ ëŸ°íƒ€ì„ ìƒíƒœ
+    public RewardProgress RewardProgress { get; } // ë³´ìƒ ëŸ°íƒ€ì„ ìƒíƒœ
+    public PopupProgress PopupProgress { get; } // íŒì—… ëŸ°íƒ€ì„ ìƒíƒœ
 
     public GameContext(SaveData saveData)
     {
         SaveData = saveData;
 
-        // SaveData¸¦ ±â¹İÀ¸·Î ·±Å¸ÀÓ ÁøÇà ¸ğµ¨µéÀ» »ı¼ºÇÕ´Ï´Ù.
+        // SaveDataë¥¼ ê¸°ë°˜ìœ¼ë¡œ ëŸ°íƒ€ì„ ì§„í–‰ ëª¨ë¸ë“¤ì„ ìƒì„±í•©ë‹ˆë‹¤.
         GameProgress = new GameProgress(saveData);
         CurrencyProgress = new CurrencyProgress(saveData);
+        BattleProgress = new BattleProgress();
+        RewardProgress = new RewardProgress();
+        PopupProgress = new PopupProgress();
     }
 }

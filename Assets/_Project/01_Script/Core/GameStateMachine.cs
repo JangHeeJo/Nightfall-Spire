@@ -1,16 +1,9 @@
-using UnityEngine;
-
-public class GameStateMachine : MonoBehaviour
+﻿// 상태 전환 규칙이 복잡해질 때 확장할 순수 C# 상태 전환기입니다.
+// 현재는 GameProgress.ChangeState가 상태 변경의 단일 진입점이므로 별도 동작은 두지 않습니다.
+public sealed class GameStateMachine
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public bool CanChange(GameState currentState, GameState nextState)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        return currentState != nextState;
     }
 }

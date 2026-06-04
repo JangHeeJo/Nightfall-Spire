@@ -1,36 +1,54 @@
-using R3;
+ï»¿using R3;
 
-// °ÔÀÓÀÇ ÇöÀç ÁøÇà »óÅÂ¸¦ ´ã´Â ¸ğµ¨ÀÔ´Ï´Ù.
-// »óÅÂ º¯°æ, ÇöÀç ½ºÅ×ÀÌÁö °°Àº ·±Å¸ÀÓ ÁøÇà °ªÀ» °ü¸®ÇÕ´Ï´Ù.
+// ê²Œì„ì˜ í˜„ì¬ ì§„í–‰ ìƒíƒœë¥¼ ë‹´ëŠ” ëª¨ë¸ì…ë‹ˆë‹¤.
+// ìƒíƒœ ë³€ê²½, ì´ì „ ìƒíƒœ ë³µêµ¬, í˜„ì¬ ìŠ¤í…Œì´ì§€ ê°™ì€ ëŸ°íƒ€ì„ ì§„í–‰ ê°’ì„ ê´€ë¦¬í•©ë‹ˆë‹¤.
 public sealed class GameProgress
 {
-    private readonly SaveData saveData; // ½ÇÁ¦ ÀúÀå µ¥ÀÌÅÍ ÂüÁ¶
+    private readonly SaveData saveData; // ì‹¤ì œ ì €ì¥ ë°ì´í„° ì°¸ì¡°
 
-    public ReactiveProperty<GameState> CurrentState { get; } = new(GameState.None); // ÇöÀç °ÔÀÓ »óÅÂ
-    public ReactiveProperty<int> CurrentStageId { get; } // ÇöÀç ÁøÇà ÁßÀÎ ½ºÅ×ÀÌÁö ID
+    public ReactiveProperty<GameState> CurrentState { get; } = new(GameState.None); // í˜„ì¬ ê²Œì„ ìƒíƒœ
+    public ReactiveProperty<GameState> PreviousState { get; } = new(GameState.None); // AppBackground ì§„ì… ì „ ìƒíƒœ
+    public ReactiveProperty<int> CurrentStageId { get; } // í˜„ì¬ ì§„í–‰ ì¤‘ì¸ ìŠ¤í…Œì´ì§€ ID
 
     public GameProgress(SaveData saveData)
     {
         this.saveData = saveData;
 
-        // SaveData¿¡ ÀúÀåµÈ ÇöÀç ½ºÅ×ÀÌÁö¸¦ ·±Å¸ÀÓ »óÅÂ·Î °¡Á®¿É´Ï´Ù.
+        // SaveDataì— ì €ì¥ëœ í˜„ì¬ ìŠ¤í…Œì´ì§€ë¥¼ ëŸ°íƒ€ì„ ìƒíƒœë¡œ ê°€ì ¸ì˜µë‹ˆë‹¤.
         CurrentStageId = new ReactiveProperty<int>(saveData.Progress.CurrentStageId);
 
-        // CurrentStageId°¡ ¹Ù²î¸é SaveData¿¡µµ ¹İ¿µÇÕ´Ï´Ù.
+        // CurrentStageIdê°€ ë°”ë€Œë©´ SaveDataì—ë„ ë°˜ì˜í•©ë‹ˆë‹¤.
         CurrentStageId.Subscribe(stageId => this.saveData.Progress.CurrentStageId = stageId);
     }
 
-    // °ÔÀÓ »óÅÂ¸¦ º¯°æÇÕ´Ï´Ù.
-    // ¿ÜºÎ¿¡¼­ CurrentState.Value¸¦ Á÷Á¢ ¹Ù²ÙÁö ¾Ê°í ÀÌ ¸Ş¼­µå·Î ÅëÀÏÇÕ´Ï´Ù.
+    // ê²Œì„ ìƒíƒœë¥¼ ë³€ê²½í•©ë‹ˆë‹¤.
+    // ì™¸ë¶€ì—ì„œ CurrentState.Valueë¥¼ ì§ì ‘ ë°”ê¾¸ì§€ ì•Šê³  ì´ ë©”ì„œë“œë¡œ í†µì¼í•©ë‹ˆë‹¤.
     public void ChangeState(GameState nextState)
     {
         if (CurrentState.Value == nextState)
             return;
 
+        if (nextState == GameState.AppBackground)
+            PreviousState.Value = CurrentState.Value;
+
         CurrentState.Value = nextState;
     }
 
-    // ÇöÀç ÁøÇà ½ºÅ×ÀÌÁö¸¦ º¯°æÇÕ´Ï´Ù.
+    // AppBackgroundì—ì„œ ëŒì•„ì˜¬ ë•Œ ì´ì „ ìƒíƒœë¡œ ë³µê·€í•©ë‹ˆë‹¤.
+    public void RestorePreviousState()
+    {
+        if (CurrentState.Value != GameState.AppBackground)
+            return;
+
+        GameState restoreState = PreviousState.Value == GameState.None
+            ? GameState.Lobby
+            : PreviousState.Value;
+
+        ChangeState(restoreState);
+        PreviousState.Value = GameState.None;
+    }
+
+    // í˜„ì¬ ì§„í–‰ ìŠ¤í…Œì´ì§€ë¥¼ ë³€ê²½í•©ë‹ˆë‹¤.
     public void SetCurrentStage(int stageId)
     {
         if (stageId <= 0)
