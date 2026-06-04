@@ -96,14 +96,19 @@ public class Test : MonoBehaviour
         }
         public void Reverse()
         {
-            T[] tempArr = new T[count];
-            int newCount = count;
-            for(int i =0; i < count; i++)
+            int left = 0;
+            int right = count - 1;
+
+            while(left < right)
             {
-               tempArr[i] = arr[newCount];
-               newCount--;
+                T temp = arr[left];
+                arr[left] = arr[right];
+                arr[right] = temp;
+
+                left++;
+                right--;
+
             }
-            arr = tempArr;
         }
     }
     //public class MyList
