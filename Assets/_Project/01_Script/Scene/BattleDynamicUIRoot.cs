@@ -21,5 +21,11 @@ public sealed class BattleDynamicUIRoot : MonoBehaviour
     public void Initialize(GameContext gameContext)
     {
         context = gameContext;
+        GameRoot.Instance?.PopupManager.RegisterSceneLayers(this, gameObject.scene.name, popupLayer, dimLayer, toastLayer);
+    }
+
+    private void OnDestroy()
+    {
+        GameRoot.Instance?.PopupManager.UnregisterSceneLayers(this);
     }
 }

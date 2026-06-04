@@ -34,6 +34,9 @@
   - `Fix practice list reverse`
   - `Refactor core progress architecture`
   - `Add scene root structure`
+  - `Add Codex project summary`
+  - `Connect scene root components`
+  - `Add popup layer registration`
 
 ## CI 구성 상태
 
@@ -196,6 +199,71 @@ while(left < right)
 `GameRoot`가 UI Canvas를 들고 다니지 않는 구조를 지키기 위해서다.
 각 씬이 자기 UI Canvas와 Layer를 소유하고, 씬 진입점에서 `GameContext`를 UI에 전달하는 흐름을 만들기 위한 첫 단계다.
 
+## 완료된 작업 5: 씬 Root 컴포넌트 연결
+
+커밋: `Connect scene root components`
+
+### 변경된 파일
+
+- `Assets/_Project/00_Scenes/LobbyScene.unity`
+- `Assets/_Project/00_Scenes/BattleScene.unity`
+
+### LobbyScene 연결 내용
+
+- `LobbySceneRoot` 오브젝트에 `LobbySceneRoot.cs`를 연결했다.
+- `LobbyStaticUIRoot` 오브젝트에 `LobbyStaticUIRoot.cs`를 연결했다.
+- `Canvas_DynamicUI` 오브젝트에 `LobbyDynamicUIRoot.cs`를 연결했다.
+- `DimLayer` 오브젝트에 `CanvasGroup`을 추가했다.
+- `LobbySceneRoot`의 `staticUIRoot`, `dynamicUIRoot` 참조를 연결했다.
+- `LobbyDynamicUIRoot`의 `popupLayer`, `dimLayer`, `toastLayer` 참조를 연결했다.
+
+### BattleScene 연결 내용
+
+- `BattleSceneRoot` 오브젝트에 `BattleSceneRoot.cs`를 연결했다.
+- `BattleStaticUIRoot` 오브젝트에 `BattleStaticUIRoot.cs`를 연결했다.
+- `Canvas_DynamicUI` 오브젝트에 `BattleDynamicUIRoot.cs`를 연결했다.
+- `DimLayer` 오브젝트에 `CanvasGroup`을 추가했다.
+- `BattleSceneRoot`의 `staticUIRoot`, `dynamicUIRoot` 참조를 연결했다.
+- `BattleDynamicUIRoot`의 `popupLayer`, `dimLayer`, `toastLayer` 참조를 연결했다.
+- `floatingTextLayer`, `unitHpBarLayer`는 아직 씬에 명확한 오브젝트가 없어 `None` 상태로 두었다.
+
+### 왜 이렇게 했는지
+
+현재 씬에는 별도 `LobbyDynamicUIRoot`, `BattleDynamicUIRoot` 오브젝트가 없었다.
+그래서 새 GameObject를 만들기보다 기존 `Canvas_DynamicUI`에 Dynamic UI Root 스크립트를 붙였다.
+이 방식은 하이어라키 변경 폭이 작고, 현재 씬 구조를 크게 흔들지 않는다.
+
+`DimLayer`는 팝업 뒤 어둡게 처리하거나 입력 차단을 제어해야 하므로 `CanvasGroup`이 필요하다.
+따라서 `DimLayer`에 `CanvasGroup`을 추가했다.
+
+## 완료된 작업 6: PopupManager 레이어 등록 구조
+
+커밋: `Add popup layer registration`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/UI/PopupManager.cs`
+- `Assets/_Project/01_Script/Scene/LobbyDynamicUIRoot.cs`
+- `Assets/_Project/01_Script/Scene/BattleDynamicUIRoot.cs`
+
+### 주요 변경
+
+- `PopupManager`를 빈 `MonoBehaviour`에서 순수 C# 관리 클래스로 변경했다.
+- `GameRoot`가 `PopupManager`를 생성하고 전역에서 접근할 수 있게 했다.
+- `LobbyDynamicUIRoot`가 로비 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 등록한다.
+- `BattleDynamicUIRoot`가 전투 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 등록한다.
+- 씬이 파괴될 때 Dynamic UI Root가 등록한 레이어를 해제한다.
+- 레이어 등록 시 `DimLayer`의 `alpha`, `blocksRaycasts`, `interactable`을 초기 상태로 되돌린다.
+
+### 왜 이렇게 했는지
+
+팝업은 전역 요청으로 열릴 수 있지만, 실제 표시 위치는 현재 씬의 Canvas 아래에 있어야 한다.
+따라서 `GameRoot`가 Canvas를 직접 들고 다니지 않고, 현재 씬의 Dynamic UI Root가 자기 레이어를 `PopupManager`에 등록하는 구조로 잡았다.
+
+이번 단계에서는 실제 팝업 Prefab 생성까지 가지 않았다.
+먼저 레이어 등록/해제 책임을 고정해두면, 다음 단계에서 `BasePopup`, 닫기 연출, 딤 처리, 중복 팝업 정책을 붙일 때 구조가 흔들리지 않는다.
+
 ## 현재 검증 상태
 
 로컬 검증 명령:
@@ -239,35 +307,26 @@ dotnet build "Nightfall Spire.sln"
 - `PopupLayer`
 - `ToastLayer`
 
-단, 새로 추가한 스크립트들이 실제 씬 오브젝트에 붙어 있는지는 아직 정리하지 않았다.
-다음 작업에서 Unity 씬 하이어라키와 스크립트 연결을 맞추는 것이 좋다.
+현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
+각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
 
 ## 다음 작업 계획
 
-### 1순위: 씬 Root 연결
+### 1순위: PopupManager 실제 팝업 흐름
 
-- `LobbySceneRoot` 오브젝트에 `LobbySceneRoot.cs` 연결
-- `LobbyStaticUIRoot` 오브젝트에 `LobbyStaticUIRoot.cs` 연결
-- 로비 Dynamic UI Root 오브젝트 정리 또는 생성
-- `PopupLayer`, `DimLayer`, `ToastLayer` Inspector 참조 연결
-- `BattleSceneRoot` 오브젝트에 `BattleSceneRoot.cs` 연결
-- `BattleStaticUIRoot` 오브젝트에 `BattleStaticUIRoot.cs` 연결
-- 전투 Dynamic UI Root 오브젝트 정리 또는 생성
-- 전투의 `PopupLayer`, `DimLayer`, `ToastLayer`, `FloatingTextLayer`, `UnitHpBarLayer` 참조 연결
+- `BasePopup`의 기본 열기/닫기 생명주기 정의
+- `PopupManager.OpenAsync()` 형태의 팝업 생성 API 추가
+- 팝업 Prefab을 현재 씬 `PopupLayer` 아래에 생성
+- 팝업이 열릴 때 `DimLayer` 표시 및 입력 차단
+- 팝업이 닫힐 때 `DimLayer` 복구
+- 팝업 닫기 시 R3 구독 정리와 Destroy 흐름 정리
+- DOTween 설치 여부 확인 후 열기/닫기 연출 적용
 
-### 2순위: PopupManager 구조 정리
+### 2순위: Battle Dynamic UI 보조 레이어
 
-현재 `PopupManager`는 빈 `MonoBehaviour`다.
-최종 방향은 아래와 같다.
-
-```text
-GameRoot.PopupManager
-→ 현재 씬의 DynamicUIRoot에서 PopupLayer / DimLayer / ToastLayer를 등록받음
-→ Popup 요청 시 현재 PopupLayer 아래에 Prefab 생성
-→ 닫을 때 R3 구독 정리, DOTween Close, Destroy
-```
-
-다음 작업에서는 아직 실제 팝업 Prefab 생성까지 가지 말고, 레이어 등록/해제 구조부터 만드는 것이 안전하다.
+- 전투 `FloatingTextLayer`, `UnitHpBarLayer` 실제 오브젝트 추가 또는 기존 오브젝트 지정
+- Unity 에디터에서 Inspector 연결 상태 확인
+- GitHub Actions로 PlayMode 테스트 확인
 
 ### 3순위: ScreenFadeView 추가
 
