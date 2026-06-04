@@ -7,6 +7,7 @@ public sealed class BattleDynamicUIRoot : MonoBehaviour
     [SerializeField] private Transform popupLayer; // 팝업이 생성될 부모 레이어
     [SerializeField] private CanvasGroup dimLayer; // 팝업 뒤 딤 처리 레이어
     [SerializeField] private Transform toastLayer; // 토스트 메시지 부모 레이어
+    [SerializeField] private ScreenFadeView screenFadeView; // 씬 전환용 화면 페이드 View
     [SerializeField] private Transform floatingTextLayer; // 데미지/회복 텍스트 부모 레이어
     [SerializeField] private Transform unitHpBarLayer; // 유닛 머리 위 HP바 부모 레이어
 
@@ -15,17 +16,24 @@ public sealed class BattleDynamicUIRoot : MonoBehaviour
     public Transform PopupLayer => popupLayer;
     public CanvasGroup DimLayer => dimLayer;
     public Transform ToastLayer => toastLayer;
+    public ScreenFadeView ScreenFadeView => screenFadeView;
     public Transform FloatingTextLayer => floatingTextLayer;
     public Transform UnitHpBarLayer => unitHpBarLayer;
 
+    // 전투 Dynamic UI에 현재 게임 상태를 전달하고 전역 UI 매니저에 씬 레이어를 등록합니다.
+    // 전투 중 팝업, 토스트, 페이드, 플로팅 텍스트가 모두 이 Root 기준으로 확장됩니다.
     public void Initialize(GameContext gameContext)
     {
         context = gameContext;
         GameRoot.Instance?.PopupManager.RegisterSceneLayers(this, gameObject.scene.name, popupLayer, dimLayer, toastLayer);
+        GameRoot.Instance?.ScreenFadeManager.RegisterSceneFade(this, gameObject.scene.name, screenFadeView);
     }
 
+    // 씬이 파괴될 때 현재 씬이 등록했던 동적 UI 참조를 해제합니다.
+    // 전투 씬 전환 이후 이전 Canvas를 참조하지 않도록 Root가 정리 책임을 갖습니다.
     private void OnDestroy()
     {
         GameRoot.Instance?.PopupManager.UnregisterSceneLayers(this);
+        GameRoot.Instance?.ScreenFadeManager.UnregisterSceneFade(this);
     }
 }

@@ -13,6 +13,7 @@ public sealed class GameRoot : MonoBehaviour
     public DataTableManager DataTableManager { get; private set; } // 테이블 데이터 매니저
     public ServiceRegistry ServiceRegistry { get; private set; } // 외부 서비스 등록소
     public PopupManager PopupManager { get; private set; } // 현재 씬 팝업 레이어 관리자
+    public ScreenFadeManager ScreenFadeManager { get; private set; } // 현재 씬 화면 페이드 관리자
 
     private void Awake()
     {
@@ -70,6 +71,7 @@ public sealed class GameRoot : MonoBehaviour
         DataTableManager = new DataTableManager();
         ServiceRegistry = new ServiceRegistry();
         PopupManager = new PopupManager();
+        ScreenFadeManager = new ScreenFadeManager();
     }
 
     private void OnApplicationPause(bool pauseStatus)

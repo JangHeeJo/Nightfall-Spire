@@ -39,6 +39,7 @@
   - `Add popup layer registration`
   - `Add popup lifecycle foundation`
   - `Add currency HUD binder`
+  - `Add screen fade foundation`
 
 ## CI 구성 상태
 
@@ -360,6 +361,50 @@ CurrencyHudBinder
 그래서 `CurrencyHud`의 `goldText`, `gemText` 참조는 비워둔 상태다.
 나중에 UI 배치 단계에서 텍스트 오브젝트를 만든 뒤 Inspector에 연결하면 된다.
 
+## 완료된 작업 9: ScreenFade 기초 구조 추가
+
+커밋: `Add screen fade foundation`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/UI/ScreenFadeManager.cs`
+- `Assets/_Project/01_Script/UI/ScreenFadeManager.cs.meta`
+- `Assets/_Project/01_Script/UI/ScreenFadeView.cs`
+- `Assets/_Project/01_Script/UI/ScreenFadeView.cs.meta`
+- `Assets/_Project/01_Script/Scene/LobbyDynamicUIRoot.cs`
+- `Assets/_Project/01_Script/Scene/BattleDynamicUIRoot.cs`
+- `Assets/_Project/00_Scenes/LobbyScene.unity`
+- `Assets/_Project/00_Scenes/BattleScene.unity`
+
+### 주요 변경
+
+- `ScreenFadeManager`를 추가해 현재 씬의 `ScreenFadeView` 참조를 전역에서 사용할 수 있게 했다.
+- `GameRoot`가 `ScreenFadeManager`를 생성하도록 했다.
+- `ScreenFadeView`를 추가해 `CanvasGroup` 기반 페이드 알파와 입력 차단을 제어하게 했다.
+- DOTween 의존성 없이 UniTask 기반 시간 보간으로 `FadeToAsync()`를 구현했다.
+- `ScreenFadeManager.FadeOutAsync()`, `FadeInAsync()`를 추가했다.
+- `LobbyDynamicUIRoot`, `BattleDynamicUIRoot`가 현재 씬의 `ScreenFadeView`를 등록/해제하도록 했다.
+- `LobbyScene`의 기존 `ScreenFade` 오브젝트에 `CanvasGroup`과 `ScreenFadeView`를 연결했다.
+- `BattleScene`의 `Canvas_DynamicUI` 아래에 `ScreenFade` 오브젝트를 추가하고 `CanvasGroup`, `ScreenFadeView`를 연결했다.
+
+### 왜 이렇게 했는지
+
+화면 페이드는 씬 전환, 로딩, 전투 진입, 튜토리얼 차단 등 여러 시스템에서 공통으로 요청할 수 있다.
+하지만 실제 페이드 오브젝트는 현재 씬의 Canvas 아래에 있어야 하므로 `GameRoot`가 Canvas를 직접 소유하면 안 된다.
+
+따라서 팝업과 같은 원칙으로 구조를 잡았다.
+
+```text
+GameRoot.ScreenFadeManager
+→ 현재 씬 DynamicUIRoot가 ScreenFadeView 등록
+→ 전역에서 FadeOutAsync / FadeInAsync 요청
+→ 실제 표시는 현재 씬 Canvas_DynamicUI 아래 ScreenFadeView가 처리
+```
+
+현재 `ScreenFade` 오브젝트는 `CanvasGroup`과 스크립트만 갖고 있다.
+실제 검은 화면을 보이게 하려면 다음 UI 배치 단계에서 `Image` 또는 전용 그래픽 오브젝트를 추가해야 한다.
+
 ## 현재 검증 상태
 
 로컬 검증 명령:
@@ -391,6 +436,7 @@ dotnet build "Nightfall Spire.sln"
 - `DimLayer`
 - `PopupLayer`
 - `ToastLayer`
+- `ScreenFade`
 - `TopCurrencyHud`
 
 `BattleScene`
@@ -402,19 +448,20 @@ dotnet build "Nightfall Spire.sln"
 - `DimLayer`
 - `PopupLayer`
 - `ToastLayer`
+- `ScreenFade`
 
 현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
 각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
+각 씬의 Dynamic UI Root는 현재 씬의 `ScreenFade`를 `ScreenFadeManager`에 등록한다.
 `LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHud` View가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudBinder`를 통해 `CurrencyProgress`와 연결한다.
 
 ## 다음 작업 계획
 
-### 1순위: ScreenFadeView 추가
+### 1순위: DataTable 방향 확정
 
-- 각 씬의 `Canvas_DynamicUI` 아래에 `ScreenFadeView`를 둔다.
-- `GameRoot`에는 Fade Canvas를 두지 않는다.
-- DOTween이 없으므로 우선 UniTask 기반 즉시/시간 보간 구조를 만든다.
-- DOTween 설치 후에는 내부 연출만 DOTween으로 교체할 수 있게 분리한다.
+- `Assets/_Project/05_Data` 아래에 테이블 원본과 생성물 폴더를 만든다.
+- `DataTableManager`가 읽을 데이터 형식을 TSV/CSV/ScriptableObject 중에서 확정한다.
+- 초기 테이블 스키마는 Hero, Enemy, Stage, Wave, Skill, Reward 중심으로 잡는다.
 
 ### 2순위: Currency HUD 실제 표시 오브젝트 구성
 
@@ -428,7 +475,13 @@ dotnet build "Nightfall Spire.sln"
 - Unity 에디터에서 Inspector 연결 상태 확인
 - GitHub Actions로 PlayMode 테스트 확인
 
-### 4순위: DataTable 방향 확정
+### 4순위: ScreenFade 실제 그래픽 구성
+
+- `ScreenFade` 아래에 전체 화면 검은 Image를 추가한다.
+- `ScreenFadeView`가 해당 그래픽을 통해 실제 화면 암전을 보여주게 한다.
+- 모바일 해상도 기준으로 Safe Area와 전체 화면 덮임 여부를 확인한다.
+
+### 5순위: DataTable 후보 구조
 
 `Assets/_Project/05_Data` 아래 구조를 만든다.
 
@@ -449,7 +502,7 @@ Assets/_Project/05_Data
 
 밸런스 수치 데이터는 TSV/CSV가 적합하고, Prefab/Audio/Addressables 참조는 ScriptableObject가 적합하다.
 
-### 5순위: 정리 후보
+### 6순위: 정리 후보
 
 - `Assets/_Recovery`는 Unity 자동 복구 씬처럼 보이므로 정리 후보다.
 - `Assets/_Project/01_Script/Test`는 연습용 코드이므로 추후 삭제하거나 `99_Test` 아래로 옮기는 것이 좋다.
