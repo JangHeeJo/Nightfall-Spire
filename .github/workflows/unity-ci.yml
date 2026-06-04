@@ -120,8 +120,6 @@ jobs:
           unityVersion: auto
           testMode: ${{ matrix.testMode }}
           artifactsPath: ${{ matrix.testMode }}-test-results
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Unity ${{ matrix.testMode }} tests
 
       - name: Upload Unity test results
         uses: actions/upload-artifact@v4
