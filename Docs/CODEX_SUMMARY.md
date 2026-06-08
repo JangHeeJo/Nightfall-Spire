@@ -364,6 +364,59 @@ CurrencyHudPresenter
 그래서 `CurrencyHudView`의 `goldText`, `gemText` 참조는 비워둔 상태다.
 나중에 UI 배치 단계에서 텍스트 오브젝트를 만든 뒤 Inspector에 연결하면 된다.
 
+## 완료된 작업 8-1: Currency HUD MVP 라이브 기준 보강
+
+커밋: `Harden currency HUD MVP structure`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/UI/CurrencyHudView.cs`
+- `Assets/_Project/01_Script/Presenter/ICurrencyHudView.cs`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudViewState.cs`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs`
+- `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
+- `Assets/_Project/99_Test/EditMode/Presenter/CurrencyHudPresenterTests.cs`
+
+### 주요 변경
+
+- `CurrencyHud` 이름을 `CurrencyHudView`로 바꿔 View 역할이 이름에 드러나게 했다.
+- Unity 씬의 Missing Script를 막기 위해 기존 `CurrencyHud` `.meta` GUID를 `CurrencyHudView`가 유지하게 했다.
+- `ICurrencyHudView`를 별도 파일로 분리해 Presenter가 Unity 컴포넌트 구체 타입에 직접 묶이지 않게 했다.
+- `CurrencyHudViewState`를 별도 파일로 분리해 Presenter가 만든 표시 상태를 명확히 했다.
+- `CurrencyHudPresenter`는 생성자에서 바로 구독하지 않고 `Initialize()`에서 명시적으로 시작하게 했다.
+- `CurrencyHudPresenter`에 중복 초기화 방지와 Dispose 이후 갱신 차단을 추가했다.
+- `LobbyStaticUIRoot`는 `FormerlySerializedAs("currencyHud")`를 사용해 기존 Inspector 직렬화 값을 `currencyHudView`로 이어받게 했다.
+- `CurrencyHudPresenterTests`를 추가해 초기 렌더링, Model 변경 반영, 중복 초기화 방지, Dispose 후 갱신 차단, null 의존성 거부를 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+출시용 UI 구조에서는 View, Presenter, ViewState, View Interface가 한 파일에 섞이면 규모가 커질 때 책임이 흐려진다.
+그래서 Currency HUD를 앞으로 다른 UI가 따라갈 기준 구조로 정리했다.
+
+```text
+CurrencyProgress
+= Model. 재화 값과 변경 규칙을 가진다.
+
+ICurrencyHudView
+= Presenter가 기대하는 View 계약이다.
+
+CurrencyHudView
+= Unity View. Text 참조와 Render만 담당한다.
+
+CurrencyHudViewState
+= View에 넘길 완성된 표시 상태다.
+
+CurrencyHudPresenter
+= Presenter. Model 구독, 숫자 포맷, ViewState 생성, View 갱신, 구독 해제를 담당한다.
+```
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `CurrencyHudPresenterTests.cs` 컴파일 통과.
+- Unity EditMode Test Runner는 현재 로컬에 Unity 프로세스가 여러 개 떠 있어 batchmode 실행이 종료 코드 127로 실패했다.
+- Unity 에디터를 닫은 뒤 EditMode 테스트를 다시 실행해야 한다.
+
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
 커밋: `Add screen fade foundation`
