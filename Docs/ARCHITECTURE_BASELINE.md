@@ -197,6 +197,8 @@ UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.Chan
 
 - 웨이브 진행기
 - `NightDefenseWavePlan` 기반 적 스폰 컨트롤러
+- 전투 슬롯 공격 루프
+- 타겟 선택과 피해 적용
 - 방어 세션 타이머
 - 보스 웨이브 판단
 - 방어 성공/실패 처리
@@ -221,6 +223,22 @@ WaveDataRow
 실제 Unity 적 프리팹 생성기는 `INightDefenseSpawnSink`를 구현해 스폰 요청을 받는 방식으로 붙입니다.
 `BattleSceneRoot`는 씬 진입 후 밤 방어 세션이 시작되면 `NightDefenseBattleRuntime`을 초기화합니다.
 현재 `UnityNightDefenseSpawnSink`는 실제 적 생성 전 단계이므로 스폰 요청을 로그로만 받으며, 이후 `EnemyFactory`와 오브젝트 풀로 교체합니다.
+
+전투 숫자 규칙은 `CombatRuntimeController`에서 처리합니다.
+이 클래스는 Unity 오브젝트를 만들지 않고, 테이블에서 읽은 영웅/적/슬롯 성장 값과 현재 `CombatSlotProgress`만 보고 공격 가능한 슬롯, 살아 있는 적, 피해 결과를 계산합니다.
+
+```text
+CombatSlotProgress
+→ ICombatDataSource
+→ CombatRuntimeController
+→ CombatTargetingService
+→ CombatDamageResolver
+→ CombatRuntimeTickResult
+```
+
+`CombatTargetingService`는 `TargetingType`에 맞춰 적을 고르고, `CombatDamageResolver`는 공격력과 방어력 기준으로 실제 피해를 적용합니다.
+이 구조가 필요한 이유는 전투 규칙을 MonoBehaviour, 프리팹, 애니메이션 이벤트 안에 섞지 않기 위해서입니다.
+이후 투사체, 스킬, 드래프트 효과, 속성 상성은 이 전투 런타임 위에 별도 Resolver로 붙입니다.
 
 ### 3순위: 드래프트 런타임
 

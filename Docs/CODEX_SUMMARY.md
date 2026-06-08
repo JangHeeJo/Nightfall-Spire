@@ -1126,3 +1126,43 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 
 - 남아 있는 잘못된 팝업 소유권 기준 표현을 검색했다.
 - 문서 변경만이라 런타임 동작 변경은 없다.
+
+## 완료된 작업 23: 순수 C# 전투 런타임 뼈대 추가
+
+커밋 예정: `Add combat runtime core`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/CombatTargetingService.cs`
+- `Assets/_Project/01_Script/Service/CombatDamageResolver.cs`
+- `Assets/_Project/99_Test/EditMode/Service/CombatRuntimeControllerTests.cs`
+- 각 새 스크립트의 `.meta`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `ICombatDataSource`를 추가해 전투 런타임이 영웅, 적, 슬롯, 슬롯 성장 테이블을 조회할 수 있게 했다.
+- `GameContentDataSource`가 `ICombatDataSource`를 구현하게 했다.
+- `CombatRuntimeController`를 추가해 해금된 전투 슬롯을 공격자 상태로 만들고, 스폰된 적을 런타임 상태로 등록하고, Tick마다 공격/피해/처치를 계산하게 했다.
+- `CombatTargetingService`를 추가해 `Nearest`, `Farthest`, `LowestHp`, `HighestHp`, `Random` 타겟 규칙을 한곳에서 처리하게 했다.
+- `CombatDamageResolver`를 추가해 기본 공격 피해 계산을 전투 컨트롤러에서 분리했다.
+- `CombatRuntimeContracts.cs`에 전투 런타임 실패 이유, 영웅 슬롯 상태, 적 상태, 피해 결과, Tick 결과를 모았다.
+- `CombatRuntimeControllerTests`를 추가해 슬롯 구성, 공격 피해, 적 처치 제거, 슬롯 성장 보정 적용을 검증했다.
+
+### 왜 이렇게 만들었는지
+
+기존 밤 방어 런타임은 웨이브 시간표를 실행하고 스폰 요청을 만드는 단계까지 있었다.
+하지만 실제로 스폰된 적이 체력을 갖고, 전투 슬롯이 타겟을 잡고, 피해를 넣는 규칙 엔진은 아직 없었다.
+
+이번 변경은 Unity 씬, 프리팹, 애니메이션을 건드리지 않고 전투 숫자 규칙만 순수 C#으로 추가한 것이다.
+이 구조를 먼저 두면 이후 적 프리팹, 투사체, 스킬, 드래프트 효과를 붙이더라도 전투 규칙이 씬 오브젝트에 흩어지지 않는다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 전투 런타임 테스트 파일을 추가해 슬롯 구성, 기본 공격, 처치 제거, 슬롯 성장 보정 시나리오를 고정했다.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.

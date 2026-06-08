@@ -29,8 +29,17 @@ public interface IDayGrowthDataSource
     bool TryGetCombatSlotUpgrade(int upgradeGroupId, int level, out CombatSlotUpgradeDataRow row);
 }
 
+// 전투 런타임이 필요한 테이블 조회 계약입니다.
+public interface ICombatDataSource
+{
+    bool TryGetHero(int heroId, out HeroDataRow row);
+    bool TryGetEnemy(int enemyId, out EnemyDataRow row);
+    bool TryGetCombatSlotByIndex(int slotIndex, out CombatSlotDataRow row);
+    bool TryGetCombatSlotUpgrade(int upgradeGroupId, int level, out CombatSlotUpgradeDataRow row);
+}
+
 // DataTableManager를 도메인 서비스가 쓰는 조회 계약으로 감싸는 어댑터입니다.
-public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IRewardDataSource, IDayGrowthDataSource
+public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource
 {
     private readonly DataTableManager dataTableManager; // 실제 테이블 보관소
 
@@ -93,6 +102,28 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
         return dataTableManager?.CombatSlotData?.TryGet(slotId, out row) == true;
     }
 
+    // 전투 슬롯 번호로 슬롯 Row를 조회합니다.
+    public bool TryGetCombatSlotByIndex(int slotIndex, out CombatSlotDataRow row)
+    {
+        row = null;
+
+        if (dataTableManager?.CombatSlotData?.Rows == null)
+            return false;
+
+        for (int i = 0; i < dataTableManager.CombatSlotData.Rows.Count; i++)
+        {
+            CombatSlotDataRow candidate = dataTableManager.CombatSlotData.Rows[i];
+
+            if (candidate.SlotIndex != slotIndex)
+                continue;
+
+            row = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
     // 전투 슬롯 성장 Row를 조회합니다.
     public bool TryGetCombatSlotUpgrade(int upgradeGroupId, int level, out CombatSlotUpgradeDataRow row)
     {
@@ -107,5 +138,19 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
         {
             return false;
         }
+    }
+
+    // 영웅 Row를 조회합니다.
+    public bool TryGetHero(int heroId, out HeroDataRow row)
+    {
+        row = null;
+        return dataTableManager?.HeroData?.TryGet(heroId, out row) == true;
+    }
+
+    // 적 Row를 조회합니다.
+    public bool TryGetEnemy(int enemyId, out EnemyDataRow row)
+    {
+        row = null;
+        return dataTableManager?.EnemyData?.TryGet(enemyId, out row) == true;
     }
 }
