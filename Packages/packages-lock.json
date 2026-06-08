@@ -16,6 +16,12 @@
       "dependencies": {},
       "hash": "e5acc106ee196bc5a32fb14cdf2987b0f96d11e0"
     },
+    "com.demigiant.dotween": {
+      "version": "file:com.demigiant.dotween",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.github-glitchenzo.nugetforunity": {
       "version": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
       "depth": 0,
