@@ -7,11 +7,11 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
 {
     [FormerlySerializedAs("currencyHud")]
     [SerializeField] private CurrencyHudView currencyHudView; // 로비 상단 재화 HUD View
-    [SerializeField] private FightStartView fightStartView; // 밤 방어 시작 버튼 View
+    [SerializeField] private LobbyScreen lobbyScreen; // 로비 화면 단위 View
 
     private GameContext context; // 로비 UI가 참조할 현재 게임 상태
     private CurrencyHudPresenter currencyHudPresenter; // 재화 HUD MVP Presenter
-    private FightStartPresenter fightStartPresenter; // 밤 방어 시작 버튼 Presenter
+    private LobbyPresenter lobbyPresenter; // 로비 화면 단위 Presenter
 
     // 로비 Static UI에 현재 게임 상태를 전달하고 필요한 Presenter를 생성합니다.
     // Root는 Presenter 조립만 담당하고, 실제 UI 표시 규칙은 Presenter에 맡깁니다.
@@ -19,7 +19,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     {
         context = gameContext;
         CreateCurrencyHudPresenter();
-        CreateFightStartPresenter();
+        CreateLobbyPresenter();
     }
 
     private void OnDestroy()
@@ -44,40 +44,29 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         currencyHudPresenter.Initialize();
     }
 
-    // FightStartView(View)와 GameFlowController(Model/Flow)를 Presenter로 연결합니다.
-    // 씬에 스크립트가 아직 직접 붙어 있지 않으면 오브젝트 이름으로 찾아 자동 추가합니다.
-    private void CreateFightStartPresenter()
+    // LobbyScreen(View)과 GameFlowController(Model/Flow)를 화면 단위 Presenter로 연결합니다.
+    // 버튼마다 Presenter를 만들지 않고 로비 화면의 주요 액션을 LobbyPresenter가 관리합니다.
+    private void CreateLobbyPresenter()
     {
-        fightStartView ??= GetComponentInChildren<FightStartView>(true);
-        fightStartView ??= FindFightStartViewInChildren();
+        lobbyScreen ??= FindLobbyScreen();
 
-        if (fightStartView == null)
+        if (lobbyScreen == null)
         {
-            Debug.LogWarning("[LobbyStaticUIRoot] FightStartView를 찾을 수 없습니다.");
+            Debug.LogWarning("[LobbyStaticUIRoot] LobbyScreen을 만들 수 없습니다.");
             return;
         }
 
-        fightStartPresenter?.Dispose();
-        fightStartPresenter = new FightStartPresenter(fightStartView, GameRoot.Instance.GameFlowController.LoadNightDefenseAsync);
-        fightStartPresenter.Initialize();
+        lobbyPresenter?.Dispose();
+        lobbyPresenter = new LobbyPresenter(lobbyScreen, GameRoot.Instance.GameFlowController.LoadNightDefenseAsync);
+        lobbyPresenter.Initialize();
     }
 
-    // 기존 씬에 있는 FightStartView 이름의 오브젝트를 찾아 View 컴포넌트를 보장합니다.
-    // FightStartView는 LobbyStaticUIRoot의 자식이 아니라 같은 Canvas 아래 형제일 수 있으므로 부모 Canvas부터 찾습니다.
-    private FightStartView FindFightStartViewInChildren()
+    // LobbyStaticUIRoot와 같은 Canvas에 LobbyScreen 컴포넌트를 보장합니다.
+    // 로비 화면 입력은 이 컴포넌트 하나에서 모으고, 세부 버튼 스크립트는 만들지 않습니다.
+    private LobbyScreen FindLobbyScreen()
     {
         Transform searchRoot = transform.parent != null ? transform.parent : transform;
-        Transform[] children = searchRoot.GetComponentsInChildren<Transform>(true);
-
-        for (int i = 0; i < children.Length; i++)
-        {
-            if (children[i].name != "FightStartView")
-                continue;
-
-            return children[i].GetComponent<FightStartView>() ?? children[i].gameObject.AddComponent<FightStartView>();
-        }
-
-        return null;
+        return searchRoot.GetComponent<LobbyScreen>() ?? searchRoot.gameObject.AddComponent<LobbyScreen>();
     }
 
     // 씬이 파괴될 때 Presenter 구독을 해제합니다.
@@ -87,7 +76,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         currencyHudPresenter?.Dispose();
         currencyHudPresenter = null;
 
-        fightStartPresenter?.Dispose();
-        fightStartPresenter = null;
+        lobbyPresenter?.Dispose();
+        lobbyPresenter = null;
     }
 }

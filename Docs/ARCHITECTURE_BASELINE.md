@@ -267,22 +267,26 @@ WaveDataRow
 밤 방어 씬 로드가 끝나면 바로 `NightDefensePlaying`으로 뛰지 않고 `NightDefenseReady`를 거칩니다.
 이 단계에서 `NightDefenseSessionService`가 현재 세션 입장 조건과 테이블 연결을 검증하고, 성공한 경우에만 실제 플레이 상태로 진입합니다.
 
-## Lobby Fight Start MVP
+## Lobby Screen MVP
 
-로비에서 밤 방어전으로 들어가는 입력은 MVP 구조를 기준으로 연결합니다.
+로비 화면 입력은 버튼 단위가 아니라 화면 단위 MVP 구조를 기준으로 연결합니다.
 
 ```text
-FightStartView
-→ FightStartPresenter
+LobbyScreen
+→ LobbyPresenter
 → GameFlowController.LoadNightDefenseAsync()
 → SceneLoadManager.LoadBattleSceneAsync()
 → BattleSceneRoot
 → GameFlowController.BeginLoadedNightDefenseSession()
 ```
 
-`FightStartView`는 Unity Button 클릭을 일반 C# 이벤트로 바꾸는 View입니다.
-`FightStartPresenter`는 중복 클릭 방지, 로드 중 비활성화, 로드 거부 시 재활성화를 담당합니다.
-`LobbyStaticUIRoot`는 View와 Presenter를 조립만 하고, 상태 전환 판단은 `GameFlowController`에 맡깁니다.
+`LobbyScreen`은 로비 화면 전체 View입니다.
+개별 버튼마다 View/Presenter 클래스를 만들지 않고, 밤 방어 시작, 하단 탭, 업그레이드 진입 같은 로비 화면 액션을 화면 단위 이벤트로 모읍니다.
+`LobbyPresenter`는 중복 클릭 방지, 로드 중 비활성화, 로드 거부 시 재활성화처럼 로비 화면 액션의 흐름을 담당합니다.
+`LobbyStaticUIRoot`는 `LobbyScreen`과 `LobbyPresenter`를 조립만 하고, 상태 전환 판단은 `GameFlowController`에 맡깁니다.
 
-현재 로비 씬의 `FightStartView`는 최소 클릭 보장을 위해 런타임에서 Button/Image를 붙입니다.
-이후 실제 로비 UI 디자인이 확정되면 프리팹에 Button, Image, TextMeshPro 라벨을 명시적으로 구성하고 같은 Presenter 계약을 유지합니다.
+재화 HUD처럼 여러 화면에서 재사용되거나 독립 상태 구독이 필요한 위젯은 별도 Presenter를 둘 수 있습니다.
+하지만 단순 버튼 하나를 이유로 `ButtonNameView`, `ButtonNamePresenter`를 계속 추가하지 않습니다.
+
+현재 로비 씬의 `FightStartView` 이름 오브젝트는 `LobbyScreen`이 밤 방어 시작 버튼으로 찾아 사용합니다.
+이후 실제 로비 UI 디자인이 확정되면 프리팹에 Button, Image, TextMeshPro 라벨을 명시적으로 구성하고 `LobbyScreen`의 화면 단위 계약을 유지합니다.

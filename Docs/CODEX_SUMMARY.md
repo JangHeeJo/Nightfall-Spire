@@ -977,35 +977,39 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
 
-## 완료된 작업 19: 로비 전투 시작 버튼 연결
+## 완료된 작업 19: 로비 화면 단위 전투 시작 연결
 
-커밋 예정: `Connect lobby fight start flow`
+커밋 예정: `Refactor lobby MVP to screen presenter`
 
 ### 변경된 파일
 
-- `Assets/_Project/01_Script/Presenter/IFightStartView.cs`
-- `Assets/_Project/01_Script/Presenter/FightStartPresenter.cs`
-- `Assets/_Project/01_Script/UI/FightStartView.cs`
+- `Assets/_Project/01_Script/Presenter/ILobbyScreenView.cs`
+- `Assets/_Project/01_Script/Presenter/LobbyPresenter.cs`
+- `Assets/_Project/01_Script/UI/LobbyScreen.cs`
 - `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
-- `Assets/_Project/99_Test/EditMode/Presenter/FightStartPresenterTests.cs`
+- `Assets/_Project/99_Test/EditMode/Presenter/LobbyPresenterTests.cs`
 - `Docs/ARCHITECTURE_BASELINE.md`
 - `Docs/CODEX_SUMMARY.md`
 
 ### 주요 변경
 
-- 로비의 `FightStartView` 오브젝트를 실제 클릭 가능한 View로 연결했다.
-- `FightStartPresenter`를 추가해 View 클릭 이벤트가 `GameFlowController.LoadNightDefenseAsync()`로 이어지게 했다.
-- `LobbyStaticUIRoot`가 재화 HUD Presenter뿐 아니라 전투 시작 Presenter도 조립하게 바꿨다.
-- 기존 씬의 `FightStartView`가 `LobbyStaticUIRoot`의 자식이 아니라 같은 Canvas 아래 형제일 수 있어서 부모 Canvas 기준으로 검색하게 했다.
-- 씬에 Button/Image 컴포넌트가 아직 없어도 `FightStartView`가 런타임에 최소 클릭 가능한 Button/Image를 보장하게 했다.
-- `FightStartPresenterTests`를 추가해 초기화, 클릭 시 로드 요청, 로드 거부 시 재활성화, Dispose 후 클릭 차단을 검증했다.
+- 잘못 쪼갠 `FightStartView`, `FightStartPresenter`, `IFightStartView`를 제거했다.
+- 로비 화면 전체 View인 `LobbyScreen`을 기준으로 밤 방어 시작 입력을 받게 했다.
+- `LobbyPresenter`를 추가해 로비 화면 액션이 `GameFlowController.LoadNightDefenseAsync()`로 이어지게 했다.
+- `LobbyStaticUIRoot`가 부모 Canvas에 `LobbyScreen` 컴포넌트를 보장하고 `LobbyPresenter`를 조립하게 바꿨다.
+- 씬에 Button/Image 컴포넌트가 아직 없어도 `LobbyScreen`이 기존 `FightStartView` 이름 오브젝트를 찾아 최소 클릭 가능한 Button/Image를 보장하게 했다.
+- `LobbyPresenterTests`를 추가해 초기화, 클릭 시 로드 요청, 로드 거부 시 재활성화, Dispose 후 클릭 차단을 검증했다.
 
 ### 왜 이렇게 바꿨는지
 
 로비에서 전투 씬으로 넘어가지 않았던 이유는 `FightStartView`라는 오브젝트는 있었지만 실제 Button, View 스크립트, Presenter, `GameFlowController.LoadNightDefenseAsync()` 호출 연결이 없었기 때문이다.
 
-이번 변경은 Unity식 임시 버튼 호출이 아니라 MVP 기준으로 분리했다.
-`FightStartView`는 클릭 입력만 내보내고, `FightStartPresenter`가 입력 가능 상태와 씬 로드 요청을 관리하며, 실제 상태 전환은 `GameFlowController`가 계속 담당한다.
+처음에는 버튼 단위 View/Presenter로 너무 잘게 쪼개는 잘못된 방향으로 갔다.
+출시용 구조에서는 버튼 하나마다 스크립트와 Presenter를 만드는 방식이 유지보수에 불리하다.
+
+그래서 로비는 화면 단위 MVP로 정리했다.
+`LobbyScreen`은 로비 화면의 주요 입력을 모으고, `LobbyPresenter`가 그 입력을 게임 흐름으로 연결한다.
+재화 HUD처럼 독립적으로 재사용되거나 상태 구독이 필요한 위젯만 별도 Presenter를 유지한다.
 
 ### 검증
 
