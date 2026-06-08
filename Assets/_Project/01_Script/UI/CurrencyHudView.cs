@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 // 재화 HUD의 Unity View입니다.
 // Model을 직접 알지 않고 Presenter가 전달한 표시 문자열만 화면에 반영합니다.
-public sealed class CurrencyHud : MonoBehaviour, ICurrencyHudView
+public sealed class CurrencyHudView : MonoBehaviour, ICurrencyHudView
 {
     [SerializeField] private Text goldText; // 골드 표시 텍스트
     [SerializeField] private Text gemText; // 젬 표시 텍스트

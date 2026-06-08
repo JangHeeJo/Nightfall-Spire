@@ -323,7 +323,7 @@ DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 �
 
 ### 변경된 파일
 
-- `Assets/_Project/01_Script/UI/CurrencyHud.cs`
+- `Assets/_Project/01_Script/UI/CurrencyHudView.cs`
 - `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs`
 - `Assets/_Project/01_Script/Presenter.meta`
 - `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs.meta`
@@ -332,14 +332,14 @@ DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 �
 
 ### 주요 변경
 
-- `CurrencyHud`를 MVP View로 정리했다.
-- `CurrencyHudPresenter`를 추가해 `CurrencyProgress`와 `CurrencyHud`를 연결하게 했다.
+- `CurrencyHudView`를 MVP View로 정리했다.
+- `CurrencyHudPresenter`를 추가해 `CurrencyProgress`와 `CurrencyHudView`를 연결하게 했다.
 - `CurrencyHudPresenter`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
 - Presenter가 숫자 포맷을 담당하고 `CurrencyHudViewState`를 만들어 View에 전달한다.
-- `CurrencyHud`는 Model, R3, 숫자 포맷을 알지 않고 `Render()`로 전달받은 문자열만 표시한다.
+- `CurrencyHudView`는 Model, R3, 숫자 포맷을 알지 않고 `Render()`로 전달받은 문자열만 표시한다.
 - `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudPresenter`를 생성한다.
 - `LobbyStaticUIRoot.OnDestroy()`에서 Presenter 구독을 해제한다.
-- `LobbyScene`의 `TopCurrencyHud` 오브젝트에 `CurrencyHud` 컴포넌트를 연결했다.
+- `LobbyScene`의 `TopCurrencyHud` 오브젝트에 `CurrencyHudView` 컴포넌트를 연결했다.
 
 ### 왜 이렇게 했는지
 
@@ -353,7 +353,7 @@ Unity View는 씬/프리팹과 Inspector 참조를 가져야 하므로, View가 
 CurrencyProgress
 = Model. 골드/젬 상태와 변경 규칙을 가진다.
 
-CurrencyHud
+CurrencyHudView
 = View. Presenter가 넘긴 표시 상태만 화면에 반영한다.
 
 CurrencyHudPresenter
@@ -361,7 +361,7 @@ CurrencyHudPresenter
 ```
 
 현재 `TopCurrencyHud`에는 아직 실제 골드/젬 텍스트 자식이 없다.
-그래서 `CurrencyHud`의 `goldText`, `gemText` 참조는 비워둔 상태다.
+그래서 `CurrencyHudView`의 `goldText`, `gemText` 참조는 비워둔 상태다.
 나중에 UI 배치 단계에서 텍스트 오브젝트를 만든 뒤 Inspector에 연결하면 된다.
 
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
@@ -486,7 +486,7 @@ dotnet build "Nightfall Spire.sln"
 현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
 각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
 각 씬의 Dynamic UI Root는 현재 씬의 `ScreenFade`를 `ScreenFadeManager`에 등록한다.
-`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHud` View가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudPresenter`를 통해 `CurrencyProgress`와 연결한다.
+`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHudView`가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudPresenter`를 통해 `CurrencyProgress`와 연결한다.
 
 ## 다음 작업 계획
 
@@ -499,7 +499,7 @@ dotnet build "Nightfall Spire.sln"
 ### 2순위: Currency HUD 실제 표시 오브젝트 구성
 
 - `TopCurrencyHud` 아래에 골드/젬 텍스트 오브젝트를 추가한다.
-- `CurrencyHud.goldText`, `CurrencyHud.gemText` Inspector 참조를 연결한다.
+- `CurrencyHudView.goldText`, `CurrencyHudView.gemText` Inspector 참조를 연결한다.
 - 모바일 해상도 기준으로 상단 HUD 위치와 크기를 정리한다.
 
 ### 3순위: Battle Dynamic UI 보조 레이어

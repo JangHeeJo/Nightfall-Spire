@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // LobbyScene의 Static UI 초기화 지점입니다.
 // 위치가 고정된 로비 UI들은 이 Root를 통해 GameContext를 전달받습니다.
 public sealed class LobbyStaticUIRoot : MonoBehaviour
 {
-    [SerializeField] private CurrencyHud currencyHud; // 로비 상단 재화 HUD
+    [FormerlySerializedAs("currencyHud")]
+    [SerializeField] private CurrencyHudView currencyHudView; // 로비 상단 재화 HUD View
 
     private GameContext context; // 로비 UI가 참조할 현재 게임 상태
     private CurrencyHudPresenter currencyHudPresenter; // 재화 HUD MVP Presenter
@@ -22,20 +24,21 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         DisposePresenters();
     }
 
-    // CurrencyProgress(Model), CurrencyHud(View), CurrencyHudPresenter(Presenter)를 조립합니다.
-    // Inspector 연결이 비어 있으면 자식 오브젝트에서 CurrencyHud를 찾아 초기 세팅 단계의 실수를 줄입니다.
+    // CurrencyProgress(Model), CurrencyHudView(View), CurrencyHudPresenter(Presenter)를 조립합니다.
+    // Inspector 연결이 비어 있으면 자식 오브젝트에서 CurrencyHudView를 찾아 초기 세팅 단계의 실수를 줄입니다.
     private void CreateCurrencyHudPresenter()
     {
-        currencyHud ??= GetComponentInChildren<CurrencyHud>(true);
+        currencyHudView ??= GetComponentInChildren<CurrencyHudView>(true);
 
-        if (currencyHud == null)
+        if (currencyHudView == null)
         {
-            Debug.LogWarning("[LobbyStaticUIRoot] CurrencyHud가 연결되지 않았습니다.");
+            Debug.LogWarning("[LobbyStaticUIRoot] CurrencyHudView가 연결되지 않았습니다.");
             return;
         }
 
         currencyHudPresenter?.Dispose();
-        currencyHudPresenter = new CurrencyHudPresenter(context.CurrencyProgress, currencyHud);
+        currencyHudPresenter = new CurrencyHudPresenter(context.CurrencyProgress, currencyHudView);
+        currencyHudPresenter.Initialize();
     }
 
     // 씬이 파괴될 때 Presenter 구독을 해제합니다.
