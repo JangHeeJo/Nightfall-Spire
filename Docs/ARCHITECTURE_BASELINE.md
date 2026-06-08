@@ -219,6 +219,8 @@ WaveDataRow
 `NightDefenseRuntimeController`는 세션 서비스에서 다음 웨이브 계획을 받아오고, 세션 경과 시간과 웨이브 스폰 실행을 함께 진행합니다.
 `NightDefenseSpawnController`는 `NightDefenseWavePlan`의 `NightDefenseSpawnEvent`를 시간에 맞춰 `NightDefenseSpawnRequest`로 바꿉니다.
 실제 Unity 적 프리팹 생성기는 `INightDefenseSpawnSink`를 구현해 스폰 요청을 받는 방식으로 붙입니다.
+`BattleSceneRoot`는 씬 진입 후 밤 방어 세션이 시작되면 `NightDefenseBattleRuntime`을 초기화합니다.
+현재 `UnityNightDefenseSpawnSink`는 실제 적 생성 전 단계이므로 스폰 요청을 로그로만 받으며, 이후 `EnemyFactory`와 오브젝트 풀로 교체합니다.
 
 ### 3순위: 드래프트 런타임
 

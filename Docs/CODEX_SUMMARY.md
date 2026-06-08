@@ -631,6 +631,39 @@ NightDefenseSessionService
 - `NightDefenseRuntimeControllerTests.cs` 컴파일 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고 1개는 그대로 남아 있다.
 
+## 완료된 작업 18: BattleScene 밤 방어 런타임 연결
+
+커밋 예정: `Connect battle scene night defense runtime`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+- `Assets/_Project/01_Script/Scene/NightDefenseBattleRuntime.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `NightDefenseBattleRuntime`을 추가해 BattleScene에서 매 프레임 밤 방어 런타임 Tick을 실행하게 했다.
+- `UnityNightDefenseSpawnSink`를 추가해 순수 C# 런타임에서 발생한 스폰 요청을 Unity 씬 계층이 받을 수 있게 했다.
+- `BattleSceneRoot`가 밤 방어 세션 시작 성공 후 `NightDefenseBattleRuntime`과 `UnityNightDefenseSpawnSink`를 초기화하게 했다.
+- 씬에 런타임 컴포넌트가 없으면 `BattleSceneRoot`가 같은 GameObject에 자동 추가해 최소 실행 연결을 보장하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+이전 단계까지는 스폰 요청이 순수 C# 테스트 안에서만 발생했다.
+이번 변경으로 BattleScene에 들어왔을 때 실제 Unity 프레임 시간 기준으로 `NightDefenseRuntimeController.Tick()`이 호출되는 연결이 생겼다.
+
+아직 적 프리팹을 생성하지 않는 이유는 EnemyView, EnemyFactory, ObjectPool 자리가 확정되지 않았기 때문이다.
+그래서 지금은 `UnityNightDefenseSpawnSink`가 요청을 로그로 받고, 다음 단계에서 실제 Enemy 생성 계층으로 교체할 수 있게 했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- Unity 씬 파일은 직접 수정하지 않고 런타임 자동 연결 방식으로 처리했다.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고 1개는 그대로 남아 있다.
+
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
 커밋: `Add screen fade foundation`
