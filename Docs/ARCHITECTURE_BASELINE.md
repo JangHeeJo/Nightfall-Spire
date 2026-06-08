@@ -58,6 +58,7 @@ GameRoot
 
 게임 전체 상태와 낮/밤 루프 진행을 관리합니다.
 현재는 다음 밤 방어 세션 ID와 완료한 낮/밤 루프 수를 보유합니다.
+상태 변경은 `GameStateMachine` 규칙을 통과해야만 반영됩니다.
 
 주요 값:
 
@@ -65,6 +66,28 @@ GameRoot
 - `CompletedDayCount`
 - `CurrentState`
 - `PreviousState`
+
+### GameStateMachine
+
+게임 전체 상태 전환 규칙을 검증합니다.
+아래처럼 큰 흐름을 벗어나는 전환은 막습니다.
+
+```text
+None
+→ Boot
+→ DayPreparationLoading
+→ DayPreparation
+→ NightDefenseLoading
+→ NightDefenseReady 또는 NightDefensePlaying
+→ DraftSelection
+→ NightDefensePlaying
+→ NightDefenseResult
+→ DayPreparationLoading
+```
+
+`AppBackground`는 현재 상태를 `PreviousState`에 저장하고, 복귀 시 이전 플레이 흐름 상태로만 돌아가게 합니다.
+UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.ChangeState()`를 통해 이 규칙을 거치도록 합니다.
+`ChangeState()`는 성공 여부를 반환하므로, 흐름 제어 계층은 상태 변경 실패 시 다음 처리를 진행하지 않아야 합니다.
 
 ### DayProgress
 
@@ -204,6 +227,7 @@ GameRoot
 
 `GameFlowController`는 낮/밤 루프의 상태 전환 진입점입니다.
 앞으로 UI 버튼, 전투 컨트롤러, 결과 팝업은 `GameProgress`, `NightDefenseProgress`, `DraftProgress`를 직접 조합해서 상태를 바꾸지 않고 이 클래스를 통해 요청합니다.
+각 요청은 상태 변경 성공 여부를 반환해야 하며, 실패한 상태 전환 뒤에 Progress 값을 계속 바꾸지 않는 것을 원칙으로 합니다.
 
 주요 책임:
 

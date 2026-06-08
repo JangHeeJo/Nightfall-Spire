@@ -5,6 +5,7 @@
 public sealed class GameProgress
 {
     private readonly SaveData saveData; // 실제 저장 데이터 참조
+    private readonly GameStateMachine stateMachine; // 게임 상태 전환 규칙
 
     public ReactiveProperty<GameState> CurrentState { get; } = new(GameState.None); // 현재 게임 상태
     public ReactiveProperty<GameState> PreviousState { get; } = new(GameState.None); // AppBackground 진입 전 상태
@@ -13,9 +14,10 @@ public sealed class GameProgress
     public ReactiveProperty<int> CompletedDayCount { get; } // 완료한 낮/밤 루프 수
 
     // 저장된 전체 진행 값을 런타임에서 구독 가능한 상태로 변환합니다.
-    public GameProgress(SaveData saveData)
+    public GameProgress(SaveData saveData, GameStateMachine stateMachine = null)
     {
         this.saveData = saveData;
+        this.stateMachine = stateMachine ?? new GameStateMachine();
 
         // SaveData에 저장된 진행 값을 런타임 상태로 가져옵니다.
         CurrentDefenseSessionId = new ReactiveProperty<int>(saveData.Progress.CurrentDefenseSessionId);
@@ -30,29 +32,37 @@ public sealed class GameProgress
 
     // 게임 상태를 변경합니다.
     // 외부에서 CurrentState.Value를 직접 바꾸지 않고 이 메서드로 통일합니다.
-    public void ChangeState(GameState nextState)
+    public bool ChangeState(GameState nextState)
     {
         if (CurrentState.Value == nextState)
-            return;
+            return false;
+
+        if (!stateMachine.CanChange(CurrentState.Value, nextState))
+            return false;
 
         if (nextState == GameState.AppBackground)
             PreviousState.Value = CurrentState.Value;
 
         CurrentState.Value = nextState;
+        return true;
     }
 
     // AppBackground에서 돌아올 때 이전 상태로 복귀합니다.
-    public void RestorePreviousState()
+    public bool RestorePreviousState()
     {
         if (CurrentState.Value != GameState.AppBackground)
-            return;
+            return false;
 
         GameState restoreState = PreviousState.Value == GameState.None
             ? GameState.DayPreparation
             : PreviousState.Value;
 
-        ChangeState(restoreState);
-        PreviousState.Value = GameState.None;
+        bool restored = ChangeState(restoreState);
+
+        if (restored)
+            PreviousState.Value = GameState.None;
+
+        return restored;
     }
 
     // 다음에 도전할 밤 방어 세션을 변경합니다.

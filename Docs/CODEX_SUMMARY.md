@@ -419,7 +419,7 @@ CurrencyHudPresenter
 
 ## 완료된 작업 14: 핵심 컨텐츠 서비스 뼈대 라이브 기준화
 
-커밋 예정: `Add core content domain services`
+커밋: `Add core content domain services`
 
 ### 변경된 파일
 
@@ -496,6 +496,44 @@ Table Row
 - Unity EditMode Test Runner는 로컬 Unity 프로세스가 떠 있으면 batchmode가 실패할 수 있으므로, 에디터 종료 후 재실행해야 한다.
 - `DraftService.cs.meta` GUID가 잘못된 길이로 생성되면 Unity가 해당 스크립트를 컴파일 대상에서 빠뜨릴 수 있다.
 - `DraftService.cs.meta` GUID를 정상 32자리 값으로 수정했다.
+
+## 완료된 작업 15: GameStateMachine 전이 규칙 구현
+
+커밋: `Add game state transition rules`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameStateMachine.cs`
+- `Assets/_Project/01_Script/Core/GameFlowController.cs`
+- `Assets/_Project/01_Script/Model/GameProgress.cs`
+- `Assets/_Project/99_Test/EditMode/Core/GameFlowControllerTests.cs`
+- `Assets/_Project/99_Test/EditMode/Core/GameStateMachineTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 비어 있던 `GameStateMachine`에 실제 상태 전환 규칙을 추가했다.
+- `GameProgress.ChangeState()`가 `GameStateMachine.CanChange()`를 통과해야 상태를 바꾸게 했다.
+- `GameProgress.ChangeState()`는 상태 변경 성공 여부를 `bool`로 반환하게 했다.
+- `GameProgress.RestorePreviousState()`도 복구 성공 여부를 `bool`로 반환하게 했다.
+- `GameFlowController`가 상태 전환 실패 여부를 확인하고, 실패한 흐름에서는 Progress 변경을 계속하지 않게 했다.
+- `AppBackground` 진입 시 이전 상태를 저장하고, 복귀 시 유효한 플레이 상태로만 돌아가게 했다.
+- `GameStateMachineTests`를 추가해 부팅 흐름, 잘못된 전환 차단, 드래프트 왕복, 백그라운드 복구를 검증하게 했다.
+- `GameFlowControllerTests`를 추가해 밤 방어 세션 시작, 잘못된 세션 시작 차단, 드래프트 왕복, 방어 결과 확정을 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+기존 `GameStateMachine`은 `current != next`만 확인하는 빈 껍데기였다.
+이 상태에서는 UI 버튼, 전투 시스템, 팝업이 실수로 `DayPreparation -> DraftSelection` 같은 잘못된 상태 전환을 만들어도 막을 수 없다.
+
+상태 전환은 게임 루프의 뼈대이므로, 앞으로 모든 상태 변경은 `GameProgress.ChangeState()`를 통해 `GameStateMachine` 규칙을 거치게 한다.
+또한 컨트롤러는 `ChangeState()`의 반환값을 확인해서, 상태가 바뀌지 않았는데 세션 시작이나 보상 반영만 진행되는 불일치를 막는다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `GameStateMachineTests.cs`, `GameFlowControllerTests.cs` 컴파일 통과.
 
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
