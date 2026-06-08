@@ -8,12 +8,12 @@
 - 답변과 작업 요약은 한국어로 작성한다.
 - 사용자의 말에 무조건 동의하지 않고, 출시 기준에서 더 나은 구조가 있으면 먼저 제안한다.
 - 실제 Unity 프로젝트 파일과 현재 코드 기준으로 판단한다.
-- `GameRoot`, `GameContext`, 순수 Model, 씬별 Root, UI 바인딩 구조를 기본 골격으로 사용한다.
+- `GameRoot`, `GameContext`, 순수 Model, 씬별 Root, MVP UI 구조를 기본 골격으로 사용한다.
 - `GameRoot`는 전역 시작점이지만 Canvas를 들고 다니지 않는다.
 - 실제 UI Canvas와 Layer는 각 씬이 소유한다.
 - 팝업은 씬에 미리 배치하지 않고 Prefab으로 생성하고 닫으면 파괴한다.
 - 비동기 흐름은 `UniTask`를 사용한다.
-- 상태와 UI 구독은 `R3`를 사용한다.
+- 상태 구독은 `R3`를 사용하되, UI에서는 Presenter가 구독을 소유한다.
 - UI 연출은 `DOTween`을 사용한다.
 - Coroutine 사용은 금지한다.
 - 불필요한 `MonoBehaviour` 매니저를 늘리지 않는다.
@@ -38,7 +38,7 @@
   - `Connect scene root components`
   - `Add popup layer registration`
   - `Add popup lifecycle foundation`
-  - `Add currency HUD binder`
+  - `Add currency HUD MVP presenter`
   - `Add screen fade foundation`
   - `Add DOTween package and UI tweens`
 
@@ -317,33 +317,35 @@ BasePopup.RequestCloseAsync()
 DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 추가하지 않았다.
 나중에 DOTween을 설치하면 `PopupTweenManager` 내부만 교체해서 열기/닫기 연출을 붙이면 된다.
 
-## 완료된 작업 8: Currency HUD Binder 샘플 추가
+## 완료된 작업 8: Currency HUD MVP 샘플 추가
 
-커밋: `Add currency HUD binder`
+커밋: `Add currency HUD MVP presenter`
 
 ### 변경된 파일
 
 - `Assets/_Project/01_Script/UI/CurrencyHud.cs`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudBinder.cs`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs`
 - `Assets/_Project/01_Script/Presenter.meta`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudBinder.cs.meta`
+- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs.meta`
 - `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
 - `Assets/_Project/00_Scenes/LobbyScene.unity`
 
 ### 주요 변경
 
-- `CurrencyHud`를 재화 표시만 담당하는 View로 정리했다.
-- `CurrencyHudBinder`를 추가해 `CurrencyProgress`와 `CurrencyHud`를 연결하게 했다.
-- `CurrencyHudBinder`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
-- 값이 바뀌면 Binder가 `CurrencyHud.SetGold()`, `CurrencyHud.SetGem()`을 호출한다.
-- `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudBinder`를 생성한다.
-- `LobbyStaticUIRoot.OnDestroy()`에서 Binder 구독을 해제한다.
+- `CurrencyHud`를 MVP View로 정리했다.
+- `CurrencyHudPresenter`를 추가해 `CurrencyProgress`와 `CurrencyHud`를 연결하게 했다.
+- `CurrencyHudPresenter`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
+- Presenter가 숫자 포맷을 담당하고 `CurrencyHudViewState`를 만들어 View에 전달한다.
+- `CurrencyHud`는 Model, R3, 숫자 포맷을 알지 않고 `Render()`로 전달받은 문자열만 표시한다.
+- `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudPresenter`를 생성한다.
+- `LobbyStaticUIRoot.OnDestroy()`에서 Presenter 구독을 해제한다.
 - `LobbyScene`의 `TopCurrencyHud` 오브젝트에 `CurrencyHud` 컴포넌트를 연결했다.
 
 ### 왜 이렇게 했는지
 
-이 프로젝트는 전통 MVC를 그대로 쓰기보다 Unity식 MV(P) + R3 Binder 구조가 더 적합하다.
+이 프로젝트는 전통 MVC를 그대로 쓰기보다 Unity에서 운용하기 쉬운 MVP 구조가 더 적합하다.
 Unity View는 씬/프리팹과 Inspector 참조를 가져야 하므로, View가 Model을 직접 구독하기 시작하면 UI 코드가 점점 무거워진다.
+따라서 UI는 MVP 기준으로 두고 Presenter가 Model 구독, 표시 문자열 생성, View 갱신을 맡는다.
 
 이번 변경으로 첫 UI 바인딩 기준을 아래처럼 잡았다.
 
@@ -352,10 +354,10 @@ CurrencyProgress
 = Model. 골드/젬 상태와 변경 규칙을 가진다.
 
 CurrencyHud
-= View. 골드/젬 표시 함수만 가진다.
+= View. Presenter가 넘긴 표시 상태만 화면에 반영한다.
 
-CurrencyHudBinder
-= Binder. Model을 구독하고 View 표시 함수를 호출한다.
+CurrencyHudPresenter
+= Presenter. Model을 구독하고 화면 표시 상태를 만들어 View에 전달한다.
 ```
 
 현재 `TopCurrencyHud`에는 아직 실제 골드/젬 텍스트 자식이 없다.
@@ -484,7 +486,7 @@ dotnet build "Nightfall Spire.sln"
 현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
 각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
 각 씬의 Dynamic UI Root는 현재 씬의 `ScreenFade`를 `ScreenFadeManager`에 등록한다.
-`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHud` View가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudBinder`를 통해 `CurrencyProgress`와 연결한다.
+`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHud` View가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudPresenter`를 통해 `CurrencyProgress`와 연결한다.
 
 ## 다음 작업 계획
 
