@@ -53,12 +53,12 @@ public class BasePopup : MonoBehaviour
 
     // 외부 버튼이나 닫기 입력에서 호출하는 닫기 요청 함수입니다.
     // 팝업 제거 정책은 PopupManager가 갖고 있으므로, 팝업 자신은 관리자에게 닫기를 요청합니다.
-    public UniTask RequestCloseAsync()
+    public UniTask RequestCloseAsync(PopupCloseReason closeReason = PopupCloseReason.Dismissed, object payload = null)
     {
         if (owner == null)
             return UniTask.CompletedTask;
 
-        return owner.CloseAsync(this);
+        return owner.CloseAsync(this, closeReason, payload);
     }
 
     // PopupManager가 팝업을 닫을 때 호출합니다.

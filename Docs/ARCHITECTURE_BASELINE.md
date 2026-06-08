@@ -290,3 +290,28 @@ LobbyScreen
 
 현재 로비 씬의 `FightStartView` 이름 오브젝트는 `LobbyScreen`이 밤 방어 시작 버튼으로 찾아 사용합니다.
 이후 실제 로비 UI 디자인이 확정되면 프리팹에 Button, Image, TextMeshPro 라벨을 명시적으로 구성하고 `LobbyScreen`의 화면 단위 계약을 유지합니다.
+
+## Popup Architecture
+
+팝업은 단순 생성/닫기 관리자가 아니라 요청, 정책, 결과가 있는 공통 UI 시스템으로 다룹니다.
+
+```text
+PopupRequest
+→ PopupManager
+→ BasePopup
+→ PopupHandle.ResultTask
+→ PopupResult
+```
+
+`PopupRequest`는 어떤 팝업 프리팹을 어떤 정책으로 열지 명시합니다.
+`PopupOpenPolicy`는 같은 팝업이 이미 열려 있을 때 쌓을지, 재사용할지, 위 팝업만 교체할지, 전체를 교체할지 결정합니다.
+`PopupHandle`은 실제 열린 팝업 인스턴스와 닫힘 결과 대기 태스크를 보관합니다.
+`PopupResult`는 확인, 취소, 배경 닫기, 교체, 씬 전환 같은 닫힘 이유와 선택 결과 Payload를 전달합니다.
+
+기준은 다음과 같습니다.
+
+- 단순 알림, 확인/취소, 에러, 로딩 팝업은 공용 팝업 프리팹과 공용 요청으로 처리합니다.
+- 드래프트 선택, 보상 결과, 장비 선택처럼 게임 상태와 선택 결과가 중요한 팝업은 전용 View/Presenter를 둘 수 있습니다.
+- 버튼 하나나 단순 닫기 동작만을 이유로 팝업마다 Presenter를 만들지 않습니다.
+- 씬 전환으로 레이어가 해제되면 열린 팝업 결과는 `SceneChanged`로 완료합니다.
+- 팝업이 하나라도 딤을 요구하면 DimLayer가 뒤쪽 UI 입력을 막고, 딤이 필요 없는 토스트성 팝업은 PopupRequest에서 `UseDim = false`로 엽니다.

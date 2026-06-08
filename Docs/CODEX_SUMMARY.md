@@ -1017,3 +1017,47 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 - `LobbyScene`에 `EventSystem`과 `GraphicRaycaster`가 있는 것을 확인했다.
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 20: 팝업 요청/정책/결과 아키텍처 추가
+
+커밋 예정: `Add popup request architecture`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/UI/PopupRequest.cs`
+- `Assets/_Project/01_Script/UI/PopupHandle.cs`
+- `Assets/_Project/01_Script/UI/PopupResult.cs`
+- `Assets/_Project/01_Script/UI/PopupOpenPolicy.cs`
+- `Assets/_Project/01_Script/UI/PopupPriority.cs`
+- `Assets/_Project/01_Script/UI/PopupCloseReason.cs`
+- `Assets/_Project/01_Script/UI/PopupManager.cs`
+- `Assets/_Project/01_Script/UI/BasePopup.cs`
+- `Assets/_Project/99_Test/EditMode/UI/PopupRequestTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 팝업 열기 요청을 표현하는 `PopupRequest<TPopup>`를 추가했다.
+- 중복 팝업 처리 기준인 `PopupOpenPolicy`를 추가했다.
+- 팝업 중요도인 `PopupPriority`와 닫힘 이유인 `PopupCloseReason`을 추가했다.
+- 호출자가 팝업 닫힘 결과를 받을 수 있도록 `PopupHandle`과 `PopupResult`를 추가했다.
+- `PopupManager.OpenAsync(prefab)` 기존 호출은 유지하면서, `PopupManager.OpenAsync(request)` 요청 기반 API를 추가했다.
+- `SingleInstance`, `ReplaceTop`, `ReplaceAll`, `Stack` 정책을 `PopupManager`에 반영했다.
+- `BasePopup.RequestCloseAsync()`가 닫힘 이유와 Payload를 전달할 수 있게 바꿨다.
+- 씬 레이어가 해제될 때 열린 팝업 결과를 `SceneChanged`로 완료하게 했다.
+- 딤 레이어는 열린 팝업 개수만 보지 않고 `UseDim`이 필요한 팝업이 있는지 기준으로 갱신하게 했다.
+- 팝업 요청과 결과 타입의 기본 계약을 검증하는 EditMode 테스트를 추가했다.
+
+### 왜 이렇게 바꿨는지
+
+기존 구조는 팝업 프리팹을 열고 닫을 수는 있었지만, 어떤 팝업을 중복으로 막을지, 어떤 팝업을 교체할지, 확인/취소 결과를 어떻게 받을지 기준이 없었다.
+출시용 게임에서는 보상 팝업, 드래프트 선택 팝업, 에러 팝업, 확인창이 동시에 들어올 수 있으므로 팝업 요청과 결과 계약이 먼저 필요하다.
+
+이번 변경으로 팝업은 단순 UI 오브젝트가 아니라 `PopupRequest -> PopupManager -> PopupHandle -> PopupResult` 흐름을 갖는다.
+단순 확인창은 공용 팝업으로 처리하고, 드래프트 선택처럼 게임 상태가 얽힌 팝업만 전용 Presenter를 붙이는 기준으로 간다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
