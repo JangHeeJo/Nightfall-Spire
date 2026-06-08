@@ -535,6 +535,53 @@ Table Row
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - `GameStateMachineTests.cs`, `GameFlowControllerTests.cs` 컴파일 통과.
 
+## 완료된 작업 16: 밤 방어 웨이브 스폰 계획 구조 추가
+
+커밋 예정: `Add night defense wave plan`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameFlowController.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseWavePlan.cs`
+- `Assets/_Project/99_Test/EditMode/Service/GameContentServiceTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/NightDefenseWavePlanTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `NightDefenseWavePlan`을 추가해 한 웨이브의 실제 스폰 시간표를 보관하게 했다.
+- `NightDefenseSpawnEvent`를 추가해 적 ID, 라인 ID, 스폰 시간, 스폰 순서를 한 이벤트로 표현하게 했다.
+- `NightDefenseWavePlanBuilder`를 추가해 `WaveDataRow` 목록을 검증하고 시간순 스폰 계획으로 변환하게 했다.
+- `NightDefenseSessionService.TryAdvanceNextWave()`가 웨이브 Row만 반환하지 않고 `WavePlan`도 함께 반환하게 했다.
+- 유효하지 않은 웨이브 Row가 들어오면 `InvalidWaveData` 실패로 막게 했다.
+- `GameFlowController.BeginLoadedNightDefenseSession()`이 바로 플레이 상태로 가지 않고 `NightDefenseReady`를 거쳐 세션 서비스를 통해 입장 조건을 검증하게 했다.
+- `NightDefenseWavePlanTests`를 추가해 스폰 시간표 정렬과 잘못된 웨이브 Row 차단을 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+전투 MonoBehaviour가 `WaveDataRow`를 직접 읽어 스폰 시간을 계산하기 시작하면, 테이블 해석 규칙이 씬 코드에 흩어진다.
+출시 기준에서는 웨이브 데이터 검증, 스폰 시간 계산, 정렬, 마지막 스폰 시간 계산을 순수 C# 계층에서 끝내야 한다.
+
+그래서 흐름을 아래처럼 고정했다.
+
+```text
+WaveDataRow
+→ NightDefenseWavePlanBuilder
+→ NightDefenseWavePlan
+→ 전투 씬 스폰 컨트롤러
+```
+
+전투 씬은 이제 어떤 테이블 컬럼을 어떻게 계산할지 몰라도 된다.
+나중에 실제 적 프리팹 생성기는 `NightDefenseSpawnEvent`만 보고 시간에 맞춰 생성하면 된다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `NightDefenseWavePlanTests.cs` 컴파일 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고 1개는 그대로 남아 있다.
+
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
 커밋: `Add screen fade foundation`

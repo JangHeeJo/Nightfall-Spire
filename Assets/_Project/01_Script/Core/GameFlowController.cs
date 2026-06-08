@@ -51,16 +51,27 @@ public sealed class GameFlowController
     // 씬 로드와 런타임 세션 시작을 분리해 UI Root가 준비되는 타이밍 문제를 줄입니다.
     public bool BeginLoadedNightDefenseSession()
     {
-        int defenseSessionId = context.GameProgress.CurrentDefenseSessionId.Value;
+        bool ready = context.GameProgress.ChangeState(GameState.NightDefenseReady);
 
-        bool changed = context.GameProgress.ChangeState(GameState.NightDefensePlaying);
-
-        if (!changed)
+        if (!ready)
             return false;
 
+        bool sessionStarted = TryStartNightDefenseSession();
+
+        if (!sessionStarted)
+        {
+            context.GameProgress.ChangeState(GameState.DayPreparationLoading);
+            return false;
+        }
+
+        bool playing = context.GameProgress.ChangeState(GameState.NightDefensePlaying);
+
+        if (playing)
+            return true;
+
+        context.NightDefenseProgress.EndDefenseSession(DefenseOutcome.Abandoned);
         context.DraftProgress.ResetForNewDefenseSession();
-        context.NightDefenseProgress.BeginDefenseSession(defenseSessionId);
-        return true;
+        return false;
     }
 
     // 전투 중 로그라이트 카드 선택지를 엽니다.
@@ -136,5 +147,21 @@ public sealed class GameFlowController
 
         await sceneLoadManager.LoadLobbySceneAsync();
         return EnterDayPreparation();
+    }
+
+    // 테이블 서비스가 있으면 세션 입장 조건을 검증하고, 없으면 테스트와 초기 부트스트랩용 최소 시작만 수행합니다.
+    private bool TryStartNightDefenseSession()
+    {
+        if (context.NightDefenseSessionService != null)
+        {
+            NightDefenseStartResult startResult = context.NightDefenseSessionService.TryStartCurrentSession();
+            return startResult.IsSuccess;
+        }
+
+        int defenseSessionId = context.GameProgress.CurrentDefenseSessionId.Value;
+
+        context.DraftProgress.ResetForNewDefenseSession();
+        context.NightDefenseProgress.BeginDefenseSession(defenseSessionId);
+        return context.NightDefenseProgress.IsDefenseActive.Value;
     }
 }

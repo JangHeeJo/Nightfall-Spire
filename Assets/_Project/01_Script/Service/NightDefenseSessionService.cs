@@ -6,12 +6,14 @@ public sealed class NightDefenseSessionService
 {
     private readonly INightDefenseDataSource dataSource; // 밤 방어 테이블 조회 계약
     private readonly GameContext context; // 현재 진행 모델 묶음
+    private readonly NightDefenseWavePlanBuilder wavePlanBuilder; // 웨이브 Row를 스폰 시간표로 바꾸는 빌더
 
     // 세션 규칙에 필요한 데이터와 진행 모델을 받습니다.
-    public NightDefenseSessionService(INightDefenseDataSource dataSource, GameContext context)
+    public NightDefenseSessionService(INightDefenseDataSource dataSource, GameContext context, NightDefenseWavePlanBuilder wavePlanBuilder = null)
     {
         this.dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
         this.context = context ?? throw new ArgumentNullException(nameof(context));
+        this.wavePlanBuilder = wavePlanBuilder ?? new NightDefenseWavePlanBuilder();
     }
 
     // 현재 선택된 밤 방어 세션을 시작할 수 있는지 검증하고 시작합니다.
@@ -62,9 +64,12 @@ public sealed class NightDefenseSessionService
         bool draftAfterWave = HasDraftAfterWave(waveRows);
         bool isLastWave = nextWaveIndex >= waveGroupRow.MaxWaveIndex;
 
+        if (!wavePlanBuilder.TryBuild(nextWaveIndex, waveRows, isBossWave, draftAfterWave, isLastWave, out NightDefenseWavePlan wavePlan))
+            return NightDefenseWaveResult.Fail(NightDefenseFailureReason.InvalidWaveData);
+
         context.NightDefenseProgress.AdvanceWave(isBossWave);
 
-        return NightDefenseWaveResult.Success(nextWaveIndex, waveRows, isBossWave, draftAfterWave, isLastWave);
+        return NightDefenseWaveResult.Success(nextWaveIndex, waveRows, wavePlan, isBossWave, draftAfterWave, isLastWave);
     }
 
     // 현재 웨이브 Row 중 드래프트 발생 플래그가 있는지 확인합니다.
@@ -88,7 +93,8 @@ public enum NightDefenseFailureReason
     WaveGroupNotFound,
     SessionNotActive,
     WaveOutOfRange,
-    WaveRowsNotFound
+    WaveRowsNotFound,
+    InvalidWaveData
 }
 
 // 밤 방어 세션 시작 결과입니다.
@@ -125,28 +131,30 @@ public readonly struct NightDefenseWaveResult
     public NightDefenseFailureReason FailureReason { get; } // 실패 이유
     public int WaveIndex { get; } // 진행된 웨이브 번호
     public IReadOnlyList<WaveDataRow> WaveRows { get; } // 해당 웨이브 스폰 Row
+    public NightDefenseWavePlan WavePlan { get; } // 스폰러가 사용할 시간표
     public bool IsBossWave { get; } // 보스 웨이브 여부
     public bool DraftAfterWave { get; } // 웨이브 종료 후 드래프트 여부
     public bool IsLastWave { get; } // 마지막 웨이브 여부
 
-    private NightDefenseWaveResult(bool isSuccess, NightDefenseFailureReason failureReason, int waveIndex, IReadOnlyList<WaveDataRow> waveRows, bool isBossWave, bool draftAfterWave, bool isLastWave)
+    private NightDefenseWaveResult(bool isSuccess, NightDefenseFailureReason failureReason, int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool draftAfterWave, bool isLastWave)
     {
         IsSuccess = isSuccess;
         FailureReason = failureReason;
         WaveIndex = waveIndex;
         WaveRows = waveRows;
+        WavePlan = wavePlan;
         IsBossWave = isBossWave;
         DraftAfterWave = draftAfterWave;
         IsLastWave = isLastWave;
     }
 
-    public static NightDefenseWaveResult Success(int waveIndex, IReadOnlyList<WaveDataRow> waveRows, bool isBossWave, bool draftAfterWave, bool isLastWave)
+    public static NightDefenseWaveResult Success(int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool draftAfterWave, bool isLastWave)
     {
-        return new NightDefenseWaveResult(true, NightDefenseFailureReason.None, waveIndex, waveRows, isBossWave, draftAfterWave, isLastWave);
+        return new NightDefenseWaveResult(true, NightDefenseFailureReason.None, waveIndex, waveRows, wavePlan, isBossWave, draftAfterWave, isLastWave);
     }
 
     public static NightDefenseWaveResult Fail(NightDefenseFailureReason failureReason)
     {
-        return new NightDefenseWaveResult(false, failureReason, 0, Array.Empty<WaveDataRow>(), false, false, false);
+        return new NightDefenseWaveResult(false, failureReason, 0, Array.Empty<WaveDataRow>(), NightDefenseWavePlan.Empty(), false, false, false);
     }
 }

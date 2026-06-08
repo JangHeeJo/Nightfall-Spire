@@ -21,6 +21,10 @@ public sealed class GameContentServiceTests
         Assert.That(context.NightDefenseProgress.CurrentDefenseSessionId.Value, Is.EqualTo(101));
         Assert.That(waveResult.IsSuccess, Is.True);
         Assert.That(waveResult.WaveIndex, Is.EqualTo(1));
+        Assert.That(waveResult.WavePlan.TotalSpawnCount, Is.EqualTo(12));
+        Assert.That(waveResult.WavePlan.SpawnEvents[0].EnemyId, Is.EqualTo(1101));
+        Assert.That(waveResult.WavePlan.SpawnEvents[0].SpawnTimeSec, Is.EqualTo(0f));
+        Assert.That(waveResult.WavePlan.LastSpawnTimeSec, Is.EqualTo(6.6f).Within(0.001f));
         Assert.That(context.NightDefenseProgress.CurrentWaveIndex.Value, Is.EqualTo(1));
     }
 

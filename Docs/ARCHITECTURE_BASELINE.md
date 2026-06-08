@@ -185,7 +185,7 @@ UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.Chan
 테이블을 읽는 것만으로는 게임 규칙이 고정되지 않습니다.
 따라서 Progress 모델을 직접 조작하지 않고, 도메인 서비스가 테이블 조건을 검증한 뒤 Progress에 결과를 반영하는 구조를 기본으로 둡니다.
 
-- `NightDefenseSessionService`: 방어 세션 입장 조건, 웨이브 진행, 보스/드래프트 웨이브 판단을 담당합니다.
+- `NightDefenseSessionService`: 방어 세션 입장 조건, 웨이브 진행, 보스/드래프트 웨이브 판단, 스폰 계획 생성을 담당합니다.
 - `DraftService`: 드래프트 풀의 포함/제외 태그, PickCount, 이미 선택한 고유 카드 조건을 기준으로 후보를 만듭니다.
 - `RewardService`: 보상 그룹을 계산하고 현재 RewardProgress가 표현할 수 있는 재화 보상을 수령 대기 상태로 반영합니다.
 - `DayGrowthService`: 성채 층 해금, 전투 슬롯 업그레이드, 비용 지불, 해금 기능 반영을 담당합니다.
@@ -196,10 +196,24 @@ UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.Chan
 ### 2순위: 밤 방어 런타임
 
 - 웨이브 진행기
-- 적 스폰 컨트롤러
+- `NightDefenseWavePlan` 기반 적 스폰 컨트롤러
 - 방어 세션 타이머
 - 보스 웨이브 판단
 - 방어 성공/실패 처리
+
+`WaveDataRow`는 테이블 원본이며, 실제 스폰러가 직접 해석하지 않습니다.
+`NightDefenseSessionService.TryAdvanceNextWave()`가 웨이브 Row를 검증하고 `NightDefenseWavePlan`으로 변환합니다.
+전투 씬의 스폰 컨트롤러는 `NightDefenseSpawnEvent` 목록만 보고 적 생성 시간, 라인, 적 ID를 처리해야 합니다.
+
+```text
+WaveDataRow
+→ NightDefenseWavePlanBuilder
+→ NightDefenseWavePlan
+→ NightDefenseSpawnController
+```
+
+이 구조가 필요한 이유는 웨이브 테이블 해석 규칙을 전투 MonoBehaviour 안에 흩뿌리지 않기 위해서입니다.
+테이블 값 검증, 시간표 정렬, 마지막 스폰 시간 계산은 순수 C#에서 끝내고, Unity 씬은 프리팹 생성과 위치 배치만 맡습니다.
 
 ### 3순위: 드래프트 런타임
 
@@ -242,3 +256,6 @@ UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.Chan
 이 구조가 필요한 이유는 게임의 핵심 루프가 단순 전투 시작/종료가 아니기 때문입니다.
 밤 방어전은 웨이브, 드래프트, 보상, 다음 낮 성장으로 이어지는 흐름을 반드시 함께 관리해야 합니다.
 따라서 개별 UI나 전투 시스템이 Progress를 직접 건드리기 시작하면 출시 단계에서 상태 꼬임이 생길 가능성이 큽니다.
+
+밤 방어 씬 로드가 끝나면 바로 `NightDefensePlaying`으로 뛰지 않고 `NightDefenseReady`를 거칩니다.
+이 단계에서 `NightDefenseSessionService`가 현재 세션 입장 조건과 테이블 연결을 검증하고, 성공한 경우에만 실제 플레이 상태로 진입합니다.
