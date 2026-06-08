@@ -582,6 +582,55 @@ WaveDataRow
 - `NightDefenseWavePlanTests.cs` 컴파일 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고 1개는 그대로 남아 있다.
 
+## 완료된 작업 17: 밤 방어 런타임 스폰 실행 계층 추가
+
+커밋 예정: `Add night defense runtime controller`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/INightDefenseSpawnSink.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSpawnRequest.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSpawnTickResult.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSpawnController.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseRuntimeStartResult.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseRuntimeTickResult.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseRuntimeController.cs`
+- `Assets/_Project/99_Test/EditMode/Service/NightDefenseRuntimeControllerTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `NightDefenseSpawnRequest`를 추가해 전투 씬 스폰러에 넘길 생성 요청 값을 만들었다.
+- `INightDefenseSpawnSink`를 추가해 실제 프리팹 생성 계층과 순수 런타임 계층을 분리했다.
+- `NightDefenseSpawnController`를 추가해 `NightDefenseWavePlan`의 스폰 이벤트를 시간 흐름에 맞춰 실행하게 했다.
+- `NightDefenseRuntimeController`를 추가해 다음 웨이브 시작, 세션 경과 시간 갱신, 스폰 Tick 실행을 묶었다.
+- `NightDefenseRuntimeControllerTests`를 추가해 시간이 흐를 때 스폰 요청이 순서대로 발생하고 `NightDefenseProgress.ElapsedSeconds`가 갱신되는지 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+공개 설명 기준 Nightfall Spire 계열의 중심은 낮 성장과 밤 방어, 전투 중 로그라이트 드래프트입니다.
+따라서 다음 단계가 영웅 공격이나 투사체보다 먼저 웨이브 스폰 런타임이어야 합니다.
+
+이번 구조는 아래 흐름을 고정합니다.
+
+```text
+NightDefenseSessionService
+→ NightDefenseWavePlan
+→ NightDefenseRuntimeController
+→ NightDefenseSpawnController
+→ INightDefenseSpawnSink
+→ 나중에 Unity Enemy Prefab 생성
+```
+
+이렇게 두면 전투 씬의 MonoBehaviour는 시간표 계산을 하지 않고, 순수 C# 런타임에서 발생한 스폰 요청만 처리합니다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `NightDefenseRuntimeControllerTests.cs` 컴파일 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고 1개는 그대로 남아 있다.
+
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
 커밋: `Add screen fade foundation`

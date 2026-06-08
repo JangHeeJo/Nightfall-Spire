@@ -209,11 +209,16 @@ UI, 서비스, 씬 루트가 직접 상태를 바꾸더라도 `GameProgress.Chan
 WaveDataRow
 → NightDefenseWavePlanBuilder
 → NightDefenseWavePlan
+→ NightDefenseRuntimeController
 → NightDefenseSpawnController
 ```
 
 이 구조가 필요한 이유는 웨이브 테이블 해석 규칙을 전투 MonoBehaviour 안에 흩뿌리지 않기 위해서입니다.
 테이블 값 검증, 시간표 정렬, 마지막 스폰 시간 계산은 순수 C#에서 끝내고, Unity 씬은 프리팹 생성과 위치 배치만 맡습니다.
+
+`NightDefenseRuntimeController`는 세션 서비스에서 다음 웨이브 계획을 받아오고, 세션 경과 시간과 웨이브 스폰 실행을 함께 진행합니다.
+`NightDefenseSpawnController`는 `NightDefenseWavePlan`의 `NightDefenseSpawnEvent`를 시간에 맞춰 `NightDefenseSpawnRequest`로 바꿉니다.
+실제 Unity 적 프리팹 생성기는 `INightDefenseSpawnSink`를 구현해 스폰 요청을 받는 방식으로 붙입니다.
 
 ### 3순위: 드래프트 런타임
 
