@@ -48,8 +48,9 @@ public sealed class GameRoot : MonoBehaviour
         // 저장 데이터를 먼저 불러옵니다.
         SaveData saveData = await SaveManager.LoadAsync();
 
-        // 저장 데이터를 기반으로 현재 게임 진행 Context와 루프 지휘자를 생성합니다.
-        Context = new GameContext(saveData);
+        // 저장 데이터와 테이블 조회 어댑터를 기반으로 현재 게임 진행 Context와 도메인 서비스를 생성합니다.
+        GameContentDataSource contentDataSource = new GameContentDataSource(DataTableManager);
+        Context = new GameContext(saveData, contentDataSource);
         GameFlowController = new GameFlowController(Context, SceneLoadManager);
         PopupManager.SetContext(Context);
 

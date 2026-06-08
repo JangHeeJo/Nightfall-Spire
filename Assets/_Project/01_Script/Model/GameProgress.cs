@@ -9,6 +9,7 @@ public sealed class GameProgress
     public ReactiveProperty<GameState> CurrentState { get; } = new(GameState.None); // 현재 게임 상태
     public ReactiveProperty<GameState> PreviousState { get; } = new(GameState.None); // AppBackground 진입 전 상태
     public ReactiveProperty<int> CurrentDefenseSessionId { get; } // 다음에 도전할 밤 방어 세션 ID
+    public ReactiveProperty<int> HighestClearedDefenseSessionId { get; } // 가장 멀리 클리어한 밤 방어 세션 ID
     public ReactiveProperty<int> CompletedDayCount { get; } // 완료한 낮/밤 루프 수
 
     // 저장된 전체 진행 값을 런타임에서 구독 가능한 상태로 변환합니다.
@@ -18,10 +19,12 @@ public sealed class GameProgress
 
         // SaveData에 저장된 진행 값을 런타임 상태로 가져옵니다.
         CurrentDefenseSessionId = new ReactiveProperty<int>(saveData.Progress.CurrentDefenseSessionId);
+        HighestClearedDefenseSessionId = new ReactiveProperty<int>(saveData.Progress.HighestClearedDefenseSessionId);
         CompletedDayCount = new ReactiveProperty<int>(saveData.Progress.CompletedDayCount);
 
         // 진행 값이 바뀌면 SaveData에도 반영합니다.
         CurrentDefenseSessionId.Subscribe(sessionId => this.saveData.Progress.CurrentDefenseSessionId = sessionId);
+        HighestClearedDefenseSessionId.Subscribe(sessionId => this.saveData.Progress.HighestClearedDefenseSessionId = sessionId);
         CompletedDayCount.Subscribe(dayCount => this.saveData.Progress.CompletedDayCount = dayCount);
     }
 
@@ -73,8 +76,8 @@ public sealed class GameProgress
         if (clearedSessionId <= 0)
             return;
 
-        if (saveData.Progress.HighestClearedDefenseSessionId < clearedSessionId)
-            saveData.Progress.HighestClearedDefenseSessionId = clearedSessionId;
+        if (HighestClearedDefenseSessionId.Value < clearedSessionId)
+            HighestClearedDefenseSessionId.Value = clearedSessionId;
 
         if (CurrentDefenseSessionId.Value <= clearedSessionId)
             CurrentDefenseSessionId.Value = clearedSessionId + 1;

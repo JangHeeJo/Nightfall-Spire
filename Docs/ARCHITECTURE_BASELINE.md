@@ -48,6 +48,10 @@ GameRoot
   → DraftProgress
   → RewardProgress
   → PopupProgress
+  → NightDefenseSessionService
+  → DraftService
+  → RewardService
+  → DayGrowthService
 ```
 
 ### GameProgress
@@ -152,6 +156,19 @@ GameRoot
 
 이 구조가 필요한 이유는 밤 방어전, 드래프트, 낮 성장 시스템이 서로 같은 테이블 기준을 봐야 하기 때문입니다.
 전투 시스템이나 UI가 TSV를 직접 파싱하면 같은 데이터가 여러 방식으로 해석될 수 있으므로, 테이블 파싱은 `DataTableManager` 한 곳에 묶습니다.
+
+### 1-1순위: 도메인 서비스
+
+테이블을 읽는 것만으로는 게임 규칙이 고정되지 않습니다.
+따라서 Progress 모델을 직접 조작하지 않고, 도메인 서비스가 테이블 조건을 검증한 뒤 Progress에 결과를 반영하는 구조를 기본으로 둡니다.
+
+- `NightDefenseSessionService`: 방어 세션 입장 조건, 웨이브 진행, 보스/드래프트 웨이브 판단을 담당합니다.
+- `DraftService`: 드래프트 풀의 포함/제외 태그, PickCount, 이미 선택한 고유 카드 조건을 기준으로 후보를 만듭니다.
+- `RewardService`: 보상 그룹을 계산하고 현재 RewardProgress가 표현할 수 있는 재화 보상을 수령 대기 상태로 반영합니다.
+- `DayGrowthService`: 성채 층 해금, 전투 슬롯 업그레이드, 비용 지불, 해금 기능 반영을 담당합니다.
+
+서비스는 `DataTableManager`에 직접 강하게 묶이지 않고 조회 인터페이스를 통해 데이터를 받습니다.
+실제 런타임에서는 `GameContentDataSource`가 `DataTableManager`를 감싸고, 테스트에서는 fake data source가 같은 계약을 구현합니다.
 
 ### 2순위: 밤 방어 런타임
 

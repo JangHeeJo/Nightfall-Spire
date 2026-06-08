@@ -417,6 +417,84 @@ CurrencyHudPresenter
 - Unity EditMode Test Runner는 현재 로컬에 Unity 프로세스가 여러 개 떠 있어 batchmode 실행이 종료 코드 127로 실패했다.
 - Unity 에디터를 닫은 뒤 EditMode 테스트를 다시 실행해야 한다.
 
+## 완료된 작업 14: 핵심 컨텐츠 서비스 뼈대 라이브 기준화
+
+커밋 예정: `Add core content domain services`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/01_Script/Service/DraftService.cs`
+- `Assets/_Project/01_Script/Service/RewardService.cs`
+- `Assets/_Project/01_Script/Service/DayGrowthService.cs`
+- `Assets/_Project/01_Script/Core/GameContext.cs`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/Model/GameProgress.cs`
+- `Assets/_Project/99_Test/EditMode/Service/GameContentServiceTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 핵심 컨텐츠 규칙을 담당할 `Service` 폴더를 추가했다.
+- `GameContentDataSource`를 추가해 `DataTableManager`를 도메인 서비스용 조회 계약으로 감쌌다.
+- `NightDefenseSessionService`를 추가해 방어 세션 입장 조건, 웨이브 진행, 보스 웨이브, 드래프트 웨이브 판단을 담당하게 했다.
+- `DraftService`를 추가해 드래프트 풀의 포함/제외 태그와 PickCount 기준으로 카드 후보를 만들게 했다.
+- `RewardService`를 추가해 보상 그룹을 보상 목록과 수령 대기 재화로 변환하게 했다.
+- `DayGrowthService`를 추가해 성채 층 해금, 비용 지불, 전투 슬롯 업그레이드를 담당하게 했다.
+- `GameProgress`에 `HighestClearedDefenseSessionId`를 ReactiveProperty로 노출해 낮 성장 조건이 저장 데이터와 동기화되게 했다.
+- `GameContext`가 런타임에서 도메인 서비스를 보유하게 했다.
+- `GameRoot`가 `DataTableManager` 로드 후 `GameContentDataSource`를 만들어 `GameContext`에 전달하게 했다.
+- `GameContentServiceTests`를 추가해 밤 방어, 드래프트, 보상, 낮 성장 서비스의 핵심 계약을 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+기존 구조는 Progress 모델과 테이블 로딩은 있었지만, 실제 게임 규칙을 책임지는 계층이 없었다.
+이 상태에서 UI나 전투 컨트롤러가 Progress를 직접 조작하기 시작하면 출시 단계에서 상태가 꼬일 가능성이 높다.
+
+그래서 컨텐츠 규칙은 아래처럼 서비스로 고정한다.
+
+```text
+Table Row
+→ Domain Service
+→ Progress Model
+→ Presenter/UI 또는 전투 런타임
+```
+
+### 현재 각 서비스 책임
+
+`NightDefenseSessionService`
+
+- 현재 방어 세션 ID가 테이블에 있는지 확인한다.
+- 필요한 성채 층 조건을 확인한다.
+- 웨이브 그룹과 웨이브 Row를 확인한다.
+- 검증 성공 시 `NightDefenseProgress`를 시작하고 웨이브를 진행한다.
+
+`DraftService`
+
+- 드래프트 풀의 Include/Exclude 태그를 기준으로 후보 카드를 필터링한다.
+- `PickCount`만큼 후보를 안정적인 순서로 선택한다.
+- 후보 생성 성공 시 `DraftProgress.OpenDraft()`를 호출한다.
+
+`RewardService`
+
+- 보상 그룹 Row를 읽어 지급 가능한 보상 목록을 만든다.
+- 현재 `RewardProgress`가 표현할 수 있는 골드/젬 수령 대기 보상을 계산한다.
+
+`DayGrowthService`
+
+- 다음 성채 층 해금 조건과 비용을 확인한다.
+- 골드/젬 비용을 차감한다.
+- 전투 슬롯 업그레이드 조건과 비용을 확인한다.
+- 성채 층 해금 기능 중 전투 슬롯/드래프트 풀 해금을 Progress에 반영한다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `GameContentServiceTests.cs` 컴파일 통과.
+- Unity EditMode Test Runner는 로컬 Unity 프로세스가 떠 있으면 batchmode가 실패할 수 있으므로, 에디터 종료 후 재실행해야 한다.
+
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
 커밋: `Add screen fade foundation`
