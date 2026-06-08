@@ -976,3 +976,40 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 19: 로비 전투 시작 버튼 연결
+
+커밋 예정: `Connect lobby fight start flow`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Presenter/IFightStartView.cs`
+- `Assets/_Project/01_Script/Presenter/FightStartPresenter.cs`
+- `Assets/_Project/01_Script/UI/FightStartView.cs`
+- `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
+- `Assets/_Project/99_Test/EditMode/Presenter/FightStartPresenterTests.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 로비의 `FightStartView` 오브젝트를 실제 클릭 가능한 View로 연결했다.
+- `FightStartPresenter`를 추가해 View 클릭 이벤트가 `GameFlowController.LoadNightDefenseAsync()`로 이어지게 했다.
+- `LobbyStaticUIRoot`가 재화 HUD Presenter뿐 아니라 전투 시작 Presenter도 조립하게 바꿨다.
+- 기존 씬의 `FightStartView`가 `LobbyStaticUIRoot`의 자식이 아니라 같은 Canvas 아래 형제일 수 있어서 부모 Canvas 기준으로 검색하게 했다.
+- 씬에 Button/Image 컴포넌트가 아직 없어도 `FightStartView`가 런타임에 최소 클릭 가능한 Button/Image를 보장하게 했다.
+- `FightStartPresenterTests`를 추가해 초기화, 클릭 시 로드 요청, 로드 거부 시 재활성화, Dispose 후 클릭 차단을 검증했다.
+
+### 왜 이렇게 바꿨는지
+
+로비에서 전투 씬으로 넘어가지 않았던 이유는 `FightStartView`라는 오브젝트는 있었지만 실제 Button, View 스크립트, Presenter, `GameFlowController.LoadNightDefenseAsync()` 호출 연결이 없었기 때문이다.
+
+이번 변경은 Unity식 임시 버튼 호출이 아니라 MVP 기준으로 분리했다.
+`FightStartView`는 클릭 입력만 내보내고, `FightStartPresenter`가 입력 가능 상태와 씬 로드 요청을 관리하며, 실제 상태 전환은 `GameFlowController`가 계속 담당한다.
+
+### 검증
+
+- `ProjectSettings/EditorBuildSettings.asset`에서 `BootScene`, `LobbyScene`, `BattleScene`이 모두 활성화되어 있는 것을 확인했다.
+- `LobbyScene`에 `EventSystem`과 `GraphicRaycaster`가 있는 것을 확인했다.
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
