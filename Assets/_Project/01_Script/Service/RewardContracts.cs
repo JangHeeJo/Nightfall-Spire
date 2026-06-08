@@ -4,9 +4,9 @@ using System.Collections.Generic;
 // 보상 서비스에서 사용하는 실패 이유와 결과 계약입니다.
 public enum RewardFailureReason
 {
-    None,
-    RewardGroupNotFound,
-    NoGrantableRewards
+    None, // 실패 없음
+    RewardGroupNotFound, // 보상 그룹 데이터를 찾지 못함
+    NoGrantableRewards // 조건을 만족해 지급할 보상이 없음
 }
 
 // 보상 한 줄입니다.
@@ -34,6 +34,7 @@ public readonly struct RewardGrantResult
     public long Gold { get; } // RewardProgress에 반영 가능한 골드 합계
     public long Gem { get; } // RewardProgress에 반영 가능한 젬 합계
 
+    // 성공 여부, 실패 이유, 보상 목록, 재화 합계를 보관합니다.
     private RewardGrantResult(bool isSuccess, RewardFailureReason failureReason, IReadOnlyList<RewardLine> rewardLines, long gold, long gem)
     {
         IsSuccess = isSuccess;

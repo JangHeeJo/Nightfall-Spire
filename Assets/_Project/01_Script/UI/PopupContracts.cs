@@ -16,20 +16,20 @@ public enum PopupOpenPolicy
 // 여러 팝업 요청이 동시에 들어올 때 중요도를 표현합니다.
 public enum PopupPriority
 {
-    Normal,
-    Important,
-    Critical
+    Normal, // 일반 팝업 요청
+    Important, // 보상이나 주요 확인처럼 우선순위가 높은 요청
+    Critical // 에러, 결제, 데이터 손상처럼 반드시 먼저 처리해야 하는 요청
 }
 
 // 팝업이 닫힌 이유를 결과 처리 쪽에 전달합니다.
 public enum PopupCloseReason
 {
-    None,
-    Confirmed,
-    Cancelled,
-    Dismissed,
-    Replaced,
-    SceneChanged
+    None, // 아직 닫힘 이유가 정해지지 않은 상태
+    Confirmed, // 사용자가 확인 또는 선택을 확정함
+    Cancelled, // 사용자가 취소를 선택함
+    Dismissed, // 배경 닫기나 닫기 버튼으로 단순 종료함
+    Replaced, // 다른 팝업 요청에 의해 교체됨
+    SceneChanged // 씬 전환으로 팝업 레이어가 해제됨
 }
 
 // 팝업이 닫힌 뒤 호출자에게 돌려주는 결과 값입니다.

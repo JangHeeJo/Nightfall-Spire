@@ -13,14 +13,14 @@ public enum DefenseOutcome
 
 public enum NightDefenseFailureReason
 {
-    None,
-    SessionNotFound,
-    RequiredFloorLocked,
-    WaveGroupNotFound,
-    SessionNotActive,
-    WaveOutOfRange,
-    WaveRowsNotFound,
-    InvalidWaveData
+    None, // 실패 없음
+    SessionNotFound, // 방어 세션 데이터를 찾지 못함
+    RequiredFloorLocked, // 세션 입장에 필요한 성채 층이 잠겨 있음
+    WaveGroupNotFound, // 세션에 연결된 웨이브 그룹을 찾지 못함
+    SessionNotActive, // 밤 방어 세션이 진행 중이 아님
+    WaveOutOfRange, // 다음 웨이브 번호가 웨이브 그룹 범위를 벗어남
+    WaveRowsNotFound, // 해당 웨이브의 스폰 Row가 없음
+    InvalidWaveData // 웨이브 Row를 유효한 스폰 계획으로 만들 수 없음
 }
 
 // 밤 방어 세션 시작 결과입니다.
@@ -31,6 +31,7 @@ public readonly struct NightDefenseStartResult
     public DefenseSessionDataRow SessionRow { get; } // 시작한 세션 Row
     public WaveGroupDataRow WaveGroupRow { get; } // 세션의 웨이브 그룹 Row
 
+    // 성공 여부, 실패 이유, 세션 Row, 웨이브 그룹 Row를 보관합니다.
     private NightDefenseStartResult(bool isSuccess, NightDefenseFailureReason failureReason, DefenseSessionDataRow sessionRow, WaveGroupDataRow waveGroupRow)
     {
         IsSuccess = isSuccess;
@@ -64,6 +65,7 @@ public readonly struct NightDefenseWaveResult
     public bool DraftAfterWave { get; } // 웨이브 종료 후 드래프트 여부
     public bool IsLastWave { get; } // 마지막 웨이브 여부
 
+    // 웨이브 진행 결과에 필요한 모든 상태 값을 보관합니다.
     private NightDefenseWaveResult(bool isSuccess, NightDefenseFailureReason failureReason, int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool draftAfterWave, bool isLastWave)
     {
         IsSuccess = isSuccess;
@@ -96,6 +98,7 @@ public readonly struct NightDefenseRuntimeStartResult
     public NightDefenseFailureReason FailureReason { get; } // 세션 서비스 실패 이유
     public NightDefenseWavePlan WavePlan { get; } // 시작된 웨이브 스폰 계획
 
+    // 런타임 웨이브 시작 성공 여부와 시작된 웨이브 계획을 보관합니다.
     private NightDefenseRuntimeStartResult(bool isSuccess, NightDefenseFailureReason failureReason, NightDefenseWavePlan wavePlan)
     {
         IsSuccess = isSuccess;
