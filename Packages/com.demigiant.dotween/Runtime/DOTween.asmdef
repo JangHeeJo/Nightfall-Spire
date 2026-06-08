@@ -1,5 +1,5 @@
 {
-    "name": "DOTween",
+    "name": "DOTween.Modules",
     "rootNamespace": "",
     "references": [
         "UnityEngine.UI"
