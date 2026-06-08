@@ -82,37 +82,3 @@ public sealed class DayGrowthService
         return false;
     }
 }
-
-public enum DayGrowthFailureReason
-{
-    None,
-    FloorNotFound,
-    RequiredSessionNotCleared,
-    NotEnoughCurrency,
-    SlotNotFound,
-    SlotLocked,
-    UpgradeNotFound
-}
-
-// 낮 성장 명령 결과입니다.
-public readonly struct DayGrowthResult
-{
-    public bool IsSuccess { get; } // 성장 명령 성공 여부
-    public DayGrowthFailureReason FailureReason { get; } // 실패 이유
-
-    private DayGrowthResult(bool isSuccess, DayGrowthFailureReason failureReason)
-    {
-        IsSuccess = isSuccess;
-        FailureReason = failureReason;
-    }
-
-    public static DayGrowthResult Success()
-    {
-        return new DayGrowthResult(true, DayGrowthFailureReason.None);
-    }
-
-    public static DayGrowthResult Fail(DayGrowthFailureReason failureReason)
-    {
-        return new DayGrowthResult(false, failureReason);
-    }
-}

@@ -317,3 +317,18 @@ PopupRequest
 - 버튼 하나나 단순 닫기 동작만을 이유로 팝업마다 Presenter를 만들지 않습니다.
 - 씬 전환으로 레이어가 해제되면 열린 팝업 결과는 `SceneChanged`로 완료합니다.
 - 팝업이 하나라도 딤을 요구하면 DimLayer가 뒤쪽 UI 입력을 막고, 딤이 필요 없는 토스트성 팝업은 PopupRequest에서 `UseDim = false`로 엽니다.
+
+## Contract File Rule
+
+작은 enum, result, request, event 값 타입은 파일을 무작정 늘리지 않고 콘텐츠별 Contracts 파일에 모읍니다.
+
+- 데이터 테이블 enum: `GameDataEnums.cs`
+- 팝업 요청/정책/결과: `PopupContracts.cs`
+- 낮 성장 결과/실패 이유: `DayGrowthContracts.cs`
+- 드래프트 결과/실패 이유: `DraftContracts.cs`
+- 보상 결과/실패 이유: `RewardContracts.cs`
+- 밤 방어 세션/런타임/스폰 계약: `NightDefenseContracts.cs`
+
+독립 파일로 남기는 기준은 실제 동작 책임이 큰 클래스이거나 파일 하나가 읽기 어려울 정도로 커지는 경우입니다.
+예를 들어 `PopupManager`, `NightDefenseRuntimeController`, `NightDefenseWavePlan`, `GameStateMachine`은 독립 파일로 유지합니다.
+반대로 값 몇 개짜리 enum, 단순 Result/Request struct는 관련 콘텐츠 Contracts 파일에 함께 둡니다.

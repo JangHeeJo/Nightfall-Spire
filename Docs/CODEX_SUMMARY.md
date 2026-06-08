@@ -589,11 +589,8 @@ WaveDataRow
 ### 변경된 파일
 
 - `Assets/_Project/01_Script/Service/INightDefenseSpawnSink.cs`
-- `Assets/_Project/01_Script/Service/NightDefenseSpawnRequest.cs`
-- `Assets/_Project/01_Script/Service/NightDefenseSpawnTickResult.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseContracts.cs`
 - `Assets/_Project/01_Script/Service/NightDefenseSpawnController.cs`
-- `Assets/_Project/01_Script/Service/NightDefenseRuntimeStartResult.cs`
-- `Assets/_Project/01_Script/Service/NightDefenseRuntimeTickResult.cs`
 - `Assets/_Project/01_Script/Service/NightDefenseRuntimeController.cs`
 - `Assets/_Project/99_Test/EditMode/Service/NightDefenseRuntimeControllerTests.cs`
 - `Docs/ARCHITECTURE_BASELINE.md`
@@ -974,6 +971,47 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 ### 검증
 
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 21: 콘텐츠별 계약 타입 정리
+
+커밋 예정: `Group content contracts`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/DayGrowthContracts.cs`
+- `Assets/_Project/01_Script/Service/DraftContracts.cs`
+- `Assets/_Project/01_Script/Service/RewardContracts.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseContracts.cs`
+- `Assets/_Project/01_Script/Service/DayGrowthService.cs`
+- `Assets/_Project/01_Script/Service/DraftService.cs`
+- `Assets/_Project/01_Script/Service/RewardService.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/01_Script/Model/NightDefenseProgress.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `DayGrowthFailureReason`, `DayGrowthResult`를 `DayGrowthContracts.cs`로 분리했다.
+- `DraftFailureReason`, `DraftOfferResult`를 `DraftContracts.cs`로 분리했다.
+- `RewardFailureReason`, `RewardLine`, `RewardGrantResult`를 `RewardContracts.cs`로 분리했다.
+- `DefenseOutcome`, `NightDefenseFailureReason`, 밤 방어 세션/런타임/스폰 요청/결과 값을 `NightDefenseContracts.cs`로 모았다.
+- `NightDefenseRuntimeStartResult.cs`, `NightDefenseRuntimeTickResult.cs`, `NightDefenseSpawnTickResult.cs`, `NightDefenseSpawnEvent.cs`, `NightDefenseSpawnRequest.cs` 같은 작은 단일 값 타입 파일을 제거했다.
+- 서비스 파일은 실제 규칙 실행 코드만 남기고, enum/결과 계약 타입은 콘텐츠별 Contracts 파일로 이동했다.
+
+### 왜 이렇게 바꿨는지
+
+작은 enum이나 결과 struct를 파일마다 쪼개면 구조가 좋아지는 것이 아니라 파일 수만 늘어난다.
+반대로 서비스 구현 파일 안에 enum/result가 붙어 있으면 규칙 코드와 계약 코드가 섞인다.
+
+그래서 기준을 콘텐츠별 Contracts 파일로 정했다.
+테이블 enum은 `GameDataEnums.cs`, 팝업 계약은 `PopupContracts.cs`, 낮 성장/드래프트/보상/밤 방어 서비스 계약은 각각 자기 콘텐츠 Contracts 파일에 둔다.
+실제 동작 책임이 큰 클래스만 독립 파일로 유지한다.
+
+### 검증
+
+- 전체 enum/readonly struct 위치를 확인했다.
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
 
