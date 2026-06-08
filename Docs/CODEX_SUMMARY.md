@@ -1111,7 +1111,7 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 - 팝업을 공용 알림/확인 프리팹 중심으로 만들지 않는다고 명시했다.
 - `PopupManager`는 최상단 팝업 관리자이며 씬 레이어, 딤, 스택, 중복 정책, 결과 완료만 담당한다고 정리했다.
 - `BasePopup`은 모든 팝업 UI 스크립트가 상속받는 생명주기 기반이라고 정리했다.
-- 실제 기능은 `DraftSelectionPopup`, `RewardResultPopup`, `UpgradePopup`처럼 각 팝업 UI 스크립트가 직접 소유한다고 정리했다.
+- 실제 기능은 각 팝업 UI 스크립트가 직접 소유한다고 정리했다.
 - Presenter는 모든 팝업에 붙이지 않고, 모델 상태와 선택 결과 흐름이 복잡한 팝업에서만 검토한다고 정리했다.
 
 ### 왜 이렇게 바꿨는지
@@ -1126,42 +1126,3 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 
 - 남아 있는 잘못된 팝업 소유권 기준 표현을 검색했다.
 - 문서 변경만이라 런타임 동작 변경은 없다.
-
-## 완료된 작업 23: 기능별 팝업 코드 뼈대 추가
-
-커밋 예정: `Add feature popup skeletons`
-
-### 변경된 파일
-
-- `Assets/_Project/01_Script/UI/Popups/PopupFeatureContracts.cs`
-- `Assets/_Project/01_Script/UI/Popups/DraftSelectionPopup.cs`
-- `Assets/_Project/01_Script/UI/Popups/RewardResultPopup.cs`
-- `Assets/_Project/01_Script/UI/Popups/UpgradePurchasePopup.cs`
-- `Assets/_Project/01_Script/UI/Popups/DefenseResultPopup.cs`
-- `Assets/_Project/01_Script/UI/Popups.meta`
-- 각 새 스크립트의 `.meta`
-- `Docs/CODEX_SUMMARY.md`
-
-### 주요 변경
-
-- Unity 씬과 프리팹은 건드리지 않고 코드 뼈대만 추가했다.
-- `PopupFeatureContracts.cs`에 기능 팝업들이 주고받을 Payload와 Result 값을 모았다.
-- `DraftSelectionPopup`은 드래프트 후보 카드 목록을 받고 선택한 카드 ID를 `DraftSelectionPopupResult`로 돌려주게 했다.
-- `RewardResultPopup`은 보상 목록과 골드/젬 합계를 받고 수령 완료 결과를 돌려주게 했다.
-- `UpgradePurchasePopup`은 업그레이드 분류, ID, 현재 레벨, 비용을 받고 구매 확정 결과를 돌려주게 했다.
-- `DefenseResultPopup`은 밤 방어 결과, 세션 ID, 클리어 웨이브, 전투 시간, 보상 목록을 받고 로비 복귀 또는 재시도 행동을 돌려주게 했다.
-- 각 팝업에는 `SerializeField Button` 자리와 `Configure`, 버튼 연결 함수, 화면 갱신 자리만 만들었다.
-
-### 왜 이렇게 만들었는지
-
-사용자가 Unity UI 작업과 씬 내부 작업은 직접 하겠다고 했으므로, 이번 작업에서는 Hierarchy나 프리팹을 만들지 않았다.
-대신 실제 UI 오브젝트에 붙일 수 있는 기능별 팝업 스크립트만 먼저 만들었다.
-
-공용 알림/확인 팝업을 만들지 않고, 각 팝업이 자기 기능과 닫힘 결과를 직접 소유하는 기준을 유지했다.
-다만 팝업 간 작은 Payload/Result 타입은 파일을 너무 늘리지 않기 위해 `PopupFeatureContracts.cs`에 모았다.
-
-### 검증
-
-- 새 팝업 스크립트와 계약 타입이 컴파일 대상에 포함되는 것을 확인했다.
-- `dotnet build "Nightfall Spire.sln"` 통과.
-- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
