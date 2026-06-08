@@ -1024,12 +1024,7 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 ### 변경된 파일
 
-- `Assets/_Project/01_Script/UI/PopupRequest.cs`
-- `Assets/_Project/01_Script/UI/PopupHandle.cs`
-- `Assets/_Project/01_Script/UI/PopupResult.cs`
-- `Assets/_Project/01_Script/UI/PopupOpenPolicy.cs`
-- `Assets/_Project/01_Script/UI/PopupPriority.cs`
-- `Assets/_Project/01_Script/UI/PopupCloseReason.cs`
+- `Assets/_Project/01_Script/UI/PopupContracts.cs`
 - `Assets/_Project/01_Script/UI/PopupManager.cs`
 - `Assets/_Project/01_Script/UI/BasePopup.cs`
 - `Assets/_Project/99_Test/EditMode/UI/PopupRequestTests.cs`
@@ -1042,6 +1037,7 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 - 중복 팝업 처리 기준인 `PopupOpenPolicy`를 추가했다.
 - 팝업 중요도인 `PopupPriority`와 닫힘 이유인 `PopupCloseReason`을 추가했다.
 - 호출자가 팝업 닫힘 결과를 받을 수 있도록 `PopupHandle`과 `PopupResult`를 추가했다.
+- 작은 enum/DTO 파일을 여러 개로 늘리지 않고 `PopupContracts.cs`에 팝업 계약 타입을 모았다.
 - `PopupManager.OpenAsync(prefab)` 기존 호출은 유지하면서, `PopupManager.OpenAsync(request)` 요청 기반 API를 추가했다.
 - `SingleInstance`, `ReplaceTop`, `ReplaceAll`, `Stack` 정책을 `PopupManager`에 반영했다.
 - `BasePopup.RequestCloseAsync()`가 닫힘 이유와 Payload를 전달할 수 있게 바꿨다.

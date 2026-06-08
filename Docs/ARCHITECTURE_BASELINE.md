@@ -307,6 +307,8 @@ PopupRequest
 `PopupOpenPolicy`는 같은 팝업이 이미 열려 있을 때 쌓을지, 재사용할지, 위 팝업만 교체할지, 전체를 교체할지 결정합니다.
 `PopupHandle`은 실제 열린 팝업 인스턴스와 닫힘 결과 대기 태스크를 보관합니다.
 `PopupResult`는 확인, 취소, 배경 닫기, 교체, 씬 전환 같은 닫힘 이유와 선택 결과 Payload를 전달합니다.
+이 계약 타입들은 `PopupContracts.cs` 한 파일에 모아둡니다.
+값 몇 개짜리 enum이나 작은 DTO를 파일마다 쪼개지 않고, 실제 동작을 가진 `PopupManager`, `BasePopup`, `PopupTweenManager`만 별도 파일로 유지합니다.
 
 기준은 다음과 같습니다.
 
