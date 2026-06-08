@@ -494,6 +494,8 @@ Table Row
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - `GameContentServiceTests.cs` 컴파일 통과.
 - Unity EditMode Test Runner는 로컬 Unity 프로세스가 떠 있으면 batchmode가 실패할 수 있으므로, 에디터 종료 후 재실행해야 한다.
+- `DraftService.cs.meta` GUID가 잘못된 길이로 생성되면 Unity가 해당 스크립트를 컴파일 대상에서 빠뜨릴 수 있다.
+- `DraftService.cs.meta` GUID를 정상 32자리 값으로 수정했다.
 
 ## 완료된 작업 9: ScreenFade 기초 구조 추가
 
