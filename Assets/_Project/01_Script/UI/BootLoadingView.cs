@@ -130,7 +130,17 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
             return;
 
         Transform parent = loadingBarContainer != null ? loadingBarContainer : transform;
-        loadingBarInstance = Instantiate(loadingBarPrefab, parent);
+
+        // 외부 프리팹 인스턴스 기반 로딩바는 제네릭 Instantiate에서 캐스팅 예외가 날 수 있어 Object로 먼저 생성합니다.
+        Object instantiatedObject = Instantiate((Object)loadingBarPrefab, parent);
+        loadingBarInstance = ResolveInstantiatedGameObject(instantiatedObject);
+
+        if (loadingBarInstance == null)
+        {
+            Debug.LogError("[BootLoadingView] LoadingBar 프리팹 생성 결과를 GameObject로 해석할 수 없습니다.");
+            return;
+        }
+
         loadingBarInstance.name = loadingBarPrefab.name;
 
         if (loadingBarInstance.transform is RectTransform rectTransform)
@@ -141,5 +151,17 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
             rectTransform.anchoredPosition = Vector2.zero;
             rectTransform.localScale = Vector3.one;
         }
+    }
+
+    // Unity가 프리팹 복제 결과를 GameObject 또는 Component로 돌려주는 경우를 모두 GameObject로 통일합니다.
+    private static GameObject ResolveInstantiatedGameObject(Object instantiatedObject)
+    {
+        if (instantiatedObject is GameObject gameObject)
+            return gameObject;
+
+        if (instantiatedObject is Component component)
+            return component.gameObject;
+
+        return null;
     }
 }

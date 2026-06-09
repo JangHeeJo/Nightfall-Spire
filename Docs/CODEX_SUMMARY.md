@@ -1317,3 +1317,32 @@ BootScene은 사용자가 실제 UI를 붙일 첫 씬이다.
 - BootScene YAML에서 `LightBackground`, `NightBackground`, `LoadingBarContainer`, `LoadingBar.prefab` 연결을 확인했다.
 - BootScene에 연습용 `Test` 스크립트 연결이 남아 있지 않은 것을 확인했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 27: BootScene 로딩바 프리팹 생성 오류 수정
+
+커밋 예정: `Fix boot loading bar instantiation`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/UI/BootLoadingView.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `LoadingBar.prefab` 생성 방식을 제네릭 `Instantiate<GameObject>()`에서 `UnityEngine.Object` 기반 생성으로 변경했다.
+- 생성 결과가 `GameObject`로 오면 그대로 쓰고, `Component`로 오면 `component.gameObject`로 변환하도록 했다.
+- 생성 결과를 해석할 수 없는 경우에는 명확한 에러 로그를 남기고 중단하도록 했다.
+
+### 왜 이렇게 바꿨는지
+
+사용자가 Play 실행 시 BootScene에서 `InvalidCastException`이 발생했다.
+Unity Editor 로그 기준 원인은 `BootLoadingView.EnsureLoadingBarInstance()`에서 `LoadingBar.prefab`을 제네릭 방식으로 생성하는 부분이었다.
+
+해당 로딩바 프리팹은 외부 Layer Lab 프리팹 인스턴스를 기반으로 되어 있어서, Unity가 복제 결과를 돌려주는 과정에서 제네릭 반환 타입 캐스팅이 깨질 수 있다.
+따라서 Unity 오브젝트로 먼저 생성하고 실제 반환 타입을 안전하게 해석하도록 바꿨다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- Unity Editor 로그에서 기존 예외 위치가 `BootLoadingView.cs:133`의 프리팹 생성 코드였음을 확인했다.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
