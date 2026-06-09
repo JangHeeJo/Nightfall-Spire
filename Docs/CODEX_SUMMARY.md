@@ -1274,3 +1274,46 @@ BootScene
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - Unity 배치 모드 검증은 실행이 즉시 종료되고 로그 파일이 남지 않아 별도 로그 검증은 하지 못했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 26: BootScene 로딩 화면 이미지와 로딩바 구성
+
+커밋 예정: `Build boot loading screen UI`
+
+### 변경된 파일
+
+- `Assets/_Project/00_Scenes/BootScene.unity`
+- `Assets/_Project/01_Script/UI/BootLoadingView.cs`
+- `Assets/_Project/03_Art/BootScene/LightLoadingBg.png`
+- `Assets/_Project/03_Art/BootScene/NightLoadingBg.png`
+- `Assets/_Project/03_Art/BootScene/LoadingBar.prefab`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- BootScene의 `BootLoadingRoot` 아래에 `LightBackground`, `NightBackground`, `LoadingBarContainer`를 추가했다.
+- `LightLoadingBg`는 기본으로 보이고, `NightLoadingBg`는 DOTween으로 천천히 나타났다 사라지도록 구성했다.
+- 기본 배경 전환값은 낮/밤 각각 5초 유지, 1.2초 페이드다.
+- `LoadingBar.prefab`을 `LoadingBarContainer` 아래에 런타임으로 생성하도록 했다.
+- `BootLoadingView`가 로딩바 프리팹 안의 Slider를 자동으로 찾아 진행률을 연결하게 했다.
+- `BootLoadingView`에 낮/밤 배경, 로딩바 생성, 참조 자동 탐색, DOTween 정리 함수 주석을 추가했다.
+- BootScene 로딩 UI 기준 구조를 아키텍처 문서에 반영했다.
+
+### 왜 이렇게 바꿨는지
+
+BootScene은 사용자가 실제 UI를 붙일 첫 씬이다.
+이번에는 단순히 빈 Root만 두는 것이 아니라, 사용자가 넣어둔 낮 배경, 밤 배경, 로딩바 프리팹을 실제 시작 화면에 바로 연결했다.
+
+낮/밤 이미지는 둘 중 하나만 고정으로 쓰면 부트 화면이 정적이라 밋밋하다.
+그래서 두 이미지를 같은 위치에 겹치고 밤 배경의 알파만 DOTween으로 조절해, 조용히 시간이 흐르는 느낌의 로딩 화면으로 만들었다.
+
+로딩바는 프리팹 내부 구조가 외부 패키지 프리팹 인스턴스를 기반으로 되어 있어서, 씬 YAML에서 내부 Slider를 억지로 직접 참조하지 않았다.
+대신 `BootLoadingView`가 프리팹을 생성한 뒤 내부 Slider를 자동으로 찾게 했다.
+이렇게 하면 로딩바 프리팹 내부 구조가 조금 바뀌어도 View 연결이 바로 깨질 가능성이 줄어든다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- BootScene YAML에서 `LightBackground`, `NightBackground`, `LoadingBarContainer`, `LoadingBar.prefab` 연결을 확인했다.
+- BootScene에 연습용 `Test` 스크립트 연결이 남아 있지 않은 것을 확인했다.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.

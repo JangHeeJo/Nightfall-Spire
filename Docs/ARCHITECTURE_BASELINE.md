@@ -376,6 +376,10 @@ GameRoot.InitializeAsync()
 BootScene에 로딩 View가 없어도 게임 시작은 실패하지 않아야 합니다.
 따라서 `GameRoot`는 `BootLoadingView`를 찾지 못하면 로딩 UI 없이 초기화 흐름을 계속 진행합니다.
 
+로딩 배경은 `LightLoadingBg`와 `NightLoadingBg`를 같은 위치에 겹쳐 두고, `BootLoadingView`가 DOTween으로 밤 배경 알파를 서서히 올렸다 내리는 방식으로 순환시킵니다.
+기본값은 5초 유지, 1.2초 전환입니다.
+로딩바는 `LoadingBar.prefab`을 `LoadingBarContainer` 아래에 런타임으로 생성하고, 내부 Slider를 자동으로 찾아 진행률을 반영합니다.
+
 현재 BootScene 기준 하이어라키는 아래처럼 둡니다.
 
 ```text
@@ -384,10 +388,13 @@ BootScene
 ├─ GameRoot
 └─ Canvas_BootUI
    └─ BootLoadingRoot
+      ├─ LightBackground
+      ├─ NightBackground
+      └─ LoadingBarContainer
 ```
 
 `BootLoadingRoot`에는 `BootLoadingView`가 붙어 있습니다.
-실제 UI 작업자는 이 오브젝트 아래에 진행바, Fill Image, 상태 텍스트, 퍼센트 텍스트, 버전 텍스트를 배치하고 Inspector에 연결합니다.
+실제 UI 작업자는 이 오브젝트 아래 배경 이미지와 로딩바 위치를 조정하고, 상태 텍스트, 퍼센트 텍스트, 버전 텍스트가 필요할 때만 추가로 배치한 뒤 Inspector에 연결합니다.
 BootScene의 `GameRoot`에는 실제 부트스트랩 컴포넌트만 유지하고, 연습용 스크립트나 임시 테스트 컴포넌트는 붙이지 않습니다.
 
 ## Draft Effect Runtime
