@@ -4,6 +4,7 @@ using UnityEngine;
 // 모든 팝업 프리팹이 상속받는 공통 부모입니다.
 // 팝업 생성 위치, 딤 처리, 스택 관리는 PopupManager가 담당하고
 // 개별 팝업은 여기서 열림/닫힘 생명주기만 맞춰서 확장합니다.
+[RequireComponent(typeof(CanvasGroup))]
 public class BasePopup : MonoBehaviour
 {
     [SerializeField] private CanvasGroup canvasGroup; // 팝업 전체 표시와 입력을 제어합니다.
@@ -19,11 +20,7 @@ public class BasePopup : MonoBehaviour
     {
         owner = popupManager;
 
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>();
-
-        if (canvasGroup == null)
-            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        ValidateCanvasGroup();
 
         SetVisible(false);
         OnInitialized();
@@ -84,11 +81,25 @@ public class BasePopup : MonoBehaviour
     // 팝업이 닫혀 있을 때 뒤쪽 UI 입력을 막지 않도록 raycast도 같이 제어합니다.
     protected void SetVisible(bool visible)
     {
+        ValidateCanvasGroup();
+
         if (canvasGroup == null)
             return;
 
         canvasGroup.alpha = visible ? 1f : 0f;
         canvasGroup.blocksRaycasts = visible;
         canvasGroup.interactable = visible;
+    }
+
+    // 팝업 프리팹은 CanvasGroup을 직접 보유해야 하며, 런타임에서 몰래 추가하지 않습니다.
+    private void ValidateCanvasGroup()
+    {
+        if (canvasGroup != null)
+            return;
+
+        canvasGroup = GetComponent<CanvasGroup>();
+
+        if (canvasGroup == null)
+            Debug.LogError("[BasePopup] 팝업 프리팹에 CanvasGroup이 없습니다.", this);
     }
 }

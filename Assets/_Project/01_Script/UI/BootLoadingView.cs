@@ -27,16 +27,16 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
     private float displayedProgress; // 화면에 현재 표시 중인 진행률
     private bool nightBackgroundShown; // 밤 배경 전환을 이미 실행했는지 여부
 
-    // View가 생성될 때 비어 있는 UI 참조를 자식 오브젝트에서 자동으로 보강합니다.
+    // View가 생성될 때 고정 로딩 UI 연결 상태를 검사합니다.
     private void Awake()
     {
-        EnsureLoadingReferences();
+        ValidateReferences();
     }
 
     // View가 켜질 때 배경과 진행률 표시 상태를 초기화합니다.
     private void OnEnable()
     {
-        EnsureLoadingReferences();
+        ValidateReferences();
         ResetBackground();
         ApplyProgress(displayedProgress);
     }
@@ -143,13 +143,19 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
         return color;
     }
 
-    // Inspector 연결이 비어 있으면 자식 오브젝트에서 Slider와 Fill 이미지를 찾아 연결합니다.
-    private void EnsureLoadingReferences()
+    // 고정 로딩 UI는 BootScene에 배치된 오브젝트를 Inspector에서 직접 연결해야 합니다.
+    private void ValidateReferences()
     {
         if (progressSlider == null)
-            progressSlider = GetComponentInChildren<Slider>(true);
+            Debug.LogError("[BootLoadingView] Progress Slider가 연결되지 않았습니다.", this);
 
-        if (progressFillImage == null && progressSlider != null && progressSlider.fillRect != null)
-            progressFillImage = progressSlider.fillRect.GetComponent<Image>();
+        if (progressFillImage == null)
+            Debug.LogError("[BootLoadingView] Progress Fill Image가 연결되지 않았습니다.", this);
+
+        if (lightBackgroundImage == null)
+            Debug.LogError("[BootLoadingView] 낮 배경 이미지가 연결되지 않았습니다.", this);
+
+        if (nightBackgroundImage == null)
+            Debug.LogError("[BootLoadingView] 밤 배경 이미지가 연결되지 않았습니다.", this);
     }
 }

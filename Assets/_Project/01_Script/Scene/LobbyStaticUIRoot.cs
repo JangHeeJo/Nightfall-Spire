@@ -28,13 +28,14 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     }
 
     // CurrencyProgress(Model), CurrencyHudView(View), CurrencyHudPresenter(Presenter)를 조립합니다.
-    // Lobby_Default 프리팹의 ResourceBar를 실제 View로 연결하기 전까지는 HUD Presenter 생성을 건너뜁니다.
+    // 고정 UI View는 씬에서 명시적으로 연결되어야 합니다.
     private void CreateCurrencyHudPresenter()
     {
-        currencyHudView ??= GetComponentInChildren<CurrencyHudView>(true);
-
         if (currencyHudView == null)
+        {
+            Debug.LogWarning("[LobbyStaticUIRoot] CurrencyHudView 참조가 비어 있어 재화 HUD Presenter 생성을 건너뜁니다.");
             return;
+        }
 
         currencyHudPresenter?.Dispose();
         currencyHudPresenter = new CurrencyHudPresenter(context.CurrencyProgress, currencyHudView);
@@ -45,25 +46,15 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     // 버튼마다 Presenter를 만들지 않고 로비 화면의 주요 액션을 LobbyPresenter가 관리합니다.
     private void CreateLobbyPresenter()
     {
-        lobbyScreen ??= FindLobbyScreen();
-
         if (lobbyScreen == null)
         {
-            Debug.LogWarning("[LobbyStaticUIRoot] LobbyScreen을 만들 수 없습니다.");
+            Debug.LogError("[LobbyStaticUIRoot] LobbyScreen 참조가 비어 있습니다. 로비 고정 UI Root에서 화면 View를 직접 연결해야 합니다.");
             return;
         }
 
         lobbyPresenter?.Dispose();
         lobbyPresenter = new LobbyPresenter(lobbyScreen, GameRoot.Instance.GameFlowController.LoadNightDefenseAsync);
         lobbyPresenter.Initialize();
-    }
-
-    // LobbyStaticUIRoot와 같은 Canvas에 LobbyScreen 컴포넌트를 보장합니다.
-    // 로비 화면 입력은 이 컴포넌트 하나에서 모으고, 세부 버튼 스크립트는 만들지 않습니다.
-    private LobbyScreen FindLobbyScreen()
-    {
-        Transform searchRoot = transform.parent != null ? transform.parent : transform;
-        return searchRoot.GetComponent<LobbyScreen>() ?? searchRoot.gameObject.AddComponent<LobbyScreen>();
     }
 
     // 씬이 파괴될 때 Presenter 구독을 해제합니다.

@@ -4,6 +4,7 @@ using UnityEngine;
 
 // 씬 Canvas 아래에서 화면 전체 페이드를 담당하는 View입니다.
 // 실제 오브젝트는 각 씬의 Canvas_DynamicUI 아래에 두고, 전역 요청은 ScreenFadeManager가 전달합니다.
+[RequireComponent(typeof(CanvasGroup))]
 public sealed class ScreenFadeView : MonoBehaviour
 {
     [SerializeField] private CanvasGroup canvasGroup; // 페이드 알파와 입력 차단을 제어합니다.
@@ -11,11 +12,10 @@ public sealed class ScreenFadeView : MonoBehaviour
     private float currentAlpha; // 현재 페이드 알파 값
     private Tween currentTween; // 현재 실행 중인 페이드 Tween
 
-    // View가 생성될 때 필요한 CanvasGroup을 준비하고 기본 투명 상태로 맞춥니다.
-    // 씬에 CanvasGroup이 빠져 있어도 실행 중 자동으로 보강해서 기본 동작이 깨지지 않게 합니다.
+    // View가 생성될 때 필요한 CanvasGroup 연결을 검사하고 기본 투명 상태로 맞춥니다.
     private void Awake()
     {
-        EnsureCanvasGroup();
+        ValidateCanvasGroup();
         SetFadeAlpha(0f);
     }
 
@@ -23,7 +23,9 @@ public sealed class ScreenFadeView : MonoBehaviour
     // 0이면 완전히 투명, 1이면 완전히 어두운 상태로 보고 입력 차단도 함께 갱신합니다.
     public void SetFadeAlpha(float alpha)
     {
-        EnsureCanvasGroup();
+        ValidateCanvasGroup();
+        if (canvasGroup == null)
+            return;
 
         currentAlpha = Mathf.Clamp01(alpha);
         canvasGroup.alpha = currentAlpha;
@@ -36,7 +38,9 @@ public sealed class ScreenFadeView : MonoBehaviour
     // 화면 전환은 Time.timeScale이 0이어도 진행되어야 하므로 DOTween의 독립 업데이트를 사용합니다.
     public async UniTask FadeToAsync(float targetAlpha, float duration, bool blockInputAfterFade)
     {
-        EnsureCanvasGroup();
+        ValidateCanvasGroup();
+        if (canvasGroup == null)
+            return;
 
         float endAlpha = Mathf.Clamp01(targetAlpha);
 
@@ -72,9 +76,8 @@ public sealed class ScreenFadeView : MonoBehaviour
         canvasGroup.interactable = blockInput;
     }
 
-    // 페이드 제어에 필요한 CanvasGroup을 보장합니다.
-    // Inspector에 연결되어 있지 않으면 같은 오브젝트에서 찾고, 없으면 새로 추가합니다.
-    private void EnsureCanvasGroup()
+    // 페이드 고정 UI는 CanvasGroup을 씬 오브젝트에 직접 붙이고 연결해야 합니다.
+    private void ValidateCanvasGroup()
     {
         if (canvasGroup != null)
             return;
@@ -82,7 +85,7 @@ public sealed class ScreenFadeView : MonoBehaviour
         canvasGroup = GetComponent<CanvasGroup>();
 
         if (canvasGroup == null)
-            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            Debug.LogError("[ScreenFadeView] CanvasGroup이 없습니다. 같은 오브젝트에 CanvasGroup을 붙여 주세요.", this);
     }
 
     // DOTween 완료/중단을 UniTask로 기다릴 수 있게 변환합니다.

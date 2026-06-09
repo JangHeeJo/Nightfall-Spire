@@ -32,7 +32,9 @@ public sealed class BattleSceneRoot : MonoBehaviour
         staticUIRoot?.Initialize(context);
         dynamicUIRoot?.Initialize(context);
 
-        EnsureRuntimeComponents();
+        if (!ValidateRuntimeReferences())
+            return;
+
         battleRuntime.Initialize(context, spawnSink);
     }
 
@@ -55,19 +57,21 @@ public sealed class BattleSceneRoot : MonoBehaviour
         return GameRoot.Instance.Context;
     }
 
-    // 씬에 런타임 컴포넌트가 없으면 같은 GameObject에 추가해 최소 연결을 보장합니다.
-    private void EnsureRuntimeComponents()
+    // 전투 런타임 연결은 씬에서 명시적으로 세팅되어야 합니다.
+    private bool ValidateRuntimeReferences()
     {
         if (battleRuntime == null)
-            battleRuntime = GetComponent<NightDefenseBattleRuntime>();
-
-        if (battleRuntime == null)
-            battleRuntime = gameObject.AddComponent<NightDefenseBattleRuntime>();
-
-        if (spawnSink == null)
-            spawnSink = GetComponent<UnityNightDefenseSpawnSink>();
+        {
+            Debug.LogError("[BattleSceneRoot] NightDefenseBattleRuntime 참조가 비어 있습니다. BattleSceneRoot에 런타임 컴포넌트를 직접 연결해야 합니다.");
+            return false;
+        }
 
         if (spawnSink == null)
-            spawnSink = gameObject.AddComponent<UnityNightDefenseSpawnSink>();
+        {
+            Debug.LogError("[BattleSceneRoot] UnityNightDefenseSpawnSink 참조가 비어 있습니다. 전투 씬의 스폰 수신자를 직접 연결해야 합니다.");
+            return false;
+        }
+
+        return true;
     }
 }
