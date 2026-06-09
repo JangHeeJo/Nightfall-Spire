@@ -16,6 +16,7 @@ public sealed class CombatHeroSlotRuntimeState
 {
     public int SlotIndex { get; } // 전투 슬롯 번호
     public int HeroId { get; } // 슬롯에 배치된 영웅 ID
+    public CombatSlotType SlotType { get; } // 전투 슬롯 타입
     public HeroRole HeroRole { get; } // 영웅 역할
     public ElementType ElementType { get; } // 공격 속성
     public TargetingType TargetingType { get; } // 타겟 선택 규칙
@@ -26,10 +27,11 @@ public sealed class CombatHeroSlotRuntimeState
     public bool CanAttack => AttackPower > 0 && AttackSpeed > 0f; // 공격 가능한 슬롯인지 여부
 
     // 영웅 슬롯의 전투 계산용 값을 보관합니다.
-    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int attackPower, float attackSpeed)
+    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, CombatSlotType slotType, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int attackPower, float attackSpeed)
     {
         SlotIndex = slotIndex;
         HeroId = heroId;
+        SlotType = slotType;
         HeroRole = heroRole;
         ElementType = elementType;
         TargetingType = targetingType;

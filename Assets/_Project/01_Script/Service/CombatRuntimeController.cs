@@ -12,6 +12,7 @@ public sealed class CombatRuntimeController
     private readonly CombatSlotProgress combatSlotProgress; // 현재 해금/배치된 전투 슬롯 상태
     private readonly CombatTargetingService targetingService; // 타겟 선택 규칙
     private readonly CombatDamageResolver damageResolver; // 피해 계산 규칙
+    private readonly CombatRuntimeModifierSet modifierSet; // 드래프트, 시너지, 장비가 만든 전투 보정값
     private readonly List<CombatHeroSlotRuntimeState> heroSlots = new(); // 공격 가능한 영웅 슬롯 목록
     private readonly List<CombatEnemyRuntimeState> enemies = new(); // 현재 살아 있거나 정리 대기 중인 적 목록
     private readonly List<CombatDamageResult> damageResults = new(); // 최근 Tick 피해 결과 목록
@@ -27,12 +28,14 @@ public sealed class CombatRuntimeController
         ICombatDataSource dataSource,
         CombatSlotProgress combatSlotProgress,
         CombatTargetingService targetingService = null,
-        CombatDamageResolver damageResolver = null)
+        CombatDamageResolver damageResolver = null,
+        CombatRuntimeModifierSet modifierSet = null)
     {
         this.dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
         this.combatSlotProgress = combatSlotProgress ?? throw new ArgumentNullException(nameof(combatSlotProgress));
         this.targetingService = targetingService ?? new CombatTargetingService();
         this.damageResolver = damageResolver ?? new CombatDamageResolver();
+        this.modifierSet = modifierSet ?? new CombatRuntimeModifierSet();
     }
 
     // 현재 CombatSlotProgress와 테이블을 기준으로 공격 가능한 영웅 슬롯을 다시 구성합니다.
@@ -54,7 +57,7 @@ public sealed class CombatRuntimeController
             CombatSlotUpgradeDataRow upgradeRow = null;
             dataSource.TryGetCombatSlotUpgrade(slotRow.UpgradeGroupId, slot.Level.Value, out upgradeRow);
 
-            heroSlots.Add(CreateHeroSlot(slot, heroRow, upgradeRow));
+            heroSlots.Add(CreateHeroSlot(slot, slotRow, heroRow, upgradeRow));
         }
 
         return heroSlots.Count > 0
@@ -142,16 +145,22 @@ public sealed class CombatRuntimeController
     }
 
     // HeroDataRow와 슬롯 성장값을 합쳐 공격자 상태를 만듭니다.
-    private static CombatHeroSlotRuntimeState CreateHeroSlot(CombatSlotRuntimeState slot, HeroDataRow heroRow, CombatSlotUpgradeDataRow upgradeRow)
+    private CombatHeroSlotRuntimeState CreateHeroSlot(CombatSlotRuntimeState slot, CombatSlotDataRow slotRow, HeroDataRow heroRow, CombatSlotUpgradeDataRow upgradeRow)
     {
         float attackBonus = upgradeRow == null ? 0f : upgradeRow.AttackBonusPct;
         float attackSpeedBonus = upgradeRow == null ? 0f : upgradeRow.AttackSpeedBonusPct;
+        CombatRuntimeStatModifier runtimeModifier = modifierSet.GetModifier(slotRow.SlotType, heroRow.HeroRole, heroRow.HeroTagList);
+
+        attackBonus += runtimeModifier.AttackPercent;
+        attackSpeedBonus += runtimeModifier.AttackSpeedPercent;
+
         int attackPower = Math.Max(1, (int)Math.Ceiling(heroRow.BaseAttack * (1f + attackBonus / 100f)));
         float attackSpeed = Math.Max(0.01f, heroRow.BaseAttackSpeed * (1f + attackSpeedBonus / 100f));
 
         return new CombatHeroSlotRuntimeState(
             slot.SlotIndex,
             heroRow.HeroId,
+            slotRow.SlotType,
             heroRow.HeroRole,
             heroRow.ElementType,
             heroRow.TargetingType,

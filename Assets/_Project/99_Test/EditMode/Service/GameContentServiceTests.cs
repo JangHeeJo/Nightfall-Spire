@@ -81,6 +81,24 @@ public sealed class GameContentServiceTests
         Assert.That(rewardProgress.PendingGem, Is.EqualTo(0));
     }
 
+    // 밤 방어 종료 서비스는 세션의 RewardGroupId를 찾아 최초 클리어 기준 보상을 계산해야 합니다.
+    [Test]
+    public void NightDefenseCompletionService_BuildsRewardFromCurrentSession()
+    {
+        FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
+        SaveData saveData = SaveData.CreateDefault();
+        saveData.Progress.HighestClearedDefenseSessionId = 100;
+        GameContext context = new GameContext(saveData);
+        RewardService rewardService = new RewardService(dataSource, context.RewardProgress);
+        NightDefenseCompletionService service = new NightDefenseCompletionService(dataSource, rewardService, context.GameProgress);
+
+        NightDefenseCompletionRewardResult result = service.BuildRewardForCompletion(101, DefenseOutcome.Victory);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Gold, Is.EqualTo(100));
+        Assert.That(result.Gem, Is.EqualTo(0));
+    }
+
     // 낮 성장 서비스는 클리어 조건과 비용을 검증한 뒤 다음 성채 층과 연결된 기능을 해금해야 합니다.
     [Test]
     public void DayGrowthService_UnlocksNextFloorAndFeature()

@@ -15,6 +15,12 @@ public interface IDraftDataSource
     IReadOnlyList<DraftCardDataRow> GetDraftCards();
 }
 
+// 드래프트 카드 효과 적용기가 필요한 테이블 조회 계약입니다.
+public interface IDraftEffectDataSource
+{
+    IReadOnlyList<DraftCardEffectDataRow> GetDraftCardEffects(int cardId);
+}
+
 // 보상 서비스가 필요한 테이블 조회 계약입니다.
 public interface IRewardDataSource
 {
@@ -39,7 +45,7 @@ public interface ICombatDataSource
 }
 
 // DataTableManager를 도메인 서비스가 쓰는 조회 계약으로 감싸는 어댑터입니다.
-public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource
+public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IDraftEffectDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource
 {
     private readonly DataTableManager dataTableManager; // 실제 테이블 보관소
 
@@ -80,6 +86,12 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
     public IReadOnlyList<DraftCardDataRow> GetDraftCards()
     {
         return dataTableManager?.DraftCardData?.Rows ?? System.Array.Empty<DraftCardDataRow>();
+    }
+
+    // 선택된 카드 ID에 연결된 효과 Row 목록을 반환합니다.
+    public IReadOnlyList<DraftCardEffectDataRow> GetDraftCardEffects(int cardId)
+    {
+        return dataTableManager?.GetDraftCardEffects(cardId) ?? System.Array.Empty<DraftCardEffectDataRow>();
     }
 
     // 보상 그룹 Row 목록을 조회합니다.

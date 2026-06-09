@@ -23,6 +23,14 @@ public enum NightDefenseFailureReason
     InvalidWaveData // 웨이브 Row를 유효한 스폰 계획으로 만들 수 없음
 }
 
+public enum NightDefenseCompletionFailureReason
+{
+    None, // 실패 없음
+    SessionNotFound, // 종료하려는 방어 세션 데이터를 찾지 못함
+    RewardServiceMissing, // 보상 계산 서비스가 연결되지 않음
+    RewardBuildFailed // 보상 그룹 계산에 실패함
+}
+
 // 밤 방어 세션 시작 결과입니다.
 public readonly struct NightDefenseStartResult
 {
@@ -50,6 +58,38 @@ public readonly struct NightDefenseStartResult
     public static NightDefenseStartResult Fail(NightDefenseFailureReason failureReason)
     {
         return new NightDefenseStartResult(false, failureReason, null, null);
+    }
+}
+
+// 밤 방어전 종료 보상 계산 결과입니다.
+public readonly struct NightDefenseCompletionRewardResult
+{
+    public bool IsSuccess { get; } // 종료 보상 계산 성공 여부
+    public NightDefenseCompletionFailureReason FailureReason { get; } // 종료 보상 계산 실패 이유
+    public RewardFailureReason RewardFailureReason { get; } // 보상 서비스 내부 실패 이유
+    public long Gold { get; } // 수령 대기 상태에 넣을 골드
+    public long Gem { get; } // 수령 대기 상태에 넣을 젬
+
+    // 보상 계산 성공 여부와 지급 재화 값을 보관합니다.
+    private NightDefenseCompletionRewardResult(bool isSuccess, NightDefenseCompletionFailureReason failureReason, RewardFailureReason rewardFailureReason, long gold, long gem)
+    {
+        IsSuccess = isSuccess;
+        FailureReason = failureReason;
+        RewardFailureReason = rewardFailureReason;
+        Gold = gold;
+        Gem = gem;
+    }
+
+    // 성공한 종료 보상 계산 결과를 만듭니다.
+    public static NightDefenseCompletionRewardResult Success(long gold, long gem)
+    {
+        return new NightDefenseCompletionRewardResult(true, NightDefenseCompletionFailureReason.None, RewardFailureReason.None, gold, gem);
+    }
+
+    // 실패한 종료 보상 계산 결과를 만듭니다.
+    public static NightDefenseCompletionRewardResult Fail(NightDefenseCompletionFailureReason failureReason, RewardFailureReason rewardFailureReason = RewardFailureReason.None)
+    {
+        return new NightDefenseCompletionRewardResult(false, failureReason, rewardFailureReason, 0, 0);
     }
 }
 

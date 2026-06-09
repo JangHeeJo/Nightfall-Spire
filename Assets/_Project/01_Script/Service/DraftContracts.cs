@@ -6,7 +6,9 @@ public enum DraftFailureReason
 {
     None, // 실패 없음
     PoolNotFound, // 드래프트 풀 데이터를 찾지 못함
-    NoCandidateCards // 조건을 만족하는 후보 카드가 없음
+    NoCandidateCards, // 조건을 만족하는 후보 카드가 없음
+    CardEffectNotFound, // 선택한 카드에 연결된 효과 Row가 없음
+    UnsupportedEffectType // 현재 전투 런타임이 아직 처리하지 않는 효과 타입
 }
 
 // 드래프트 후보 생성 결과입니다.
@@ -34,5 +36,33 @@ public readonly struct DraftOfferResult
     public static DraftOfferResult Fail(DraftFailureReason failureReason)
     {
         return new DraftOfferResult(false, failureReason, Array.Empty<int>());
+    }
+}
+
+// 드래프트 카드 효과 적용 결과입니다.
+public readonly struct DraftEffectApplyResult
+{
+    public bool IsSuccess { get; } // 효과 적용 성공 여부
+    public DraftFailureReason FailureReason { get; } // 실패 이유
+    public int AppliedEffectCount { get; } // 실제 적용된 효과 수
+
+    // 성공 여부, 실패 이유, 적용된 효과 수를 보관합니다.
+    private DraftEffectApplyResult(bool isSuccess, DraftFailureReason failureReason, int appliedEffectCount)
+    {
+        IsSuccess = isSuccess;
+        FailureReason = failureReason;
+        AppliedEffectCount = appliedEffectCount;
+    }
+
+    // 성공 결과를 만듭니다.
+    public static DraftEffectApplyResult Success(int appliedEffectCount)
+    {
+        return new DraftEffectApplyResult(true, DraftFailureReason.None, appliedEffectCount);
+    }
+
+    // 실패 결과를 만듭니다.
+    public static DraftEffectApplyResult Fail(DraftFailureReason failureReason)
+    {
+        return new DraftEffectApplyResult(false, failureReason, 0);
     }
 }

@@ -356,3 +356,59 @@ PopupRequest
 독립 파일로 남기는 기준은 실제 동작 책임이 큰 클래스이거나 파일 하나가 읽기 어려울 정도로 커지는 경우입니다.
 예를 들어 `PopupManager`, `NightDefenseRuntimeController`, `NightDefenseWavePlan`, `GameStateMachine`은 독립 파일로 유지합니다.
 반대로 값 몇 개짜리 enum, 단순 Result/Request struct는 관련 콘텐츠 Contracts 파일에 함께 둡니다.
+
+## Boot Loading MVP
+
+BootScene의 로딩 UI는 MVP 기준으로 붙입니다.
+씬 배치와 실제 UI 디자인은 Unity에서 직접 작업하고, 코드는 아래 책임만 갖습니다.
+
+```text
+GameRoot.InitializeAsync()
+→ BootLoadingPresenter
+→ IBootLoadingView
+→ BootLoadingView
+```
+
+`BootLoadingView`는 Slider, Image Fill, TextMeshPro 참조를 받아 화면에 표시만 합니다.
+`BootLoadingPresenter`는 진행률 범위 보정, 상태 문구, 버전 텍스트 전달만 담당합니다.
+`GameRoot`는 데이터 로드, 저장 로드, 시스템 준비, 로비 씬 로드 같은 실제 초기화 단계가 끝날 때마다 Presenter에 진행률을 보고합니다.
+
+BootScene에 로딩 View가 없어도 게임 시작은 실패하지 않아야 합니다.
+따라서 `GameRoot`는 `BootLoadingView`를 찾지 못하면 로딩 UI 없이 초기화 흐름을 계속 진행합니다.
+
+## Draft Effect Runtime
+
+드래프트 선택은 `DraftProgress`에 선택한 카드 ID만 저장하는 것으로 끝나지 않습니다.
+카드 효과는 `DraftEffectResolver`가 `DraftCardEffectDataRow`를 읽어 `CombatRuntimeModifierSet`에 전투 보정값으로 저장합니다.
+
+```text
+DraftProgress.CanSelectCard()
+→ DraftEffectResolver.ApplyCardEffects()
+→ CombatRuntimeModifierSet
+→ CombatRuntimeController.RebuildHeroSlots()
+```
+
+`CombatRuntimeModifierSet`은 드래프트, 시너지, 장비, 시설 효과처럼 전투 중 슬롯/영웅에 누적되는 보정값을 한곳에 모읍니다.
+`CombatRuntimeController`는 슬롯을 다시 구성할 때 슬롯 타입, 영웅 역할, 영웅 태그 기준으로 적용 가능한 보정만 합산합니다.
+
+현재 연결된 효과는 공격력, 공격 속도, 사거리, 스킬 충전 비율입니다.
+아직 전투 런타임에 실제 동작이 없는 투사체 수, 체인, 상태 이상 같은 효과는 무리하게 하드코딩하지 않고 별도 Resolver가 생긴 뒤 연결합니다.
+
+## Night Defense Completion
+
+밤 방어 결과 확정은 테이블의 세션 보상 그룹을 기준으로 처리합니다.
+
+```text
+GameFlowController.CompleteNightDefense(outcome)
+→ NightDefenseCompletionService
+→ DefenseSessionData.RewardGroupId
+→ RewardService.BuildReward()
+→ RewardProgress.SetPendingReward()
+→ GameProgress.CompleteDefenseSession()
+```
+
+최초 클리어 보상 판단은 `GameProgress.CompleteDefenseSession()`보다 먼저 해야 합니다.
+그래서 `NightDefenseCompletionService`가 현재 최고 클리어 세션을 먼저 보고 보상을 계산한 뒤, `GameFlowController`가 진행도와 낮/밤 루프 완료를 반영합니다.
+
+테스트나 임시 개발용으로 이미 계산된 보상 숫자를 넘기는 `CompleteNightDefense(outcome, gold, gem)` 경로는 유지합니다.
+하지만 실제 런타임에서는 세션 테이블을 읽는 `CompleteNightDefense(outcome)` 경로를 기본으로 사용합니다.

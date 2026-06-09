@@ -31,6 +31,7 @@ public sealed class GameFlowController
             context.NightDefenseProgress.EndDefenseSession(DefenseOutcome.Abandoned);
 
         context.DraftProgress.ResetForNewDefenseSession();
+        context.CombatRuntimeModifierSet.Clear();
         return true;
     }
 
@@ -71,6 +72,7 @@ public sealed class GameFlowController
 
         context.NightDefenseProgress.EndDefenseSession(DefenseOutcome.Abandoned);
         context.DraftProgress.ResetForNewDefenseSession();
+        context.CombatRuntimeModifierSet.Clear();
         return false;
     }
 
@@ -90,9 +92,20 @@ public sealed class GameFlowController
     }
 
     // 드래프트 카드 선택을 확정하고 다시 밤 방어 진행 상태로 돌아갑니다.
-    // 실제 카드 효과 적용은 이후 DraftEffectResolver가 붙으면 선택 성공 뒤 처리합니다.
+    // 카드 효과를 먼저 적용한 뒤 성공한 경우에만 선택 상태를 닫습니다.
     public bool SelectDraftCard(int cardId)
     {
+        if (!context.DraftProgress.CanSelectCard(cardId))
+            return false;
+
+        if (context.DraftEffectResolver != null)
+        {
+            DraftEffectApplyResult effectResult = context.DraftEffectResolver.ApplyCardEffects(cardId);
+
+            if (!effectResult.IsSuccess)
+                return false;
+        }
+
         bool selected = context.DraftProgress.SelectCard(cardId);
 
         if (!selected)
@@ -104,8 +117,26 @@ public sealed class GameFlowController
         return true;
     }
 
+    // 현재 세션 테이블의 RewardGroupId를 사용해 밤 방어전 결과를 확정합니다.
+    public bool CompleteNightDefense(DefenseOutcome outcome)
+    {
+        if (!context.NightDefenseProgress.IsDefenseActive.Value)
+            return false;
+
+        if (context.NightDefenseCompletionService == null)
+            return CompleteNightDefense(outcome, 0, 0);
+
+        int completedSessionId = context.NightDefenseProgress.CurrentDefenseSessionId.Value;
+        NightDefenseCompletionRewardResult rewardResult = context.NightDefenseCompletionService.BuildRewardForCompletion(completedSessionId, outcome);
+
+        if (!rewardResult.IsSuccess)
+            return false;
+
+        return CompleteNightDefense(outcome, rewardResult.Gold, rewardResult.Gem);
+    }
+
     // 밤 방어전 결과를 확정합니다.
-    // 보상 금액은 전투/보상 계산 시스템이 결정하고, 이 메서드는 결과 반영 순서만 담당합니다.
+    // 테스트나 임시 런타임처럼 이미 계산된 보상을 넘기는 경로입니다.
     public bool CompleteNightDefense(DefenseOutcome outcome, long rewardGold, long rewardGem)
     {
         if (!context.NightDefenseProgress.IsDefenseActive.Value)
@@ -120,6 +151,7 @@ public sealed class GameFlowController
 
         context.NightDefenseProgress.EndDefenseSession(outcome);
         context.DraftProgress.CloseDraft();
+        context.CombatRuntimeModifierSet.Clear();
 
         if (outcome == DefenseOutcome.Victory)
         {
@@ -161,6 +193,7 @@ public sealed class GameFlowController
         int defenseSessionId = context.GameProgress.CurrentDefenseSessionId.Value;
 
         context.DraftProgress.ResetForNewDefenseSession();
+        context.CombatRuntimeModifierSet.Clear();
         context.NightDefenseProgress.BeginDefenseSession(defenseSessionId);
         return context.NightDefenseProgress.IsDefenseActive.Value;
     }

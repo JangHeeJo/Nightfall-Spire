@@ -1166,3 +1166,63 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 전투 런타임 테스트 파일을 추가해 슬롯 구성, 기본 공격, 처치 제거, 슬롯 성장 보정 시나리오를 고정했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 24: Boot 로딩 MVP와 전투 보상/드래프트 효과 연결
+
+커밋 예정: `Add boot loading and reward completion flow`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/Core/GameContext.cs`
+- `Assets/_Project/01_Script/Core/GameFlowController.cs`
+- `Assets/_Project/01_Script/Presenter/IBootLoadingView.cs`
+- `Assets/_Project/01_Script/Presenter/BootLoadingPresenter.cs`
+- `Assets/_Project/01_Script/UI/BootLoadingView.cs`
+- `Assets/_Project/01_Script/Model/DraftProgress.cs`
+- `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
+- `Assets/_Project/01_Script/Service/DraftContracts.cs`
+- `Assets/_Project/01_Script/Service/DraftEffectResolver.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeModifierSet.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseContracts.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseCompletionService.cs`
+- `Assets/_Project/99_Test/EditMode/Service/DraftEffectResolverTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/GameContentServiceTests.cs`
+- `Assembly-CSharp.csproj`
+- 각 새 스크립트의 `.meta`
+
+### 주요 변경
+
+- `BootLoadingView`, `IBootLoadingView`, `BootLoadingPresenter`를 추가해 BootScene 로딩 UI를 MVP 구조로 연결할 수 있게 했다.
+- `GameRoot` 초기화 단계에서 데이터 로드, 저장 로드, 시스템 준비, 로비 씬 로드 진행률을 Boot 로딩 Presenter에 보고하게 했다.
+- BootScene에 로딩 View가 없어도 초기화가 조용히 진행되도록 null 허용 구조로 만들었다.
+- `DraftEffectResolver`를 추가해 선택한 드래프트 카드 효과 Row를 전투 보정값으로 변환하게 했다.
+- `CombatRuntimeModifierSet`을 추가해 드래프트, 시너지, 장비에서 생기는 전투 보정값을 누적 보관하게 했다.
+- `CombatRuntimeController`가 슬롯 타입, 영웅 역할, 영웅 태그 기준 보정값을 읽어 공격력과 공격 속도에 반영하게 했다.
+- `GameFlowController.SelectDraftCard()`가 카드 선택 전에 선택 가능 여부를 확인하고, 카드 효과 적용이 성공한 경우에만 드래프트를 닫도록 변경했다.
+- `NightDefenseCompletionService`를 추가해 방어 세션의 `RewardGroupId`를 기준으로 승리 보상을 계산하게 했다.
+- `GameFlowController.CompleteNightDefense(DefenseOutcome)` 경로를 추가해 실제 런타임에서는 세션 테이블 보상으로 결과를 확정할 수 있게 했다.
+- 기존 테스트나 임시 호출을 위해 `CompleteNightDefense(DefenseOutcome, long, long)` 경로는 유지했다.
+
+### 왜 이렇게 바꿨는지
+
+BootScene은 앞으로 첫 화면 UI를 붙일 시작점이다.
+씬 내부 UI 배치는 사용자가 직접 하므로, 이번 작업에서는 Unity UI 컴포넌트 참조만 받는 View와 표시 상태를 관리하는 Presenter만 추가했다.
+이렇게 해두면 실제 로딩 화면 디자인을 만들 때 Slider, Fill Image, TextMeshPro만 Inspector에 연결하면 된다.
+
+드래프트 카드는 밤 방어전의 핵심이므로 선택 상태만 저장하고 끝내면 안 된다.
+카드 효과를 전투 런타임 보정값으로 변환하는 계층을 추가해, 카드 선택이 실제 전투 슬롯 공격력과 공격 속도에 영향을 줄 수 있는 길을 열었다.
+아직 모든 효과 타입을 구현하지 않고, 공격력/공격 속도/사거리/스킬 충전 계열처럼 현재 전투 런타임에 연결 가능한 효과부터 지원한다.
+
+보상도 외부에서 숫자를 직접 넣는 방식만 두면 테이블 중심 구조가 무너진다.
+따라서 밤 방어 결과 확정 시 현재 세션의 `RewardGroupId`를 찾아 `RewardService`로 계산하는 흐름을 추가했다.
+최초 클리어 여부는 진행도 갱신 전에 판단해야 하므로 `NightDefenseCompletionService`에서 먼저 계산하고, 그 다음 `GameProgress.CompleteDefenseSession()`을 호출하는 순서로 유지했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `DraftEffectResolverTests.cs`로 드래프트 카드 효과가 전투 보정값과 공격력 계산에 반영되는지 검증했다.
+- `GameContentServiceTests.cs`에 밤 방어 종료 보상이 세션의 RewardGroupId 기준으로 계산되는 테스트를 추가했다.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
