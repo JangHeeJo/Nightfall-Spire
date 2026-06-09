@@ -1346,3 +1346,77 @@ Unity Editor 로그 기준 원인은 `BootLoadingView.EnsureLoadingBarInstance()
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - Unity Editor 로그에서 기존 예외 위치가 `BootLoadingView.cs:133`의 프리팹 생성 코드였음을 확인했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 28: BootScene 로딩바 런타임 프리팹 생성 제거와 고정 UI 배치
+
+커밋 예정: 사용자가 Play 재확인 후 결정
+
+### 변경된 파일
+
+- `Assets/_Project/00_Scenes/BootScene.unity`
+- `Assets/_Project/01_Script/UI/BootLoadingView.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `BootLoadingView`에서 `LoadingBar.prefab` 참조와 런타임 Instantiate 흐름을 제거했다.
+- BootScene의 `BootLoadingView` serialized 데이터에서 `loadingBarPrefab` 참조를 제거했다.
+- BootScene의 `LoadingBarContainer` 아래에 고정 UI `LoadingBarFrame`, `LoadingBarFill`, `StatusText`, `PercentText`, `VersionText`를 직접 배치했다.
+- `BootLoadingView`가 `LoadingBarFill`, `StatusText`, `PercentText`, `VersionText`를 직접 참조하게 했다.
+- `BootLoadingView`에 남아 있던 기본 로딩바 코드 생성 로직을 제거했다.
+- 진행률은 고정 UI인 `LoadingBarFill`의 `Image.Type.Filled`와 `fillAmount`로 표시한다.
+
+### 왜 이렇게 바꿨는지
+
+첫 번째 수정은 `GameObject` 제네릭 생성만 피하면 될 것이라고 판단했지만, 실제 Play 결과 `LoadingBar.prefab` 생성 결과를 GameObject로 해석하지 못했다.
+즉 문제는 단순 캐스팅 방식이 아니라, 현재 로딩바 프리팹이 외부 프리팹 인스턴스 기반으로 저장된 구조 자체와 런타임 생성 방식의 충돌이었다.
+
+BootScene 로딩바는 게임 시작 안정성이 가장 중요하다.
+그리고 로딩바는 팝업이 아니라 고정 UI이므로 런타임 생성 대상이 아니다.
+그래서 외부 프리팹을 런타임 생성하는 흐름을 없애고, BootScene 안에 고정 UI로 직접 배치했다.
+이렇게 하면 로딩바 프리팹 구조와 무관하게 BootScene이 시작되고, UI 참조도 씬에서 명확하게 확인할 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 확인 예정.
+- 이 변경은 실제 Unity Play에서 사용자가 재확인한 뒤 커밋/푸시한다.
+
+## 완료된 작업 29: BootScene 진행률 연출과 고정 UI 기준 정리
+
+커밋 예정: 사용자가 Play 재확인 후 결정
+
+### 변경된 파일
+
+- `Assets/_Project/00_Scenes/BootScene.unity`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Assets/_Project/01_Script/UI/BootLoadingView.cs`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `BootLoadingView`의 진행률 표시를 즉시 변경이 아니라 DOTween으로 부드럽게 따라가게 했다.
+- 로딩 진행률이 50% 이상이 되면 `NightLoadingBg`가 1.2초 동안 페이드 인되도록 바꿨다.
+- 기존 낮/밤 이미지 5초 순환 방식은 제거하고, 로딩 진행률 기반 전환으로 바꿨다.
+- `GameRoot`에 최소 BootScene 표시 시간 2.6초를 추가했다.
+- 실제 데이터 로드가 1초 안에 끝나도 로딩바 상승과 배경 전환이 보인 뒤 LobbyScene으로 넘어가게 했다.
+- 고정 UI는 씬 배치, 팝업 UI만 인스턴스 생성한다는 UI 배치 기준을 아키텍처 문서에 추가했다.
+- BootScene 로딩 텍스트가 실제로 보이도록 `StatusText`, `PercentText`, `VersionText`를 고정 UI로 추가했다.
+
+### 왜 이렇게 바꿨는지
+
+현재 TSV 데이터는 작아서 실제 로딩이 매우 빠르게 끝난다.
+그래서 로딩 화면을 만들었어도 사용자 눈에는 바로 씬이 넘어가는 것처럼 보였다.
+
+BootScene은 첫 인상을 주는 화면이므로, 실제 작업 시간이 짧아도 최소한의 진행 연출이 필요하다.
+이번 변경으로 데이터가 빠르게 로드되어도 로딩바가 조금씩 올라가고, 절반 정도 찼을 때 낮 이미지에서 밤 이미지로 전환되는 장면을 볼 수 있게 했다.
+
+또한 고정 UI와 팝업 UI의 생성 기준을 명확히 했다.
+로딩 화면처럼 씬에 항상 존재하는 UI는 씬에 배치하고, 설정창이나 보상창처럼 필요할 때 열리는 UI만 `PopupManager`가 프리팹으로 생성한다.
+이 기준을 지켜야 BootScene 로딩바처럼 고정 UI를 불필요하게 런타임 Instantiate하다가 생기는 오류를 피할 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 확인 예정.
+- 실제 Unity Play 확인 후 커밋/푸시한다.

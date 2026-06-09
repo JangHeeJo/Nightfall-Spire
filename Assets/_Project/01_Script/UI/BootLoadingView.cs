@@ -10,46 +10,64 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
     [Header("Background")]
     [SerializeField] private Image lightBackgroundImage; // 낮 버전 배경 이미지
     [SerializeField] private Image nightBackgroundImage; // 밤 버전 배경 이미지
-    [SerializeField] private float backgroundHoldSeconds = 5f; // 한 배경을 유지하는 시간
+    [SerializeField] private float backgroundChangeProgress = 0.5f; // 밤 배경으로 전환을 시작하는 진행률
     [SerializeField] private float backgroundFadeSeconds = 1.2f; // 낮/밤 배경이 교차되는 시간
 
     [Header("Loading")]
-    [SerializeField] private GameObject loadingBarPrefab; // 런타임에 생성할 로딩바 프리팹
-    [SerializeField] private RectTransform loadingBarContainer; // 로딩바 프리팹을 배치할 부모
+    [SerializeField] private RectTransform loadingBarContainer; // 로딩바를 배치할 부모
     [SerializeField] private Slider progressSlider; // Slider 방식 진행률 표시
     [SerializeField] private Image progressFillImage; // Image Fill 방식 진행률 표시
     [SerializeField] private TMP_Text statusText; // 로딩 단계 문구
     [SerializeField] private TMP_Text percentText; // 퍼센트 표시
     [SerializeField] private TMP_Text versionText; // 버전 표시
+    [SerializeField] private float progressTweenSeconds = 0.45f; // 실제 로딩값을 화면에 부드럽게 반영하는 시간
 
-    private Sequence backgroundSequence; // 낮/밤 배경 반복 연출 Tween
-    private GameObject loadingBarInstance; // 런타임에 생성된 로딩바 인스턴스
+    private Tween backgroundTween; // 진행률 50% 지점에서 실행되는 배경 전환 Tween
+    private Tween progressTween; // 로딩바 진행률 표시 Tween
+    private float displayedProgress; // 화면에 현재 표시 중인 진행률
+    private bool nightBackgroundShown; // 밤 배경 전환을 이미 실행했는지 여부
 
     // View가 생성될 때 비어 있는 UI 참조를 자식 오브젝트에서 자동으로 보강합니다.
     private void Awake()
     {
-        EnsureLoadingBarInstance();
         EnsureLoadingReferences();
     }
 
-    // View가 켜질 때 낮/밤 배경 교차 연출을 시작합니다.
+    // View가 켜질 때 배경과 진행률 표시 상태를 초기화합니다.
     private void OnEnable()
     {
-        EnsureLoadingBarInstance();
         EnsureLoadingReferences();
-        StartBackgroundLoop();
+        ResetBackground();
+        ApplyProgress(displayedProgress);
     }
 
     // View가 꺼질 때 진행 중인 DOTween 연출을 정리합니다.
     private void OnDisable()
     {
-        StopBackgroundLoop();
+        StopTweens();
     }
 
     // 0~1 진행률을 Slider, Image Fill, 퍼센트 텍스트에 반영합니다.
     public void SetProgress(float progress01)
     {
         float clamped = Mathf.Clamp01(progress01);
+
+        if (progressTween != null && progressTween.IsActive())
+            progressTween.Kill();
+
+        progressTween = DOTween.To(() => displayedProgress, ApplyProgress, clamped, progressTweenSeconds)
+            .SetEase(Ease.OutCubic)
+            .SetUpdate(true);
+    }
+
+    // 실제 UI 컴포넌트에 진행률 값을 즉시 반영합니다.
+    private void ApplyProgress(float progress01)
+    {
+        float clamped = Mathf.Clamp01(progress01);
+        displayedProgress = clamped;
+
+        if (clamped >= backgroundChangeProgress)
+            ShowNightBackground();
 
         if (progressSlider != null)
             progressSlider.value = clamped;
@@ -75,35 +93,47 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
             versionText.text = nextVersionText ?? string.Empty;
     }
 
-    // 낮/밤 배경 이미지를 DOTween으로 천천히 교차시킵니다.
-    private void StartBackgroundLoop()
+    // 로딩 시작 상태의 낮 배경을 표시하고 밤 배경은 숨깁니다.
+    private void ResetBackground()
     {
-        StopBackgroundLoop();
-
         if (lightBackgroundImage == null || nightBackgroundImage == null)
             return;
 
+        if (backgroundTween != null && backgroundTween.IsActive())
+            backgroundTween.Kill();
+
+        nightBackgroundShown = false;
         lightBackgroundImage.color = WithAlpha(lightBackgroundImage.color, 1f);
         nightBackgroundImage.color = WithAlpha(nightBackgroundImage.color, 0f);
+    }
 
-        backgroundSequence = DOTween.Sequence()
-            .AppendInterval(backgroundHoldSeconds)
-            .Append(nightBackgroundImage.DOFade(1f, backgroundFadeSeconds))
-            .AppendInterval(backgroundHoldSeconds)
-            .Append(nightBackgroundImage.DOFade(0f, backgroundFadeSeconds))
-            .SetLoops(-1)
-            .SetEase(Ease.Linear)
+    // 진행률이 절반 이상 차면 밤 배경을 천천히 드러냅니다.
+    private void ShowNightBackground()
+    {
+        if (nightBackgroundShown || nightBackgroundImage == null)
+            return;
+
+        nightBackgroundShown = true;
+
+        if (backgroundTween != null && backgroundTween.IsActive())
+            backgroundTween.Kill();
+
+        backgroundTween = nightBackgroundImage.DOFade(1f, backgroundFadeSeconds)
+            .SetEase(Ease.InOutSine)
             .SetUpdate(true);
     }
 
-    // 현재 배경 연출 Tween을 중단합니다.
-    private void StopBackgroundLoop()
+    // 현재 진행 중인 로딩 UI Tween을 모두 중단합니다.
+    private void StopTweens()
     {
-        if (backgroundSequence == null)
-            return;
+        if (backgroundTween != null && backgroundTween.IsActive())
+            backgroundTween.Kill();
 
-        backgroundSequence.Kill();
-        backgroundSequence = null;
+        if (progressTween != null && progressTween.IsActive())
+            progressTween.Kill();
+
+        backgroundTween = null;
+        progressTween = null;
     }
 
     // 기존 색상에서 알파만 바꾼 색상을 반환합니다.
@@ -113,7 +143,7 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
         return color;
     }
 
-    // Inspector 연결이 비어 있으면 자식 로딩바 프리팹에서 Slider와 Fill 이미지를 찾아 연결합니다.
+    // Inspector 연결이 비어 있으면 자식 오브젝트에서 Slider와 Fill 이미지를 찾아 연결합니다.
     private void EnsureLoadingReferences()
     {
         if (progressSlider == null)
@@ -121,47 +151,5 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
 
         if (progressFillImage == null && progressSlider != null && progressSlider.fillRect != null)
             progressFillImage = progressSlider.fillRect.GetComponent<Image>();
-    }
-
-    // 씬에 로딩바 프리팹 참조가 있으면 지정된 컨테이너 아래에 한 번만 생성합니다.
-    private void EnsureLoadingBarInstance()
-    {
-        if (loadingBarInstance != null || loadingBarPrefab == null)
-            return;
-
-        Transform parent = loadingBarContainer != null ? loadingBarContainer : transform;
-
-        // 외부 프리팹 인스턴스 기반 로딩바는 제네릭 Instantiate에서 캐스팅 예외가 날 수 있어 Object로 먼저 생성합니다.
-        Object instantiatedObject = Instantiate((Object)loadingBarPrefab, parent);
-        loadingBarInstance = ResolveInstantiatedGameObject(instantiatedObject);
-
-        if (loadingBarInstance == null)
-        {
-            Debug.LogError("[BootLoadingView] LoadingBar 프리팹 생성 결과를 GameObject로 해석할 수 없습니다.");
-            return;
-        }
-
-        loadingBarInstance.name = loadingBarPrefab.name;
-
-        if (loadingBarInstance.transform is RectTransform rectTransform)
-        {
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.localScale = Vector3.one;
-        }
-    }
-
-    // Unity가 프리팹 복제 결과를 GameObject 또는 Component로 돌려주는 경우를 모두 GameObject로 통일합니다.
-    private static GameObject ResolveInstantiatedGameObject(Object instantiatedObject)
-    {
-        if (instantiatedObject is GameObject gameObject)
-            return gameObject;
-
-        if (instantiatedObject is Component component)
-            return component.gameObject;
-
-        return null;
     }
 }

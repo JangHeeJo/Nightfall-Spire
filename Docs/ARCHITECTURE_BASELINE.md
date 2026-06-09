@@ -376,9 +376,12 @@ GameRoot.InitializeAsync()
 BootScene에 로딩 View가 없어도 게임 시작은 실패하지 않아야 합니다.
 따라서 `GameRoot`는 `BootLoadingView`를 찾지 못하면 로딩 UI 없이 초기화 흐름을 계속 진행합니다.
 
-로딩 배경은 `LightLoadingBg`와 `NightLoadingBg`를 같은 위치에 겹쳐 두고, `BootLoadingView`가 DOTween으로 밤 배경 알파를 서서히 올렸다 내리는 방식으로 순환시킵니다.
-기본값은 5초 유지, 1.2초 전환입니다.
-로딩바는 `LoadingBar.prefab`을 `LoadingBarContainer` 아래에 런타임으로 생성하고, 내부 Slider를 자동으로 찾아 진행률을 반영합니다.
+로딩 배경은 `LightLoadingBg`와 `NightLoadingBg`를 같은 위치에 겹쳐 두고, `BootLoadingView`가 DOTween으로 밤 배경 알파를 서서히 올리는 방식으로 전환합니다.
+진행률이 50%에 도달하면 밤 배경을 1.2초 동안 페이드 인합니다.
+실제 데이터 로딩이 빨리 끝나도 `GameRoot`는 최소 2.6초 동안 BootScene을 유지해 로딩바 상승과 배경 전환이 보이게 합니다.
+로딩바와 로딩 텍스트는 `LoadingBarContainer` 아래에 고정 UI로 직접 배치합니다.
+`BootLoadingView`는 `LoadingBarFill`, `StatusText`, `PercentText`, `VersionText` 참조를 받아 값만 갱신합니다.
+외부 프리팹 인스턴스 기반 로딩바는 고정 UI로도, 런타임 생성 대상으로도 쓰지 않습니다.
 
 현재 BootScene 기준 하이어라키는 아래처럼 둡니다.
 
@@ -391,11 +394,29 @@ BootScene
       ├─ LightBackground
       ├─ NightBackground
       └─ LoadingBarContainer
+         ├─ LoadingBarFrame
+         │  └─ LoadingBarFill
+         ├─ StatusText
+         ├─ PercentText
+         └─ VersionText
 ```
 
 `BootLoadingRoot`에는 `BootLoadingView`가 붙어 있습니다.
-실제 UI 작업자는 이 오브젝트 아래 배경 이미지와 로딩바 위치를 조정하고, 상태 텍스트, 퍼센트 텍스트, 버전 텍스트가 필요할 때만 추가로 배치한 뒤 Inspector에 연결합니다.
+실제 UI 작업자는 이 오브젝트 아래 배경 이미지, 로딩바, 상태 텍스트, 퍼센트 텍스트, 버전 텍스트 위치를 조정하고 Inspector 참조를 유지합니다.
 BootScene의 `GameRoot`에는 실제 부트스트랩 컴포넌트만 유지하고, 연습용 스크립트나 임시 테스트 컴포넌트는 붙이지 않습니다.
+
+## UI Placement Rules
+
+고정 UI는 씬에 직접 배치합니다.
+로딩 화면, 로비 기본 HUD, 재화 HUD, 전투 HUD, 하단 메뉴, 스테이지 정보, 화면 페이드 레이어처럼 항상 해당 씬에 존재하는 UI는 SceneRoot가 찾아 Presenter와 연결합니다.
+고정 UI는 런타임 프리팹 생성 대상으로 보지 않습니다.
+
+팝업 UI만 프리팹으로 관리하고 `PopupManager`가 필요할 때 인스턴스로 생성합니다.
+설정, 확인창, 보상, 카드 선택, 영웅 상세, 장비 상세, 구매 확인처럼 열고 닫히는 UI가 이 범위입니다.
+팝업은 각각 전용 View 스크립트를 갖고, 공통 열기/닫기/스택 처리는 `PopupManager`와 `BasePopup` 계층이 맡습니다.
+
+전투 중 반복 생성되는 월드 UI와 이펙트성 UI는 팝업이 아니라 별도 풀링 대상으로 분리합니다.
+데미지 숫자, 몬스터 HP바, 상태이상 아이콘, 드랍 연출은 전투 런타임 풀에서 관리합니다.
 
 ## Draft Effect Runtime
 

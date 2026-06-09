@@ -5,6 +5,8 @@ using UnityEngine;
 // BootScene의 GameObject 이름도 GameRoot로 맞춥니다.
 public sealed class GameRoot : MonoBehaviour
 {
+    private const float MinimumBootLoadingSeconds = 2.6f; // 로딩이 빨라도 부트 화면 진행과 배경 전환을 보여줄 최소 시간
+
     public static GameRoot Instance { get; private set; } // 전역 접근용 인스턴스
 
     public GameContext Context { get; private set; } // 현재 게임 진행 데이터 묶음
@@ -40,6 +42,8 @@ public sealed class GameRoot : MonoBehaviour
     // 게임 시작에 필요한 핵심 시스템을 순서대로 초기화합니다.
     private async UniTask InitializeAsync()
     {
+        float bootStartTime = Time.realtimeSinceStartup;
+
         Debug.Log("[GameRoot] 초기화 시작");
 
         CreateCoreSystems();
@@ -68,13 +72,31 @@ public sealed class GameRoot : MonoBehaviour
 
         // BootScene에서 LobbyScene으로 이동합니다. LobbyScene은 낮 준비 화면 역할을 먼저 맡습니다.
         bootLoadingPresenter?.Report(0.85f, "Loading lobby...");
+        await WaitForMinimumBootLoadingTimeAsync(bootStartTime);
+        bootLoadingPresenter?.Complete();
+        await WaitRealtimeSecondsAsync(0.25f);
         await SceneLoadManager.LoadLobbySceneAsync();
 
         // 로비 씬 로드 완료 후 낮 준비 상태로 진입합니다.
         GameFlowController.EnterDayPreparation();
-        bootLoadingPresenter?.Complete();
 
         Debug.Log("[GameRoot] 초기화 완료");
+    }
+
+    // 실제 초기화가 빨리 끝나도 로딩바와 낮/밤 배경 전환을 볼 수 있게 최소 표시 시간을 보장합니다.
+    private static async UniTask WaitForMinimumBootLoadingTimeAsync(float bootStartTime)
+    {
+        while (Time.realtimeSinceStartup - bootStartTime < MinimumBootLoadingSeconds)
+            await UniTask.Yield();
+    }
+
+    // 시간 배율과 상관없이 짧은 UI 연출 시간을 기다립니다.
+    private static async UniTask WaitRealtimeSecondsAsync(float seconds)
+    {
+        float waitStartTime = Time.realtimeSinceStartup;
+
+        while (Time.realtimeSinceStartup - waitStartTime < seconds)
+            await UniTask.Yield();
     }
 
     // Core 시스템들을 생성합니다.
