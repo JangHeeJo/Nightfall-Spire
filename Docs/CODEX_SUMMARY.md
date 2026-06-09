@@ -1226,3 +1226,51 @@ BootScene은 앞으로 첫 화면 UI를 붙일 시작점이다.
 - `DraftEffectResolverTests.cs`로 드래프트 카드 효과가 전투 보정값과 공격력 계산에 반영되는지 검증했다.
 - `GameContentServiceTests.cs`에 밤 방어 종료 보상이 세션의 RewardGroupId 기준으로 계산되는 테스트를 추가했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 25: BootScene 최소 UI 루트 구성
+
+커밋 예정: `Set up boot scene loading root`
+
+### 변경된 파일
+
+- `Assets/_Project/00_Scenes/BootScene.unity`
+
+### 주요 변경
+
+- BootScene에 `Canvas_BootUI`를 추가했다.
+- `Canvas_BootUI` 아래에 `BootLoadingRoot`를 추가했다.
+- `BootLoadingRoot`에 `BootLoadingView` 스크립트를 연결했다.
+- `Canvas_BootUI`에는 `Canvas`, `CanvasScaler`, `GraphicRaycaster`를 붙였다.
+- 모바일 세로 화면 기준으로 `CanvasScaler` 기준 해상도를 `1080 x 1920`, Match 값을 `0.5`로 잡았다.
+- `BootLoadingView`의 `progressSlider`, `progressFillImage`, `statusText`, `percentText`, `versionText` 참조는 비워뒀다.
+- BootScene의 `GameRoot`에 붙어 있던 연습용 `Test` 스크립트 연결을 제거했다.
+
+### 왜 이렇게 바꿨는지
+
+BootScene은 게임 시작 시 가장 먼저 열리는 씬이다.
+지금까지는 `GameRoot`만 있고 로딩 UI를 붙일 루트가 없어서, 사용자가 UI를 만들 때 어디에 어떤 스크립트를 붙여야 하는지 기준이 없었다.
+
+이번 작업으로 아래 구조가 생겼다.
+
+```text
+BootScene
+├─ Main Camera
+├─ GameRoot
+└─ Canvas_BootUI
+   └─ BootLoadingRoot
+      └─ BootLoadingView
+```
+
+사용자는 이제 `BootLoadingRoot` 아래에 Slider, Fill Image, TextMeshPro 텍스트를 배치한 뒤 `BootLoadingView`의 Inspector 참조에 연결하면 된다.
+코드 쪽에서는 `GameRoot`가 BootScene 시작 시 자동으로 `BootLoadingView`를 찾아 초기화 진행률을 전달한다.
+
+연습용 `Test` 스크립트는 코드 파일은 유지하되, 실제 BootScene 시작점인 `GameRoot`에는 붙어 있으면 안 된다.
+그래서 씬 연결만 제거했다.
+
+### 검증
+
+- BootScene YAML에서 `Canvas_BootUI`, `BootLoadingRoot`, `BootLoadingView` 연결을 확인했다.
+- BootScene에서 `Assembly-CSharp::Test` 연결이 제거된 것을 확인했다.
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- Unity 배치 모드 검증은 실행이 즉시 종료되고 로그 파일이 남지 않아 별도 로그 검증은 하지 못했다.
+- 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.

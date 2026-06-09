@@ -376,6 +376,20 @@ GameRoot.InitializeAsync()
 BootScene에 로딩 View가 없어도 게임 시작은 실패하지 않아야 합니다.
 따라서 `GameRoot`는 `BootLoadingView`를 찾지 못하면 로딩 UI 없이 초기화 흐름을 계속 진행합니다.
 
+현재 BootScene 기준 하이어라키는 아래처럼 둡니다.
+
+```text
+BootScene
+├─ Main Camera
+├─ GameRoot
+└─ Canvas_BootUI
+   └─ BootLoadingRoot
+```
+
+`BootLoadingRoot`에는 `BootLoadingView`가 붙어 있습니다.
+실제 UI 작업자는 이 오브젝트 아래에 진행바, Fill Image, 상태 텍스트, 퍼센트 텍스트, 버전 텍스트를 배치하고 Inspector에 연결합니다.
+BootScene의 `GameRoot`에는 실제 부트스트랩 컴포넌트만 유지하고, 연습용 스크립트나 임시 테스트 컴포넌트는 붙이지 않습니다.
+
 ## Draft Effect Runtime
 
 드래프트 선택은 `DraftProgress`에 선택한 카드 ID만 저장하는 것으로 끝나지 않습니다.
