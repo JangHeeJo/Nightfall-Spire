@@ -1349,7 +1349,7 @@ Unity Editor 로그 기준 원인은 `BootLoadingView.EnsureLoadingBarInstance()
 
 ## 완료된 작업 28: BootScene 로딩바 런타임 프리팹 생성 제거와 고정 UI 배치
 
-커밋 예정: 사용자가 Play 재확인 후 결정
+커밋 완료: `c3c9169 Fix boot loading scene UI setup`
 
 ### 변경된 파일
 
@@ -1379,12 +1379,12 @@ BootScene 로딩바는 게임 시작 안정성이 가장 중요하다.
 
 ### 검증
 
-- `dotnet build "Nightfall Spire.sln"` 확인 예정.
-- 이 변경은 실제 Unity Play에서 사용자가 재확인한 뒤 커밋/푸시한다.
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 사용자가 Unity에서 BootScene 로딩바 생성과 씬 전환을 확인했다.
 
 ## 완료된 작업 29: BootScene 진행률 연출과 고정 UI 기준 정리
 
-커밋 예정: 사용자가 Play 재확인 후 결정
+커밋 완료: `c3c9169 Fix boot loading scene UI setup`
 
 ### 변경된 파일
 
@@ -1418,5 +1418,54 @@ BootScene은 첫 인상을 주는 화면이므로, 실제 작업 시간이 짧�
 
 ### 검증
 
-- `dotnet build "Nightfall Spire.sln"` 확인 예정.
-- 실제 Unity Play 확인 후 커밋/푸시한다.
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 사용자가 Unity에서 BootScene 로딩 UI가 생성되는 것을 확인했다.
+
+## 진행 중 작업 30: LobbyScene을 Lobby_Default 프리팹 기준으로 전환
+
+커밋 예정: Unity에서 Lobby_Default 배치 확인 후 결정
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Editor/LobbyDefaultPrefabSetupUtility.cs`
+- `Assets/_Project/01_Script/Editor/LobbyDefaultPrefabSetupUtility.cs.meta`
+- `Assets/_Project/00_Scenes/LobbyScene.unity`
+- `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
+- `Assets/_Project/01_Script/UI/LobbyScreen.cs`
+- `Assets/_Project/03_Art/LobbyScene/Lobby_Default.prefab`
+- `Assets/_Project/03_Art/LobbyScene/Lobby_Default.prefab.meta`
+- `Docs/ARCHITECTURE_BASELINE.md`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- placeholder 고정 UI를 자동 생성하던 `LobbySceneSetupUtility`를 제거했다.
+- `LobbyDefaultPrefabSetupUtility`를 추가해 LobbyScene의 고정 UI를 `Lobby_Default` 프리팹 기준으로 세팅하게 했다.
+- `Lobby_Default`는 `Canvas_StaticUI > LobbyStaticUIRoot` 아래에 씬 고정 UI로 배치한다.
+- 기존 placeholder 오브젝트는 Unity 세팅 유틸리티가 제거하고, `Lobby_Default` 하나를 로비 기본 UI로 사용한다.
+- `LobbyScreen`은 `Lobby_Default` 안의 `Button_03_Red` 또는 `START/FIGHT` 라벨 버튼을 밤 방어 시작 버튼으로 찾는다.
+- `Button_03_Red`에 Button 컴포넌트가 빠져 있어도 기존 Graphic을 유지한 채 클릭 가능한 Button을 보강한다.
+- 이전 placeholder HUD인 `TopCurrencyHud`를 씬에서 제거하고, `LobbyStaticUIRoot`는 `LobbyScreen`을 직접 참조한다.
+- `Lobby_Default`의 `ResourceBar_Group`을 실제 재화 View로 연결하기 전까지 `CurrencyHudPresenter` 생성은 조용히 건너뛴다.
+- 데모 문구 일부를 프로젝트 문구로 바꾼다.
+  - `START` → `FIGHT`
+  - `Battle 5` → `Week 1 Night 1`
+  - `Hero's Arena` → `Nightfall Spire`
+  - `Inventory` → `Heroes`
+  - `Mission` → `Quest`
+  - `AD Skip` → `Reward`
+
+### 왜 이렇게 바꿨는지
+
+처음 만든 placeholder 로비 뼈대는 구조를 설명하기에는 좋지만, 실제 제공된 `Lobby_Default` 프리팹보다 완성도가 낮다.
+사용자가 제공한 프리팹에는 로비 레이아웃, 재화바, 좌우 버튼, 하단 탭, 시작 버튼이 이미 들어 있으므로 이것을 기준으로 쓰는 편이 낫다.
+
+그래서 임시 placeholder 자동 생성 방식은 폐기하고, `Lobby_Default`를 우리 프로젝트 로비 고정 UI 원본으로 채택한다.
+기능 스크립트는 계속 최소화해서, 버튼 하나마다 별도 View/Presenter를 만들지 않고 실제 기능이 확정되는 묶음 단위로만 추가한다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- `LobbyScene.unity`에서 `TopCurrencyHud`, `GoalPanel`, `FightPanel` 같은 이전 placeholder 오브젝트가 남아 있지 않은 것을 확인했다.
+- `LobbyScene.unity`에서 `Canvas_StaticUI > LobbyStaticUIRoot > Lobby_Default` 구조와 `LobbyStaticUIRoot.lobbyScreen` 참조를 확인했다.
+- Unity에서 `Nightfall Spire > Setup > Lobby Default Prefab UI` 메뉴 또는 LobbyScene 재오픈으로 실제 하이어라키 확인 필요.

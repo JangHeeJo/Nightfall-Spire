@@ -55,8 +55,8 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         NightDefenseRequested?.Invoke();
     }
 
-    // 현재 로비 씬의 FightStartView 이름 오브젝트를 찾아 Button으로 사용합니다.
-    // 이후 실제 UI 프리팹이 정리되면 Inspector에서 명시적으로 연결하면 됩니다.
+    // 현재 로비 씬의 Lobby_Default 프리팹 안에 있는 시작 버튼을 찾아 Button으로 사용합니다.
+    // 프리팹 구조가 바뀌어도 Button_03_Red 이름을 우선 기준으로 삼습니다.
     private void EnsureNightDefenseStartButton()
     {
         if (nightDefenseStartButton == null)
@@ -65,7 +65,9 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         if (nightDefenseStartButton == null)
             return;
 
+        nightDefenseStartButtonImage ??= nightDefenseStartButton.targetGraphic as Image;
         nightDefenseStartButtonImage ??= nightDefenseStartButton.GetComponent<Image>();
+        nightDefenseStartButtonImage ??= nightDefenseStartButton.GetComponentInChildren<Image>(true);
 
         if (nightDefenseStartButtonImage == null)
         {
@@ -77,19 +79,59 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         nightDefenseStartButton.targetGraphic = nightDefenseStartButtonImage;
     }
 
-    // 화면 아래에 있는 기존 FightStartView 오브젝트를 찾아 Button 컴포넌트를 보장합니다.
+    // Lobby_Default 프리팹 안의 Button_03_Red 또는 START/FIGHT 라벨을 가진 버튼을 찾습니다.
     private Button FindNightDefenseStartButton()
     {
-        Transform[] children = transform.GetComponentsInChildren<Transform>(true);
+        Transform namedButton = FindChildByName(transform, "Button_03_Red");
 
-        for (int i = 0; i < children.Length; i++)
+        if (namedButton != null)
+            return EnsureButtonComponent(namedButton);
+
+        Button[] buttons = transform.GetComponentsInChildren<Button>(true);
+
+        for (int i = 0; i < buttons.Length; i++)
         {
-            if (children[i].name != "FightStartView")
-                continue;
+            if (buttons[i].name == "Button_03_Red")
+                return buttons[i];
+        }
 
-            return children[i].GetComponent<Button>() ?? children[i].gameObject.AddComponent<Button>();
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            TMPro.TMP_Text label = buttons[i].GetComponentInChildren<TMPro.TMP_Text>(true);
+
+            if (label != null && (label.text == "START" || label.text == "FIGHT"))
+                return buttons[i];
         }
 
         return null;
+    }
+
+    // 현재 로비 View 하위에서 이름이 같은 UI Transform을 찾습니다.
+    private Transform FindChildByName(Transform root, string objectName)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            if (transforms[i].name == objectName)
+                return transforms[i];
+        }
+
+        return null;
+    }
+
+    // 프리팹에 Button 컴포넌트가 빠져 있어도 기존 이미지를 그대로 클릭 대상으로 사용합니다.
+    private Button EnsureButtonComponent(Transform target)
+    {
+        Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
+        Graphic targetGraphic = target.GetComponent<Graphic>() ?? target.GetComponentInChildren<Graphic>(true);
+
+        if (targetGraphic != null)
+        {
+            targetGraphic.raycastTarget = true;
+            button.targetGraphic = targetGraphic;
+        }
+
+        return button;
     }
 }

@@ -306,8 +306,29 @@ LobbyScreen
 재화 HUD처럼 여러 화면에서 재사용되거나 독립 상태 구독이 필요한 위젯은 별도 Presenter를 둘 수 있습니다.
 하지만 단순 버튼 하나를 이유로 `ButtonNameView`, `ButtonNamePresenter`를 계속 추가하지 않습니다.
 
-현재 로비 씬의 `FightStartView` 이름 오브젝트는 `LobbyScreen`이 밤 방어 시작 버튼으로 찾아 사용합니다.
-이후 실제 로비 UI 디자인이 확정되면 프리팹에 Button, Image, TextMeshPro 라벨을 명시적으로 구성하고 `LobbyScreen`의 화면 단위 계약을 유지합니다.
+현재 로비 씬의 기본 UI는 `Assets/_Project/03_Art/LobbyScene/Lobby_Default.prefab`을 기준으로 둡니다.
+`Lobby_Default`는 로비 고정 UI이므로 런타임 생성 대상이 아니라 `Canvas_StaticUI > LobbyStaticUIRoot` 아래에 씬 오브젝트로 배치합니다.
+이후 실제 로비 UI 디자인이 확정되면 이 프리팹의 텍스트, 중앙 성채 이미지, 버튼 라벨을 프로젝트에 맞게 교체하고 `LobbyScreen`의 화면 단위 계약을 유지합니다.
+기존 placeholder HUD였던 `TopCurrencyHud`는 제거하고, `Lobby_Default` 내부의 `ResourceBar_Group`을 실제 재화 View 연결 대상으로 봅니다.
+`ResourceBar_Group` 연결 전까지 `LobbyStaticUIRoot`는 재화 HUD Presenter 생성을 건너뛰고 로비 화면 입력만 초기화합니다.
+
+현재 LobbyScene 고정 UI는 아래 이름을 기준으로 둡니다.
+
+```text
+Canvas_StaticUI
+└─ LobbyStaticUIRoot
+   └─ Lobby_Default
+      ├─ ResourceBar_Group
+      ├─ Group_LeftButtons
+      ├─ Group_RightButtons
+      ├─ SampleImage_Map
+      ├─ Button_03_Red
+      └─ Tab_01_BottomFlushMenu
+```
+
+`LobbyScreen`은 `Lobby_Default` 내부의 `Button_03_Red` 또는 `START/FIGHT` 라벨 버튼을 밤 방어 시작 버튼으로 사용합니다.
+`Button_03_Red`에 Button 컴포넌트가 없으면 기존 Graphic을 유지하면서 Button만 보강합니다.
+기능 스크립트는 UI 기능이 확정될 때 해당 묶음 단위로 추가하고, 버튼 하나마다 별도 View/Presenter를 만들지 않습니다.
 
 ## Popup Architecture
 

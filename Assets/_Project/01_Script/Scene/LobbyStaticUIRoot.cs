@@ -28,16 +28,13 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     }
 
     // CurrencyProgress(Model), CurrencyHudView(View), CurrencyHudPresenter(Presenter)를 조립합니다.
-    // Inspector 연결이 비어 있으면 자식 오브젝트에서 CurrencyHudView를 찾아 초기 세팅 단계의 실수를 줄입니다.
+    // Lobby_Default 프리팹의 ResourceBar를 실제 View로 연결하기 전까지는 HUD Presenter 생성을 건너뜁니다.
     private void CreateCurrencyHudPresenter()
     {
         currencyHudView ??= GetComponentInChildren<CurrencyHudView>(true);
 
         if (currencyHudView == null)
-        {
-            Debug.LogWarning("[LobbyStaticUIRoot] CurrencyHudView가 연결되지 않았습니다.");
             return;
-        }
 
         currencyHudPresenter?.Dispose();
         currencyHudPresenter = new CurrencyHudPresenter(context.CurrencyProgress, currencyHudView);
