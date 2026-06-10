@@ -3,21 +3,23 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 // 로비 화면 단위 Presenter입니다.
-// 버튼 하나마다 Presenter를 만들지 않고 로비의 주요 화면 액션을 한 곳에서 GameFlowController로 연결합니다.
+// 버튼별 기능을 직접 알지 않고, View가 전달한 명령 키를 로비 Root의 라우터로 넘깁니다.
 public sealed class LobbyPresenter : IDisposable
 {
     private readonly ILobbyScreenView view; // 로비 화면 View
-    private readonly Func<UniTask<bool>> loadNightDefenseAsync; // 밤 방어 씬 로드 요청
+    private readonly Func<string, UniTask<bool>> executeCommandAsync; // 로비 명령 실행 라우터
 
     private bool isInitialized; // 중복 초기화 방지
     private bool isDisposed; // Dispose 이후 비동기 콜백 방지
-    private bool isLoadingNightDefense; // 밤 방어 로딩 중 중복 입력 방지
+    private bool isExecutingCommand; // 명령 실행 중 중복 입력 방지
 
-    // 로비 View와 밤 방어 씬 로드 함수를 주입받습니다.
-    public LobbyPresenter(ILobbyScreenView view, Func<UniTask<bool>> loadNightDefenseAsync)
+    // 로비 View와 명령 실행 라우터를 주입받습니다.
+    public LobbyPresenter(
+        ILobbyScreenView view,
+        Func<string, UniTask<bool>> executeCommandAsync)
     {
         this.view = view ?? throw new ArgumentNullException(nameof(view));
-        this.loadNightDefenseAsync = loadNightDefenseAsync ?? throw new ArgumentNullException(nameof(loadNightDefenseAsync));
+        this.executeCommandAsync = executeCommandAsync ?? throw new ArgumentNullException(nameof(executeCommandAsync));
     }
 
     // 로비 화면 입력 구독을 시작합니다.
@@ -29,36 +31,41 @@ public sealed class LobbyPresenter : IDisposable
         if (!view.IsReady())
             Debug.LogWarning("[LobbyPresenter] LobbyScreen의 버튼 참조가 완전히 준비되지 않았습니다.");
 
-        view.NightDefenseRequested += OnNightDefenseRequested;
-        view.SetNightDefenseStartInteractable(true);
+        view.CommandRequested += OnCommandRequested;
         isInitialized = true;
     }
 
-    // 로비에서 밤 방어 시작 입력이 들어오면 씬 로드 흐름을 시작합니다.
-    private void OnNightDefenseRequested()
+    // 로비 View에서 전달한 명령 키를 공통 실행 흐름으로 넘깁니다.
+    private void OnCommandRequested(string commandKey)
     {
-        LoadNightDefenseAsync().Forget();
+        Debug.Log($"[LobbyPresenter] 로비 명령 수신: {commandKey}");
+        ExecuteCommandAsync(commandKey).Forget();
     }
 
-    // 중복 입력을 막고 GameFlowController에 밤 방어 씬 로드를 요청합니다.
-    private async UniTaskVoid LoadNightDefenseAsync()
+    // 명령 실행 중에는 같은 프레임의 중복 입력을 막고, 실패 시 버튼을 다시 활성화합니다.
+    private async UniTaskVoid ExecuteCommandAsync(string commandKey)
     {
-        if (isLoadingNightDefense || isDisposed)
+        if (isExecutingCommand || isDisposed || string.IsNullOrWhiteSpace(commandKey))
             return;
 
-        isLoadingNightDefense = true;
-        view.SetNightDefenseStartInteractable(false);
+        isExecutingCommand = true;
+        view.SetCommandInteractable(commandKey, false);
 
-        bool loaded = await loadNightDefenseAsync();
-
-        if (isDisposed)
-            return;
-
-        if (!loaded)
+        try
         {
-            Debug.LogWarning("[LobbyPresenter] 밤 방어 씬 로드 요청이 거부되었습니다.");
-            isLoadingNightDefense = false;
-            view.SetNightDefenseStartInteractable(true);
+            bool handled = await executeCommandAsync(commandKey);
+            Debug.Log($"[LobbyPresenter] 로비 명령 처리 결과: {commandKey}, Handled: {handled}");
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[LobbyPresenter] 로비 명령 처리 중 예외 발생: {commandKey}\n{exception}");
+        }
+        finally
+        {
+            if (!isDisposed)
+                view.SetCommandInteractable(commandKey, true);
+
+            isExecutingCommand = false;
         }
     }
 
@@ -68,7 +75,7 @@ public sealed class LobbyPresenter : IDisposable
         if (isDisposed)
             return;
 
-        view.NightDefenseRequested -= OnNightDefenseRequested;
+        view.CommandRequested -= OnCommandRequested;
         isDisposed = true;
     }
 }

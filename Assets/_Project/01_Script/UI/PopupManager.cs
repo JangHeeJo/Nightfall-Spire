@@ -72,6 +72,8 @@ public sealed class PopupManager
     // 중복 처리 정책과 결과 핸들을 함께 관리합니다.
     public async UniTask<PopupHandle> OpenAsync<TPopup>(PopupRequest<TPopup> request) where TPopup : BasePopup
     {
+        Debug.Log($"[PopupManager] OpenAsync 요청. Key: {(request == null ? "NULL" : request.Key)}, Prefab: {(request == null || request.Prefab == null ? "NULL" : request.Prefab.name)}, HasActiveLayers: {HasActiveLayers}, PopupLayer: {(PopupLayer == null ? "NULL" : PopupLayer.name)}");
+
         if (request == null)
         {
             Debug.LogError("[PopupManager] 팝업 요청이 없습니다.");
@@ -87,14 +89,19 @@ public sealed class PopupManager
         PopupHandle existingHandle = FindOpenHandle(request.Key);
 
         if (existingHandle != null && request.OpenPolicy == PopupOpenPolicy.SingleInstance)
+        {
+            Debug.Log($"[PopupManager] 이미 열린 팝업을 재사용합니다. Key: {request.Key}");
             return existingHandle;
+        }
 
         if (request.OpenPolicy == PopupOpenPolicy.ReplaceTop)
             await CloseTopAsync(PopupCloseReason.Replaced);
         else if (request.OpenPolicy == PopupOpenPolicy.ReplaceAll)
             await CloseAllAsync(PopupCloseReason.Replaced);
 
+        Debug.Log($"[PopupManager] 팝업 생성 직전. Key: {request.Key}, Parent: {PopupLayer.name}");
         TPopup popup = Object.Instantiate(request.Prefab, PopupLayer);
+        Debug.Log($"[PopupManager] 팝업 생성 완료. Key: {request.Key}, Instance: {popup.name}, Parent: {(popup.transform.parent == null ? "NULL" : popup.transform.parent.name)}");
         popup.Initialize(this);
 
         PopupHandle handle = new PopupHandle(nextHandleId++, request.Key, popup, request.Priority, request.UseDim);
@@ -103,6 +110,7 @@ public sealed class PopupManager
         RefreshDimLayer();
 
         await popup.OpenAsync(tweenManager);
+        Debug.Log($"[PopupManager] 팝업 열기 완료. Key: {request.Key}, OpenPopupCount: {openedPopups.Count}");
         return handle;
     }
 
