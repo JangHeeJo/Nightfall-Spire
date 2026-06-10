@@ -17,7 +17,7 @@ public sealed class ResponsiveLobbyLayout : MonoBehaviour
     [SerializeField] private float tallScreenAspect = 0.50f; // 이 값보다 좁으면 긴 휴대폰 계열로 봅니다.
     [SerializeField] private LayoutProfile normalProfile = new(1f, 0f, 0f, 0f); // 기준 휴대폰 비율에서 쓰는 보정값입니다.
     [SerializeField] private LayoutProfile tallPhoneProfile = new(1.04f, 24f, 8f, 0f); // 긴 휴대폰에서 중앙 공간을 조금 더 활용합니다.
-    [SerializeField] private LayoutProfile wideTabletProfile = new(0.82f, -56f, -18f, 12f); // 아이패드에서 성채가 과하게 커지지 않도록 줄입니다.
+    [SerializeField] private LayoutProfile wideTabletProfile = new(1.15f, 18f, 0f, 0f); // 아이패드에서는 빈 공간이 커지므로 성채를 키우고 버튼 영역은 SafeArea 안에 둡니다.
 
     private Vector2Int lastScreenSize; // 마지막으로 계산한 화면 크기
     private ScreenOrientation lastOrientation; // 마지막으로 계산한 화면 방향
