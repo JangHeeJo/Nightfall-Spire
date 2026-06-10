@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // BootScene 로딩 UI View입니다.
-// 씬에서 Slider, Fill Image, TextMeshPro를 연결하면 GameRoot 초기화 진행 상태를 표시합니다.
+// 씬에서 Slider 또는 Fill Image를 연결하면 GameRoot 초기화 진행 상태를 표시합니다.
 public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
 {
     [Header("Background")]
@@ -15,8 +15,8 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
 
     [Header("Loading")]
     [SerializeField] private RectTransform loadingBarContainer; // 로딩바를 배치할 부모
-    [SerializeField] private Slider progressSlider; // Slider 방식 진행률 표시
-    [SerializeField] private Image progressFillImage; // Image Fill 방식 진행률 표시
+    [SerializeField] private Slider progressSlider; // Slider 방식 진행률 표시. Fill Image만 사용할 때는 비워도 됩니다.
+    [SerializeField] private Image progressFillImage; // Image Fill 방식 진행률 표시. Slider만 사용할 때는 비워도 됩니다.
     [SerializeField] private TMP_Text statusText; // 로딩 단계 문구
     [SerializeField] private TMP_Text percentText; // 퍼센트 표시
     [SerializeField] private TMP_Text versionText; // 버전 표시
@@ -144,13 +144,11 @@ public sealed class BootLoadingView : MonoBehaviour, IBootLoadingView
     }
 
     // 고정 로딩 UI는 BootScene에 배치된 오브젝트를 Inspector에서 직접 연결해야 합니다.
+    // 로딩바는 Slider 방식과 Fill Image 방식 중 하나만 연결되어도 정상입니다.
     private void ValidateReferences()
     {
-        if (progressSlider == null)
-            Debug.LogError("[BootLoadingView] Progress Slider가 연결되지 않았습니다.", this);
-
-        if (progressFillImage == null)
-            Debug.LogError("[BootLoadingView] Progress Fill Image가 연결되지 않았습니다.", this);
+        if (progressSlider == null && progressFillImage == null)
+            Debug.LogError("[BootLoadingView] 로딩 진행률을 표시할 Slider 또는 Fill Image가 연결되지 않았습니다.", this);
 
         if (lightBackgroundImage == null)
             Debug.LogError("[BootLoadingView] 낮 배경 이미지가 연결되지 않았습니다.", this);
