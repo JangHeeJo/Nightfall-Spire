@@ -11,6 +11,7 @@ public sealed class ResponsiveLobbyLayout : MonoBehaviour
     [SerializeField] private RectTransform topHudArea; // 상단 재화와 정보 영역입니다.
     [SerializeField] private RectTransform leftShortcutArea; // 좌측 바로가기 버튼 묶음입니다.
     [SerializeField] private RectTransform rightShortcutArea; // 우측 바로가기 버튼 묶음입니다.
+    [SerializeField] private RectTransform fullScreenBackgroundArea; // SafeArea 밖 빈 공간까지 덮어야 하는 장식 배경입니다.
 
     [Header("Aspect Rules")]
     [SerializeField] private float wideScreenAspect = 0.68f; // 이 값보다 넓으면 아이패드 계열로 봅니다.
@@ -109,6 +110,7 @@ public sealed class ResponsiveLobbyLayout : MonoBehaviour
         ApplySnapshot(topHudArea, topBase, 1f, 0f);
         ApplySnapshot(leftShortcutArea, leftBase, 1f, 0f);
         ApplySnapshot(rightShortcutArea, rightBase, 1f, 0f);
+        StretchBackgroundToScreen();
     }
 
     // 현재 씬에서 맞춰둔 RectTransform 값을 기준 배치로 저장합니다.
@@ -138,6 +140,34 @@ public sealed class ResponsiveLobbyLayout : MonoBehaviour
             snapshot.LocalScale.x * safeScale,
             snapshot.LocalScale.y * safeScale,
             snapshot.LocalScale.z);
+    }
+
+    // 조작 UI는 SafeArea 안에 두되, 장식 배경은 화면 끝까지 깔아서 빈 공간이 보이지 않게 합니다.
+    private void StretchBackgroundToScreen()
+    {
+        if (fullScreenBackgroundArea == null)
+            return;
+
+        Rect safeArea = Screen.safeArea;
+
+        if (safeArea.width <= 0f || safeArea.height <= 0f || Screen.width <= 0 || Screen.height <= 0)
+            return;
+
+        RectTransform parent = fullScreenBackgroundArea.parent as RectTransform;
+
+        if (parent == null)
+            return;
+
+        float leftPadding = safeArea.xMin / safeArea.width * parent.rect.width;
+        float rightPadding = (Screen.width - safeArea.xMax) / safeArea.width * parent.rect.width;
+        float bottomPadding = safeArea.yMin / safeArea.height * parent.rect.height;
+        float topPadding = (Screen.height - safeArea.yMax) / safeArea.height * parent.rect.height;
+
+        fullScreenBackgroundArea.anchorMin = Vector2.zero;
+        fullScreenBackgroundArea.anchorMax = Vector2.one;
+        fullScreenBackgroundArea.offsetMin = new Vector2(-leftPadding, -bottomPadding);
+        fullScreenBackgroundArea.offsetMax = new Vector2(rightPadding, topPadding);
+        fullScreenBackgroundArea.localScale = Vector3.one;
     }
 
     [System.Serializable]
