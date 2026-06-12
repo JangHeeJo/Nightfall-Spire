@@ -11,6 +11,9 @@ public interface ILobbyScreenView
     // 특정 명령 버튼의 입력 가능 여부를 바꿉니다.
     void SetCommandInteractable(string commandKey, bool isInteractable);
 
+    // 특정 명령 버튼의 해금 여부를 바꿉니다.
+    void SetCommandUnlocked(string commandKey, bool isUnlocked);
+
     // 하단 탭 중 현재 선택된 버튼만 Focus 오브젝트를 켭니다.
     void SetFocusedCommand(string commandKey);
 

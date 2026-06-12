@@ -12,9 +12,12 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     private const string DefaultFocusedCommandKey = "BottomButton_Spire"; // 로비 최초 진입 시 선택된 것으로 볼 기본 하단 탭
     private const string FocusObjectName = "Focus"; // 선택된 탭 표시 오브젝트 이름
     private const string AlertDotObjectName = "Alert_Dot_01_Red"; // 알림 점 오브젝트 이름
+    private const string LockObjectName = "lock"; // 잠긴 탭 표시 오브젝트 이름
 
     private readonly Dictionary<string, Button> buttonsByCommandKey = new(); // 버튼 오브젝트 이름을 명령 키로 쓰는 버튼 캐시
     private readonly Dictionary<string, BottomTabIndicator> tabIndicatorsByCommandKey = new(); // 하단 탭 상태 표시 오브젝트 캐시
+    private readonly Dictionary<string, bool> commandUnlockedByKey = new(); // 컨텐츠 해금 상태 캐시
+    private readonly HashSet<string> temporaryDisabledCommandKeys = new(); // 명령 처리 중 잠시 막아둔 버튼 목록
     private readonly List<ButtonBinding> activeBindings = new(); // OnDisable에서 제거할 런타임 버튼 연결 목록
 
     public event Action<string> CommandRequested; // 눌린 버튼 이름을 Controller로 전달하는 이벤트
@@ -57,8 +60,26 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         if (string.IsNullOrWhiteSpace(commandKey))
             return;
 
-        if (buttonsByCommandKey.TryGetValue(commandKey, out Button button) && button != null)
-            button.interactable = isInteractable;
+        if (isInteractable)
+            temporaryDisabledCommandKeys.Remove(commandKey);
+        else
+            temporaryDisabledCommandKeys.Add(commandKey);
+
+        ApplyCommandButtonState(commandKey);
+    }
+
+    // 해금되지 않은 버튼은 눌림 연출과 명령 전달을 모두 막습니다.
+    public void SetCommandUnlocked(string commandKey, bool isUnlocked)
+    {
+        if (string.IsNullOrWhiteSpace(commandKey))
+            return;
+
+        commandUnlockedByKey[commandKey] = isUnlocked;
+
+        if (tabIndicatorsByCommandKey.TryGetValue(commandKey, out BottomTabIndicator indicator))
+            indicator.SetLocked(!isUnlocked);
+
+        ApplyCommandButtonState(commandKey);
     }
 
     // 하단 탭 Focus는 하나만 켜지도록 전체 탭 캐시를 갱신합니다.
@@ -105,12 +126,16 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
             BottomTabIndicator indicator = BottomTabIndicator.TryCreate(button.transform);
             if (indicator.HasAnyIndicator && !tabIndicatorsByCommandKey.ContainsKey(button.name))
                 tabIndicatorsByCommandKey.Add(button.name, indicator);
+
+            if (!commandUnlockedByKey.ContainsKey(button.name))
+                commandUnlockedByKey.Add(button.name, !indicator.IsLocked);
         }
 
         if (buttonsByCommandKey.Count == 0)
             Debug.LogWarning("[LobbyScreen] 로비 고정 UI 아래에서 Button 컴포넌트를 찾지 못했습니다.");
 
         SetFocusedCommand(DefaultFocusedCommandKey);
+        ApplyAllCommandButtonStates();
     }
 
     // 캐시된 모든 버튼을 같은 방식으로 연결해 Controller가 버튼 이름만 받게 합니다.
@@ -151,6 +176,9 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     // 로비 버튼 클릭을 버튼 이름 기반 명령으로 전달합니다.
     private async UniTaskVoid HandleCommandClicked(string commandKey, Button button)
     {
+        if (!IsCommandUnlocked(commandKey))
+            return;
+
         if (CommandRequested == null)
         {
             Debug.LogError($"[LobbyScreen] {commandKey} 클릭을 처리할 Controller 구독자가 없습니다.");
@@ -162,6 +190,26 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
 
         SetFocusedCommand(commandKey);
         CommandRequested?.Invoke(commandKey);
+    }
+
+    // 버튼의 최종 입력 가능 여부는 해금 상태와 일시 입력 차단 상태를 함께 봅니다.
+    private void ApplyCommandButtonState(string commandKey)
+    {
+        if (buttonsByCommandKey.TryGetValue(commandKey, out Button button) && button != null)
+            button.interactable = IsCommandUnlocked(commandKey) && !temporaryDisabledCommandKeys.Contains(commandKey);
+    }
+
+    // 캐시된 모든 버튼의 입력 상태를 현재 해금 상태 기준으로 다시 반영합니다.
+    private void ApplyAllCommandButtonStates()
+    {
+        foreach (string commandKey in buttonsByCommandKey.Keys)
+            ApplyCommandButtonState(commandKey);
+    }
+
+    // 해금 상태가 명시되지 않은 버튼은 기본적으로 사용 가능하다고 봅니다.
+    private bool IsCommandUnlocked(string commandKey)
+    {
+        return !commandUnlockedByKey.TryGetValue(commandKey, out bool isUnlocked) || isUnlocked;
     }
 
     // OnEnable에서 연결한 콜백을 모두 제거해 씬 재활성화 시 중복 호출을 막습니다.
@@ -199,13 +247,16 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     {
         private readonly GameObject focusObject; // 선택된 탭 표시 오브젝트
         private readonly GameObject alertObject; // 컨텐츠 알림 점 오브젝트
+        private readonly GameObject lockObject; // 잠김 표시 오브젝트
 
-        public bool HasAnyIndicator => focusObject != null || alertObject != null;
+        public bool HasAnyIndicator => focusObject != null || alertObject != null || lockObject != null;
+        public bool IsLocked => lockObject != null && lockObject.activeSelf;
 
-        private BottomTabIndicator(GameObject focusObject, GameObject alertObject)
+        private BottomTabIndicator(GameObject focusObject, GameObject alertObject, GameObject lockObject)
         {
             this.focusObject = focusObject;
             this.alertObject = alertObject;
+            this.lockObject = lockObject;
         }
 
         // 버튼 자식 이름 기준으로 상태 표시 오브젝트를 찾습니다.
@@ -216,7 +267,8 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
 
             return new BottomTabIndicator(
                 FindChildGameObject(buttonRoot, FocusObjectName),
-                FindChildGameObject(buttonRoot, AlertDotObjectName));
+                FindChildGameObject(buttonRoot, AlertDotObjectName),
+                FindChildGameObject(buttonRoot, LockObjectName));
         }
 
         // 선택 상태를 표시하거나 숨깁니다.
@@ -231,6 +283,13 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         {
             if (alertObject != null && alertObject.activeSelf != isVisible)
                 alertObject.SetActive(isVisible);
+        }
+
+        // 해금 상태에 맞춰 잠금 표시를 켜거나 끕니다.
+        public void SetLocked(bool isVisible)
+        {
+            if (lockObject != null && lockObject.activeSelf != isVisible)
+                lockObject.SetActive(isVisible);
         }
 
         // 이름이 같은 하위 오브젝트를 깊이 우선으로 찾습니다.

@@ -110,6 +110,8 @@ public sealed class LobbyControllerTests
         public string FocusedCommandKey { get; private set; } // 마지막으로 선택 표시된 명령 키
         public string AlertCommandKey { get; private set; } // 마지막으로 알림 상태가 바뀐 명령 키
         public bool AlertVisible { get; private set; } // 마지막 알림 표시 상태
+        public string LastUnlockedCommandKey { get; private set; } // 마지막으로 해금 상태가 바뀐 명령 키
+        public bool LastUnlockedState { get; private set; } // 마지막 해금 상태
 
         // 테스트 View는 항상 준비된 상태로 둡니다.
         public bool IsReady()
@@ -122,6 +124,13 @@ public sealed class LobbyControllerTests
         {
             LastInteractableCommandKey = commandKey;
             LastInteractableState = isInteractable;
+        }
+
+        // 테스트에서는 Controller 외부에서 들어온 해금 상태 요청만 기록합니다.
+        public void SetCommandUnlocked(string commandKey, bool isUnlocked)
+        {
+            LastUnlockedCommandKey = commandKey;
+            LastUnlockedState = isUnlocked;
         }
 
         // 테스트에서는 Focus 요청이 들어온 마지막 명령 키만 기록합니다.

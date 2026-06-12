@@ -1,12 +1,20 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
+using R3;
 
 // LobbyScene의 Static UI 초기화 지점입니다.
 // 위치가 고정된 로비 UI들은 이 Root를 통해 GameContext를 전달받습니다.
 public sealed class LobbyStaticUIRoot : MonoBehaviour
 {
+    private const string MagicCommandKey = "BottomButton_Magic"; // 마법/소환 계열 하단 탭
+    private const string HeroCommandKey = "BottomButton_Hero"; // 영웅 목록 하단 탭
+    private const string SpireCommandKey = "BottomButton_Spire"; // 성채/스파이어 하단 탭
+    private const string BattleCommandKey = "BottomButton_Battle"; // 전투 시작 하단 탭
+    private const string ShopCommandKey = "BottomButton_Shop"; // 상점 하단 탭
+
     [FormerlySerializedAs("currencyHud")]
     [SerializeField] private CurrencyHudView currencyHudView; // 로비 상단 재화 HUD View
     [SerializeField] private LobbyScreen lobbyScreen; // 로비 화면 단위 View
@@ -19,6 +27,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     private LobbyController lobbyController; // 로비 화면 단위 Controller
     private LobbyNavigationController lobbyNavigationController; // 로비 버튼 명령 실행 Controller
     private LobbyTabNotificationController lobbyTabNotificationController; // 하단 탭 알림 점 Controller
+    private readonly List<IDisposable> commandUnlockSubscriptions = new(); // 하단 탭 해금 상태 변경 구독 목록
     private bool isInitialized; // 씬 루트와 자체 초기화가 중복 호출되는 일을 막습니다.
 
     [Serializable]
@@ -58,6 +67,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         CreateCurrencyHudController();
         CreateLobbyNavigationController();
         CreateLobbyController();
+        CreateLobbyCommandUnlockBindings();
         CreateLobbyTabNotificationController();
         Debug.Log("[LobbyStaticUIRoot] 초기화 완료");
     }
@@ -125,6 +135,33 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         lobbyTabNotificationController.Initialize();
     }
 
+    // 로비 Static UI 버튼의 해금 상태를 현재 진행 데이터와 연결합니다.
+    // 잠긴 버튼은 View 단계에서 interactable이 꺼져 눌림 연출과 명령 실행이 모두 막힙니다.
+    private void CreateLobbyCommandUnlockBindings()
+    {
+        if (lobbyScreen == null)
+            return;
+
+        ClearLobbyCommandUnlockBindings();
+        ApplyLobbyCommandUnlocks();
+
+        commandUnlockSubscriptions.Add(context.DayProgress.MagicLibraryUnlocked.Subscribe(_ => ApplyLobbyCommandUnlocks()));
+        commandUnlockSubscriptions.Add(context.DayProgress.CitadelFloorCount.Subscribe(_ => ApplyLobbyCommandUnlocks()));
+    }
+
+    // 현재 게임 진행 기준으로 각 하단 탭의 사용 가능 여부를 갱신합니다.
+    private void ApplyLobbyCommandUnlocks()
+    {
+        if (lobbyScreen == null || context == null)
+            return;
+
+        lobbyScreen.SetCommandUnlocked(MagicCommandKey, context.DayProgress.MagicLibraryUnlocked.Value);
+        lobbyScreen.SetCommandUnlocked(HeroCommandKey, true);
+        lobbyScreen.SetCommandUnlocked(SpireCommandKey, true);
+        lobbyScreen.SetCommandUnlocked(BattleCommandKey, true);
+        lobbyScreen.SetCommandUnlocked(ShopCommandKey, false);
+    }
+
     // 로비 버튼 명령을 팝업/씬 전환으로 바꿔 실행할 Controller를 생성합니다.
     private void CreateLobbyNavigationController()
     {
@@ -147,6 +184,8 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     // R3 구독은 Controller가 소유하므로 Root 생명주기에 맞춰 정리합니다.
     private void DisposeControllers()
     {
+        ClearLobbyCommandUnlockBindings();
+
         currencyHudController?.Dispose();
         currencyHudController = null;
 
@@ -158,5 +197,14 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
 
         lobbyTabNotificationController?.Dispose();
         lobbyTabNotificationController = null;
+    }
+
+    // 하단 탭 해금 상태 구독을 정리합니다.
+    private void ClearLobbyCommandUnlockBindings()
+    {
+        for (int i = 0; i < commandUnlockSubscriptions.Count; i++)
+            commandUnlockSubscriptions[i]?.Dispose();
+
+        commandUnlockSubscriptions.Clear();
     }
 }
