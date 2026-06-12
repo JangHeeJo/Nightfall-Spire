@@ -10,4 +10,10 @@ public interface ILobbyScreenView
 
     // 특정 명령 버튼의 입력 가능 여부를 바꿉니다.
     void SetCommandInteractable(string commandKey, bool isInteractable);
+
+    // 하단 탭 중 현재 선택된 버튼만 Focus 오브젝트를 켭니다.
+    void SetFocusedCommand(string commandKey);
+
+    // 하단 탭에 표시할 빨간 알림 점을 켜거나 끕니다.
+    void SetCommandAlertVisible(string commandKey, bool isVisible);
 }

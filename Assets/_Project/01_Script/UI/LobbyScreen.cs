@@ -8,7 +8,12 @@ using UnityEngine.UI;
 // 개별 버튼마다 스크립트를 만들지 않고, 로비 화면의 주요 입력을 화면 단위 이벤트로 모읍니다.
 public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
 {
+    private const string DefaultFocusedCommandKey = "BottomButton_Spire"; // 로비 최초 진입 시 선택된 것으로 볼 기본 하단 탭
+    private const string FocusObjectName = "Focus"; // 선택된 탭 표시 오브젝트 이름
+    private const string AlertDotObjectName = "Alert_Dot_01_Red"; // 알림 점 오브젝트 이름
+
     private readonly Dictionary<string, Button> buttonsByCommandKey = new(); // 버튼 오브젝트 이름을 명령 키로 쓰는 버튼 캐시
+    private readonly Dictionary<string, BottomTabIndicator> tabIndicatorsByCommandKey = new(); // 하단 탭 상태 표시 오브젝트 캐시
     private readonly List<ButtonBinding> activeBindings = new(); // OnDisable에서 제거할 런타임 버튼 연결 목록
 
     public event Action<string> CommandRequested; // 눌린 버튼 이름을 Controller로 전달하는 이벤트
@@ -55,10 +60,34 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
             button.interactable = isInteractable;
     }
 
+    // 하단 탭 Focus는 하나만 켜지도록 전체 탭 캐시를 갱신합니다.
+    public void SetFocusedCommand(string commandKey)
+    {
+        if (string.IsNullOrWhiteSpace(commandKey))
+            return;
+
+        if (!tabIndicatorsByCommandKey.ContainsKey(commandKey))
+            return;
+
+        foreach (KeyValuePair<string, BottomTabIndicator> pair in tabIndicatorsByCommandKey)
+            pair.Value.SetFocus(pair.Key == commandKey);
+    }
+
+    // 컨텐츠 해금/업그레이드/수령 가능 같은 상태를 하단 탭 빨간 점으로 표시합니다.
+    public void SetCommandAlertVisible(string commandKey, bool isVisible)
+    {
+        if (string.IsNullOrWhiteSpace(commandKey))
+            return;
+
+        if (tabIndicatorsByCommandKey.TryGetValue(commandKey, out BottomTabIndicator indicator))
+            indicator.SetAlert(isVisible);
+    }
+
     // 자식 Button을 모두 모아 오브젝트 이름을 명령 키로 등록합니다.
     private void RebuildButtonCache()
     {
         buttonsByCommandKey.Clear();
+        tabIndicatorsByCommandKey.Clear();
 
         Button[] buttons = GetComponentsInChildren<Button>(true);
 
@@ -71,10 +100,16 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
 
             if (!buttonsByCommandKey.ContainsKey(button.name))
                 buttonsByCommandKey.Add(button.name, button);
+
+            BottomTabIndicator indicator = BottomTabIndicator.TryCreate(button.transform);
+            if (indicator.HasAnyIndicator && !tabIndicatorsByCommandKey.ContainsKey(button.name))
+                tabIndicatorsByCommandKey.Add(button.name, indicator);
         }
 
         if (buttonsByCommandKey.Count == 0)
             Debug.LogWarning("[LobbyScreen] 로비 고정 UI 아래에서 Button 컴포넌트를 찾지 못했습니다.");
+
+        SetFocusedCommand(DefaultFocusedCommandKey);
     }
 
     // 캐시된 모든 버튼을 같은 방식으로 연결해 Controller가 버튼 이름만 받게 합니다.
@@ -121,6 +156,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
             return;
         }
 
+        SetFocusedCommand(commandKey);
         CommandRequested?.Invoke(commandKey);
     }
 
@@ -151,6 +187,63 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         {
             if (button != null && callback != null)
                 button.onClick.RemoveListener(callback);
+        }
+    }
+
+    // 버튼 하위의 Focus와 Alert_Dot_01_Red를 한 번 찾아 보관합니다.
+    private readonly struct BottomTabIndicator
+    {
+        private readonly GameObject focusObject; // 선택된 탭 표시 오브젝트
+        private readonly GameObject alertObject; // 컨텐츠 알림 점 오브젝트
+
+        public bool HasAnyIndicator => focusObject != null || alertObject != null;
+
+        private BottomTabIndicator(GameObject focusObject, GameObject alertObject)
+        {
+            this.focusObject = focusObject;
+            this.alertObject = alertObject;
+        }
+
+        // 버튼 자식 이름 기준으로 상태 표시 오브젝트를 찾습니다.
+        public static BottomTabIndicator TryCreate(Transform buttonRoot)
+        {
+            if (buttonRoot == null)
+                return default;
+
+            return new BottomTabIndicator(
+                FindChildGameObject(buttonRoot, FocusObjectName),
+                FindChildGameObject(buttonRoot, AlertDotObjectName));
+        }
+
+        // 선택 상태를 표시하거나 숨깁니다.
+        public void SetFocus(bool isVisible)
+        {
+            if (focusObject != null && focusObject.activeSelf != isVisible)
+                focusObject.SetActive(isVisible);
+        }
+
+        // 알림 점을 표시하거나 숨깁니다.
+        public void SetAlert(bool isVisible)
+        {
+            if (alertObject != null && alertObject.activeSelf != isVisible)
+                alertObject.SetActive(isVisible);
+        }
+
+        // 이름이 같은 하위 오브젝트를 깊이 우선으로 찾습니다.
+        private static GameObject FindChildGameObject(Transform root, string objectName)
+        {
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.name == objectName)
+                    return child.gameObject;
+
+                GameObject found = FindChildGameObject(child, objectName);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
         }
     }
 }

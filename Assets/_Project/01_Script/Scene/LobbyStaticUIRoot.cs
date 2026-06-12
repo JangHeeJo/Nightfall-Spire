@@ -18,6 +18,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     private CurrencyHudController currencyHudController; // 재화 HUD Controller
     private LobbyController lobbyController; // 로비 화면 단위 Controller
     private LobbyNavigationController lobbyNavigationController; // 로비 버튼 명령 실행 Controller
+    private LobbyTabNotificationController lobbyTabNotificationController; // 하단 탭 알림 점 Controller
     private bool isInitialized; // 씬 루트와 자체 초기화가 중복 호출되는 일을 막습니다.
 
     [Serializable]
@@ -57,6 +58,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         CreateCurrencyHudController();
         CreateLobbyNavigationController();
         CreateLobbyController();
+        CreateLobbyTabNotificationController();
         Debug.Log("[LobbyStaticUIRoot] 초기화 완료");
     }
 
@@ -112,6 +114,17 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         lobbyController.Initialize();
     }
 
+    // 로비 하단 탭의 빨간 알림 점을 현재 진행 데이터와 연결합니다.
+    private void CreateLobbyTabNotificationController()
+    {
+        if (lobbyScreen == null)
+            return;
+
+        lobbyTabNotificationController?.Dispose();
+        lobbyTabNotificationController = new LobbyTabNotificationController(context, lobbyScreen);
+        lobbyTabNotificationController.Initialize();
+    }
+
     // 로비 버튼 명령을 팝업/씬 전환으로 바꿔 실행할 Controller를 생성합니다.
     private void CreateLobbyNavigationController()
     {
@@ -142,5 +155,8 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
 
         lobbyNavigationController?.Dispose();
         lobbyNavigationController = null;
+
+        lobbyTabNotificationController?.Dispose();
+        lobbyTabNotificationController = null;
     }
 }

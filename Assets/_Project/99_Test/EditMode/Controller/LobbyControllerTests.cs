@@ -107,6 +107,9 @@ public sealed class LobbyControllerTests
 
         public string LastInteractableCommandKey { get; private set; } // 마지막으로 활성화 상태가 바뀐 명령 키
         public bool LastInteractableState { get; private set; } // 마지막 입력 가능 상태
+        public string FocusedCommandKey { get; private set; } // 마지막으로 선택 표시된 명령 키
+        public string AlertCommandKey { get; private set; } // 마지막으로 알림 상태가 바뀐 명령 키
+        public bool AlertVisible { get; private set; } // 마지막 알림 표시 상태
 
         // 테스트 View는 항상 준비된 상태로 둡니다.
         public bool IsReady()
@@ -119,6 +122,19 @@ public sealed class LobbyControllerTests
         {
             LastInteractableCommandKey = commandKey;
             LastInteractableState = isInteractable;
+        }
+
+        // 테스트에서는 Focus 요청이 들어온 마지막 명령 키만 기록합니다.
+        public void SetFocusedCommand(string commandKey)
+        {
+            FocusedCommandKey = commandKey;
+        }
+
+        // 테스트에서는 알림 표시 요청이 들어온 마지막 상태만 기록합니다.
+        public void SetCommandAlertVisible(string commandKey, bool isVisible)
+        {
+            AlertCommandKey = commandKey;
+            AlertVisible = isVisible;
         }
 
         // 테스트에서 로비 명령 요청을 직접 발생시킵니다.
