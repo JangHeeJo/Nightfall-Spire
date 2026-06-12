@@ -158,7 +158,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         }
 
         if (button != null)
-            await ButtonPressTweenPlayer.PlayAsync(button.transform);
+            await PopupTweenManager.PlayButtonPressAsync(button.transform);
 
         SetFocusedCommand(commandKey);
         CommandRequested?.Invoke(commandKey);

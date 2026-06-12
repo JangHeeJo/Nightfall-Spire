@@ -118,7 +118,7 @@ public class BasePopup : MonoBehaviour
             if (button == null)
                 continue;
 
-            UnityAction callback = () => ButtonPressTweenPlayer.PlayAsync(button.transform).Forget();
+            UnityAction callback = () => PopupTweenManager.PlayButtonPressAsync(button.transform).Forget();
             button.onClick.AddListener(callback);
         }
     }
