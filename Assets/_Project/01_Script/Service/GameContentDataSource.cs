@@ -51,8 +51,17 @@ public interface IHeroCatalogDataSource
     bool TryGetHero(int heroId, out HeroDataRow row);
 }
 
+// 해금 서비스가 필요한 테이블 조회 계약입니다.
+public interface IUnlockDataSource
+{
+    IReadOnlyList<FeatureUnlockDataRow> GetFeatureUnlocks();
+    IReadOnlyList<SpireContentDataRow> GetSpireContents();
+    bool TryGetFeatureUnlock(string featureKey, out FeatureUnlockDataRow row);
+    bool TryGetSpireContent(string contentKey, out SpireContentDataRow row);
+}
+
 // DataTableManager를 도메인 서비스가 쓰는 조회 계약으로 감싸는 어댑터입니다.
-public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IDraftEffectDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource, IHeroCatalogDataSource
+public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IDraftEffectDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource, IHeroCatalogDataSource, IUnlockDataSource
 {
     private readonly DataTableManager dataTableManager; // 실제 테이블 보관소
 
@@ -170,6 +179,56 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
     public IReadOnlyList<HeroDataRow> GetHeroes()
     {
         return dataTableManager?.HeroData?.Rows ?? System.Array.Empty<HeroDataRow>();
+    }
+
+    // 모든 기능 해금 Row를 반환합니다.
+    public IReadOnlyList<FeatureUnlockDataRow> GetFeatureUnlocks()
+    {
+        return dataTableManager?.FeatureUnlockData?.Rows ?? System.Array.Empty<FeatureUnlockDataRow>();
+    }
+
+    // 모든 Spire 컨텐츠 Row를 반환합니다.
+    public IReadOnlyList<SpireContentDataRow> GetSpireContents()
+    {
+        return dataTableManager?.SpireContentData?.Rows ?? System.Array.Empty<SpireContentDataRow>();
+    }
+
+    // 기능 키로 기능 해금 Row를 조회합니다.
+    public bool TryGetFeatureUnlock(string featureKey, out FeatureUnlockDataRow row)
+    {
+        row = null;
+
+        IReadOnlyList<FeatureUnlockDataRow> rows = GetFeatureUnlocks();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            FeatureUnlockDataRow candidate = rows[i];
+            if (candidate.FeatureKey != featureKey)
+                continue;
+
+            row = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    // Spire 컨텐츠 키로 컨텐츠 Row를 조회합니다.
+    public bool TryGetSpireContent(string contentKey, out SpireContentDataRow row)
+    {
+        row = null;
+
+        IReadOnlyList<SpireContentDataRow> rows = GetSpireContents();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            SpireContentDataRow candidate = rows[i];
+            if (candidate.ContentKey != contentKey)
+                continue;
+
+            row = candidate;
+            return true;
+        }
+
+        return false;
     }
 
     // 적 Row를 조회합니다.

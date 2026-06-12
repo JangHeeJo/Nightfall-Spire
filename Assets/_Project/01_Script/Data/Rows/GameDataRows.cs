@@ -43,7 +43,9 @@ public sealed class HeroDataRow : ITableRow
     public int AttackPatternId { get; private set; } // 기본 공격 패턴 ID
     public int SkillId { get; private set; } // 스킬 ID
     public TargetingType TargetingType { get; private set; } // 타겟 선택 규칙
-    public int UnlockFloorId { get; private set; } // 해금 층 ID
+    public UnlockConditionType UnlockConditionType { get; private set; } // 영웅 해금 조건 타입
+    public int UnlockValue { get; private set; } // 해금 조건 값
+    public bool IsDefaultUnlocked { get; private set; } // 시작부터 해금되는 영웅인지 여부
     public string PrefabKey { get; private set; } // 프리팹 리소스 키
     public string IconKey { get; private set; } // 아이콘 리소스 키
     public int StartLevel { get; private set; } // 최초 획득 레벨
@@ -65,10 +67,35 @@ public sealed class HeroDataRow : ITableRow
         AttackPatternId = row.GetInt("AttackPatternId");
         SkillId = row.GetInt("SkillId");
         TargetingType = row.GetEnum<TargetingType>("TargetingType");
-        UnlockFloorId = row.GetInt("UnlockFloorId");
+        UnlockConditionType = row.GetEnum<UnlockConditionType>("UnlockConditionType");
+        UnlockValue = row.GetInt("UnlockValue");
+        IsDefaultUnlocked = row.GetBool("IsDefaultUnlocked");
         PrefabKey = row.GetString("PrefabKey");
         IconKey = row.GetString("IconKey");
         StartLevel = row.GetInt("StartLevel");
+    }
+}
+
+// Static UI 버튼이나 기능 단위 해금 조건을 담습니다.
+public sealed class FeatureUnlockDataRow : ITableRow
+{
+    public int Id => FeatureId; // DataTable 기본 키
+    public int FeatureId { get; private set; } // 기능 해금 ID
+    public string FeatureKey { get; private set; } // 버튼 이름이나 기능 키
+    public string DisplayName { get; private set; } // 기획 확인용 표시 이름
+    public UnlockConditionType UnlockConditionType { get; private set; } // 해금 조건 타입
+    public int UnlockValue { get; private set; } // 해금 조건 값
+    public bool IsDefaultUnlocked { get; private set; } // 시작부터 해금되는지 여부
+
+    // TSV 한 줄에서 기능 해금 조건을 읽어옵니다.
+    public void Load(TsvRow row)
+    {
+        FeatureId = row.GetInt("FeatureId");
+        FeatureKey = row.GetString("FeatureKey");
+        DisplayName = row.GetString("DisplayName");
+        UnlockConditionType = row.GetEnum<UnlockConditionType>("UnlockConditionType");
+        UnlockValue = row.GetInt("UnlockValue");
+        IsDefaultUnlocked = row.GetBool("IsDefaultUnlocked");
     }
 }
 
@@ -595,6 +622,35 @@ public sealed class CitadelFloorDataRow : ITableRow
         UnlockFeatureType = row.GetEnum<UnlockFeatureType>("UnlockFeatureType");
         UnlockFeatureId = row.GetInt("UnlockFeatureId");
         VisualKey = row.GetString("VisualKey");
+    }
+}
+
+// Spire 팝업 안에서 보여줄 시설/방/컨텐츠의 해금 조건을 담습니다.
+public sealed class SpireContentDataRow : ITableRow
+{
+    public int Id => ContentId; // DataTable 기본 키
+    public int ContentId { get; private set; } // Spire 컨텐츠 ID
+    public string ContentKey { get; private set; } // UI와 기능 연결에 사용할 컨텐츠 키
+    public string DisplayName { get; private set; } // 기획 확인용 표시 이름
+    public int FloorId { get; private set; } // 배치되거나 연결된 성채 층
+    public UnlockConditionType UnlockConditionType { get; private set; } // 해금 조건 타입
+    public int UnlockValue { get; private set; } // 해금 조건 값
+    public bool IsDefaultUnlocked { get; private set; } // 시작부터 해금되는지 여부
+    public string PopupKey { get; private set; } // 눌렀을 때 연결할 팝업 또는 화면 키
+    public string IconKey { get; private set; } // 아이콘 리소스 키
+
+    // TSV 한 줄에서 Spire 컨텐츠 해금 조건을 읽어옵니다.
+    public void Load(TsvRow row)
+    {
+        ContentId = row.GetInt("ContentId");
+        ContentKey = row.GetString("ContentKey");
+        DisplayName = row.GetString("DisplayName");
+        FloorId = row.GetInt("FloorId");
+        UnlockConditionType = row.GetEnum<UnlockConditionType>("UnlockConditionType");
+        UnlockValue = row.GetInt("UnlockValue");
+        IsDefaultUnlocked = row.GetBool("IsDefaultUnlocked");
+        PopupKey = row.GetString("PopupKey");
+        IconKey = row.GetString("IconKey");
     }
 }
 

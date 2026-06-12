@@ -1,0 +1,5 @@
+ContentId	ContentKey	DisplayName	FloorId	UnlockConditionType	UnlockValue	IsDefaultUnlocked	PopupKey	IconKey
+1	Gate	Gate	1	Default	0	true	Spire_Gate	Gate
+2	Workshop	Workshop	2	CitadelFloor	2	false	Spire_Workshop	Workshop
+3	MagicLibrary	Magic Library	3	CitadelFloor	3	false	Spire_MagicLibrary	MagicLibrary
+4	MineCore	Mine Core	4	CitadelFloor	4	false	Spire_MineCore	MineCore

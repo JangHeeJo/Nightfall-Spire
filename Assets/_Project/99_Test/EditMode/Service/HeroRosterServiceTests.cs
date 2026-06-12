@@ -10,7 +10,8 @@ public sealed class HeroRosterServiceTests
     {
         FakeHeroCatalogDataSource dataSource = FakeHeroCatalogDataSource.CreateDefault();
         GameContext context = new GameContext(SaveData.CreateDefault());
-        HeroRosterService service = new HeroRosterService(dataSource, context);
+        UnlockService unlockService = new UnlockService(null, context);
+        HeroRosterService service = new HeroRosterService(dataSource, context, unlockService);
 
         IReadOnlyList<HeroRosterEntry> roster = service.BuildRoster();
 
@@ -30,7 +31,8 @@ public sealed class HeroRosterServiceTests
         SaveData saveData = SaveData.CreateDefault();
         saveData.HeroCollection.Heroes[2].IsUnlocked = true;
         GameContext context = new GameContext(saveData);
-        HeroRosterService service = new HeroRosterService(dataSource, context);
+        UnlockService unlockService = new UnlockService(null, context);
+        HeroRosterService service = new HeroRosterService(dataSource, context, unlockService);
 
         IReadOnlyList<HeroRosterEntry> roster = service.BuildRoster();
 
@@ -46,7 +48,8 @@ public sealed class HeroRosterServiceTests
         SaveData saveData = SaveData.CreateDefault();
         saveData.HeroCollection.Heroes.RemoveAll(hero => hero.HeroId == 1004);
         GameContext context = new GameContext(saveData);
-        HeroRosterService service = new HeroRosterService(dataSource, context);
+        UnlockService unlockService = new UnlockService(null, context);
+        HeroRosterService service = new HeroRosterService(dataSource, context, unlockService);
 
         service.BuildRoster();
 
@@ -82,10 +85,10 @@ public sealed class HeroRosterServiceTests
         }
 
         private const string HeroTsv =
-            "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockFloorId\tPrefabKey\tIconKey\tStartLevel\n" +
-            "1001\tPlayer_Sword\tMelee\tNone\tCommon\tMelee|Starter\t120\t8\t12\t1.0\t1.2\t3001\t4001\tNearest\t1\tPlayer_Sword\tPlayer_Sword\t1\n" +
-            "1002\tPlayer_Archer\tRanged\tAir\tRare\tRanged|Projectile\t80\t3\t9\t1.2\t5.5\t3002\t4002\tNearest\t1\tPlayer_Archer\tPlayer_Archer\t1\n" +
-            "1003\tPlayer_Magician\tRanged\tIce\tEpic\tMagic|Control\t70\t2\t7\t0.9\t4.8\t3003\t4003\tHighestHp\t5\tPlayer_Magician\tPlayer_Magician\t1\n" +
-            "1004\tPlayer_Axe\tMelee\tFire\tLegendary\tMelee|Guardian\t160\t12\t18\t0.7\t1.4\t3004\t4004\tNearest\t7\tPlayer_Axe\tPlayer_Axe\t1\n";
+            "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockConditionType\tUnlockValue\tIsDefaultUnlocked\tPrefabKey\tIconKey\tStartLevel\n" +
+            "1001\tPlayer_Sword\tMelee\tNone\tCommon\tMelee|Starter\t120\t8\t12\t1.0\t1.2\t3001\t4001\tNearest\tDefault\t0\ttrue\tPlayer_Sword\tPlayer_Sword\t1\n" +
+            "1002\tPlayer_Archer\tRanged\tPhysical\tRare\tRanged|Projectile\t80\t3\t9\t1.2\t5.5\t3002\t4002\tNearest\tDefault\t0\ttrue\tPlayer_Archer\tPlayer_Archer\t1\n" +
+            "1003\tPlayer_Magician\tRanged\tIce\tEpic\tMagic|Control\t70\t2\t7\t0.9\t4.8\t3003\t4003\tHighestHp\tCitadelFloor\t5\tfalse\tPlayer_Magician\tPlayer_Magician\t1\n" +
+            "1004\tPlayer_Axe\tMelee\tFire\tLegendary\tMelee|Guardian\t160\t12\t18\t0.7\t1.4\t3004\t4004\tNearest\tCitadelFloor\t7\tfalse\tPlayer_Axe\tPlayer_Axe\t1\n";
     }
 }

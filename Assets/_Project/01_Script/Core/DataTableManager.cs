@@ -36,6 +36,8 @@ public sealed class DataTableManager
     public DataTable<MaterialDataRow> MaterialData { get; private set; } // 재료 테이블
     public DataTable<BuildingModuleDataRow> BuildingModuleData { get; private set; } // 건물 모듈 테이블
     public DataTable<CitadelFloorDataRow> CitadelFloorData { get; private set; } // 성채 층 테이블
+    public DataTable<FeatureUnlockDataRow> FeatureUnlockData { get; private set; } // 기능 해금 테이블
+    public DataTable<SpireContentDataRow> SpireContentData { get; private set; } // Spire 내부 컨텐츠 테이블
     public DataTable<SpireUpgradeDataRow> SpireUpgradeData { get; private set; } // 스파이어 업그레이드 테이블
     public DataTable<MiningNodeDataRow> MiningNodeData { get; private set; } // 채굴 노드 테이블
     public DataTable<CraftRecipeDataRow> CraftRecipeData { get; private set; } // 제작 레시피 테이블
@@ -67,6 +69,8 @@ public sealed class DataTableManager
         MaterialData = LoadTable<MaterialDataRow>(tableFolderPath, "MaterialData");
         BuildingModuleData = LoadTable<BuildingModuleDataRow>(tableFolderPath, "BuildingModuleData");
         CitadelFloorData = LoadTable<CitadelFloorDataRow>(tableFolderPath, "CitadelFloorData");
+        FeatureUnlockData = LoadTable<FeatureUnlockDataRow>(tableFolderPath, "FeatureUnlockData");
+        SpireContentData = LoadTable<SpireContentDataRow>(tableFolderPath, "SpireContentData");
         SpireUpgradeData = LoadTable<SpireUpgradeDataRow>(tableFolderPath, "SpireUpgradeData");
         MiningNodeData = LoadTable<MiningNodeDataRow>(tableFolderPath, "MiningNodeData");
         CraftRecipeData = LoadTable<CraftRecipeDataRow>(tableFolderPath, "CraftRecipeData");

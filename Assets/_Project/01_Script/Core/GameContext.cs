@@ -22,6 +22,7 @@ public sealed class GameContext
     public RewardService RewardService { get; } // 보상 계산 서비스
     public DayGrowthService DayGrowthService { get; } // 낮 성장 규칙 서비스
     public HeroRosterService HeroRosterService { get; } // 히어로 목록 UI용 로스터 생성 서비스
+    public UnlockService UnlockService { get; } // 컨텐츠 해금 조건 판정 서비스
 
     // 저장 데이터를 기반으로 게임 전체에서 공유할 런타임 모델 묶음을 만듭니다.
     public GameContext(SaveData saveData, GameContentDataSource contentDataSource = null)
@@ -43,13 +44,14 @@ public sealed class GameContext
 
         if (contentDataSource != null)
         {
+            UnlockService = new UnlockService(contentDataSource, this);
             NightDefenseSessionService = new NightDefenseSessionService(contentDataSource, this);
             RewardService = new RewardService(contentDataSource, RewardProgress);
             NightDefenseCompletionService = new NightDefenseCompletionService(contentDataSource, RewardService, GameProgress);
             DraftService = new DraftService(contentDataSource, DraftProgress);
             DraftEffectResolver = new DraftEffectResolver(contentDataSource, CombatRuntimeModifierSet);
             DayGrowthService = new DayGrowthService(contentDataSource, this);
-            HeroRosterService = new HeroRosterService(contentDataSource, this);
+            HeroRosterService = new HeroRosterService(contentDataSource, this, UnlockService);
         }
     }
 }

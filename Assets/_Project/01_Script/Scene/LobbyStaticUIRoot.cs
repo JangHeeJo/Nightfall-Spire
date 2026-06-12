@@ -147,6 +147,8 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
 
         commandUnlockSubscriptions.Add(context.DayProgress.MagicLibraryUnlocked.Subscribe(_ => ApplyLobbyCommandUnlocks()));
         commandUnlockSubscriptions.Add(context.DayProgress.CitadelFloorCount.Subscribe(_ => ApplyLobbyCommandUnlocks()));
+        commandUnlockSubscriptions.Add(context.DayProgress.SpireLevel.Subscribe(_ => ApplyLobbyCommandUnlocks()));
+        commandUnlockSubscriptions.Add(context.GameProgress.HighestClearedDefenseSessionId.Subscribe(_ => ApplyLobbyCommandUnlocks()));
     }
 
     // 현재 게임 진행 기준으로 각 하단 탭의 사용 가능 여부를 갱신합니다.
@@ -155,11 +157,19 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         if (lobbyScreen == null || context == null)
             return;
 
-        lobbyScreen.SetCommandUnlocked(MagicCommandKey, context.DayProgress.MagicLibraryUnlocked.Value);
-        lobbyScreen.SetCommandUnlocked(HeroCommandKey, true);
-        lobbyScreen.SetCommandUnlocked(SpireCommandKey, true);
-        lobbyScreen.SetCommandUnlocked(BattleCommandKey, true);
-        lobbyScreen.SetCommandUnlocked(ShopCommandKey, false);
+        UnlockService unlockService = context.UnlockService;
+
+        lobbyScreen.SetCommandUnlocked(MagicCommandKey, IsFeatureUnlocked(unlockService, MagicCommandKey));
+        lobbyScreen.SetCommandUnlocked(HeroCommandKey, IsFeatureUnlocked(unlockService, HeroCommandKey));
+        lobbyScreen.SetCommandUnlocked(SpireCommandKey, IsFeatureUnlocked(unlockService, SpireCommandKey));
+        lobbyScreen.SetCommandUnlocked(BattleCommandKey, IsFeatureUnlocked(unlockService, BattleCommandKey));
+        lobbyScreen.SetCommandUnlocked(ShopCommandKey, IsFeatureUnlocked(unlockService, ShopCommandKey));
+    }
+
+    // 테이블이 없거나 서비스가 아직 없으면 기존 배치된 버튼을 막지 않도록 기본 허용합니다.
+    private static bool IsFeatureUnlocked(UnlockService unlockService, string commandKey)
+    {
+        return unlockService == null || unlockService.IsFeatureUnlocked(commandKey);
     }
 
     // 로비 버튼 명령을 팝업/씬 전환으로 바꿔 실행할 Controller를 생성합니다.

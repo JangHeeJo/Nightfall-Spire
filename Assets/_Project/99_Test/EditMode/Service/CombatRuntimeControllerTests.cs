@@ -161,8 +161,8 @@ public sealed class CombatRuntimeControllerTests
         }
 
         private const string HeroTsv =
-            "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockFloorId\tPrefabKey\tIconKey\tStartLevel\n" +
-            "1\tHero_Guardian\tMelee\tPhysical\tCommon\tStarter|Slot\t150\t10\t20\t1.0\t2.0\t1\t0\tNearest\t1\tHero_Guardian\tIcon_Hero_Guardian\t1\n";
+            "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockConditionType\tUnlockValue\tIsDefaultUnlocked\tPrefabKey\tIconKey\tStartLevel\n" +
+            "1\tHero_Guardian\tMelee\tPhysical\tCommon\tStarter|Slot\t150\t10\t20\t1.0\t2.0\t1\t0\tNearest\tDefault\t0\ttrue\tHero_Guardian\tIcon_Hero_Guardian\t1\n";
 
         private const string EnemyTsv =
             "EnemyId\tNameKey\tEnemyRank\tElementType\tMaxHp\tMoveSpeed\tAttackPower\tArmor\tAbilityTagList\tRewardScore\tPrefabKey\n" +

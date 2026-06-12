@@ -58,6 +58,16 @@ public enum UnlockFeatureType
     CraftRecipe // 제작 레시피 해금
 }
 
+// 컨텐츠 해금 조건을 판정하는 기준입니다.
+public enum UnlockConditionType
+{
+    Default, // 시작부터 해금
+    CitadelFloor, // 성채 층 수 기준 해금
+    ClearedNight, // 클리어한 밤 세션 ID 기준 해금
+    SpireLevel, // 스파이어 레벨 기준 해금
+    MagicLibrary // 마법 도서관 해금 여부 기준 해금
+}
+
 // 업그레이드 테이블의 성장 분류입니다.
 public enum UpgradeCategory
 {

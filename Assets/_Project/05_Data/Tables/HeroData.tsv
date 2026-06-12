@@ -1,4 +1,5 @@
-HeroId	NameKey	HeroRole	ElementType	HeroTagList	BaseAttack	BaseAttackSpeed	AttackPatternId	SkillId	TargetingType	UnlockFloorId	PrefabKey	IconKey
-1001	hero_fire_apprentice	Dealer	Fire	Fire|Mage	10	1.00	3001	4001	Nearest	1	hero_fire_apprentice	icon_hero_fire
-1002	hero_arc_guardian	Dealer	Lightning	Lightning|Guard	8	1.25	3002	4002	LowestHp	2	hero_arc_guardian	icon_hero_lightning
-1003	hero_frost_scout	Support	Ice	Ice|Ranger	6	1.40	3003	4003	Farthest	3	hero_frost_scout	icon_hero_ice
+HeroId	CharacterName	HeroRole	ElementType	Rarity	HeroTagList	BaseHealth	BaseDefense	BaseAttack	BaseAttackSpeed	BaseAttackRange	AttackPatternId	SkillId	TargetingType	UnlockConditionType	UnlockValue	IsDefaultUnlocked	PrefabKey	IconKey	StartLevel
+1001	Player_Sword	Melee	Physical	Common	Sword|Melee|Starter	120	8	12	1.00	2.20	3001	4001	Nearest	Default	0	true	Player_Sword	Player_Sword	1
+1002	Player_Archer	Ranged	Physical	Rare	Bow|Ranged	80	3	9	1.35	5.50	3002	4002	Farthest	Default	0	true	Player_Archer	Player_Archer	1
+1003	Player_Magician	Ranged	Lightning	Epic	Mage|Skill	70	2	7	0.85	4.80	3003	4003	LowestHp	CitadelFloor	3	false	Player_Magician	Player_Magician	1
+1004	Player_Axe	Melee	Physical	Legendary	Axe|Melee|Guard	160	12	16	0.75	2.00	3004	4004	HighestHp	CitadelFloor	4	false	Player_Axe	Player_Axe	1

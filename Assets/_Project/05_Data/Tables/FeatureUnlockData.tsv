@@ -1,0 +1,6 @@
+FeatureId	FeatureKey	DisplayName	UnlockConditionType	UnlockValue	IsDefaultUnlocked
+1	BottomButton_Magic	Magic	CitadelFloor	3	false
+2	BottomButton_Hero	Hero	Default	0	true
+3	BottomButton_Spire	Spire	Default	0	true
+4	BottomButton_Battle	Battle	Default	0	true
+5	BottomButton_Shop	Shop	ClearedNight	3	false
