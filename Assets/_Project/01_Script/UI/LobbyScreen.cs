@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -127,7 +128,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
 
             PrepareButtonForRuntimeClick(button);
 
-            UnityAction callback = () => HandleCommandClicked(commandKey);
+            UnityAction callback = () => HandleCommandClicked(commandKey, button).Forget();
             button.onClick.AddListener(callback);
             activeBindings.Add(new ButtonBinding(button, callback));
         }
@@ -148,13 +149,16 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     }
 
     // 로비 버튼 클릭을 버튼 이름 기반 명령으로 전달합니다.
-    private void HandleCommandClicked(string commandKey)
+    private async UniTaskVoid HandleCommandClicked(string commandKey, Button button)
     {
         if (CommandRequested == null)
         {
             Debug.LogError($"[LobbyScreen] {commandKey} 클릭을 처리할 Controller 구독자가 없습니다.");
             return;
         }
+
+        if (button != null)
+            await ButtonPressTweenPlayer.PlayAsync(button.transform);
 
         SetFocusedCommand(commandKey);
         CommandRequested?.Invoke(commandKey);

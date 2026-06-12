@@ -1,5 +1,7 @@
 using Cysharp.Threading.Tasks;
+using UnityEngine.Events;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 모든 팝업 프리팹이 상속받는 공통 부모입니다.
 // 팝업 생성 위치, 딤 처리, 스택 관리는 PopupManager가 담당하고
@@ -23,6 +25,7 @@ public class BasePopup : MonoBehaviour
         ValidateCanvasGroup();
 
         SetVisible(false);
+        RegisterButtonPressFeedback();
         OnInitialized();
     }
 
@@ -101,5 +104,22 @@ public class BasePopup : MonoBehaviour
 
         if (canvasGroup == null)
             Debug.LogError("[BasePopup] 팝업 프리팹에 CanvasGroup이 없습니다.", this);
+    }
+
+    // 팝업 안의 모든 버튼에 공통 눌림 피드백을 붙입니다.
+    // 개별 팝업 View는 자기 기능만 등록하고, 버튼 감각은 BasePopup에서 통일합니다.
+    private void RegisterButtonPressFeedback()
+    {
+        Button[] buttons = GetComponentsInChildren<Button>(true);
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            if (button == null)
+                continue;
+
+            UnityAction callback = () => ButtonPressTweenPlayer.PlayAsync(button.transform).Forget();
+            button.onClick.AddListener(callback);
+        }
     }
 }

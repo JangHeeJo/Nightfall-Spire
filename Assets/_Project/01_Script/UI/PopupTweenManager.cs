@@ -21,12 +21,13 @@ public sealed class PopupTweenManager
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = true;
         canvasGroup.interactable = true;
-        popup.transform.localScale = Vector3.one * 0.96f;
+        popup.transform.localScale = Vector3.one * 0.88f;
 
         Sequence sequence = DOTween.Sequence()
             .SetUpdate(true)
-            .Append(canvasGroup.DOFade(1f, 0.16f))
-            .Join(popup.transform.DOScale(Vector3.one, 0.16f).SetEase(Ease.OutBack));
+            .Append(canvasGroup.DOFade(1f, 0.14f).SetEase(Ease.OutQuad))
+            .Join(popup.transform.DOScale(Vector3.one * 1.04f, 0.18f).SetEase(Ease.OutBack))
+            .Append(popup.transform.DOScale(Vector3.one, 0.07f).SetEase(Ease.OutQuad));
 
         await WaitForTweenAsync(sequence);
     }
@@ -45,8 +46,8 @@ public sealed class PopupTweenManager
 
         Sequence sequence = DOTween.Sequence()
             .SetUpdate(true)
-            .Append(canvasGroup.DOFade(0f, 0.12f))
-            .Join(popup.transform.DOScale(Vector3.one * 0.98f, 0.12f).SetEase(Ease.InQuad));
+            .Append(canvasGroup.DOFade(0f, 0.1f).SetEase(Ease.InQuad))
+            .Join(popup.transform.DOScale(Vector3.one * 0.9f, 0.1f).SetEase(Ease.InBack));
 
         await WaitForTweenAsync(sequence);
 
