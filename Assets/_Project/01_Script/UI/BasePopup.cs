@@ -9,16 +9,16 @@ public class BasePopup : MonoBehaviour
 {
     [SerializeField] private CanvasGroup canvasGroup; // 팝업 전체 표시와 입력을 제어합니다.
 
-    private PopupManager owner; // 이 팝업을 생성한 PopupManager
+    private PopupCloseRequester closeRequester; // 팝업 닫기 요청을 처리할 외부 함수
 
     public bool IsOpen { get; private set; } // 팝업이 현재 열린 상태인지 나타냅니다.
     public CanvasGroup CanvasGroup => canvasGroup;
 
     // PopupManager가 팝업을 생성한 직후 호출합니다.
-    // 팝업이 자기 생성자를 직접 가질 수 없으므로, 공통 의존성은 이 함수에서 받습니다.
-    public void Initialize(PopupManager popupManager)
+    // View는 PopupManager나 GameContext를 직접 받지 않고, 닫기 요청 함수만 받습니다.
+    public void Initialize(PopupCloseRequester closeRequester)
     {
-        owner = popupManager;
+        this.closeRequester = closeRequester;
 
         ValidateCanvasGroup();
 
@@ -52,10 +52,10 @@ public class BasePopup : MonoBehaviour
     // 팝업 제거 정책은 PopupManager가 갖고 있으므로, 팝업 자신은 관리자에게 닫기를 요청합니다.
     public UniTask RequestCloseAsync(PopupCloseReason closeReason = PopupCloseReason.Dismissed, object payload = null)
     {
-        if (owner == null)
+        if (closeRequester == null)
             return UniTask.CompletedTask;
 
-        return owner.CloseAsync(this, closeReason, payload);
+        return closeRequester(this, closeReason, payload);
     }
 
     // PopupManager가 팝업을 닫을 때 호출합니다.

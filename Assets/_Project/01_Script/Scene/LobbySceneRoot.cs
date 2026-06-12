@@ -18,8 +18,8 @@ public sealed class LobbySceneRoot : MonoBehaviour
     {
         GameContext context = await WaitForContextAsync();
 
-        staticUIRoot?.Initialize(context);
         dynamicUIRoot?.Initialize(context);
+        staticUIRoot?.Initialize(context);
     }
 
     // BootScene에서 LobbyScene으로 넘어오는 타이밍 차이를 흡수합니다.

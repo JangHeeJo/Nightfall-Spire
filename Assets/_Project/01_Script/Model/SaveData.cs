@@ -6,12 +6,13 @@ using System.Collections.Generic;
 [Serializable]
 public sealed class SaveData
 {
-    public int Version = 2; // 저장 데이터 버전. 구조 변경이나 마이그레이션 판단에 사용합니다.
+    public int Version = 4; // 저장 데이터 버전. 구조 변경이나 마이그레이션 판단에 사용합니다.
 
     public CurrencySaveData Currency = new(); // 골드, 젬 같은 공통 재화 저장 데이터
     public PlayerProgressSaveData Progress = new(); // 현재 방어 세션과 낮/밤 진행 저장 데이터
     public DayCycleSaveData DayCycle = new(); // 낮 준비 단계에서 성장시키는 스파이어/성채 저장 데이터
     public CombatSlotSaveDataContainer CombatSlot = new(); // 영웅 개별 성장보다 우선되는 전투 슬롯 저장 데이터
+    public HeroCollectionSaveData HeroCollection = new(); // 영웅 해금과 개별 레벨 저장 데이터
 
     // 새 게임을 시작할 때 사용할 기본 저장 데이터를 만듭니다.
     public static SaveData CreateDefault()
@@ -35,9 +36,14 @@ public sealed class SaveData
         {
             SlotIndex = 0,
             Level = 1,
-            EquippedHeroId = 1,
+            EquippedHeroId = 1001,
             IsUnlocked = true
         });
+
+        saveData.HeroCollection.Heroes.Add(new HeroSaveData { HeroId = 1001, Level = 1, IsUnlocked = true });
+        saveData.HeroCollection.Heroes.Add(new HeroSaveData { HeroId = 1002, Level = 1, IsUnlocked = true });
+        saveData.HeroCollection.Heroes.Add(new HeroSaveData { HeroId = 1003, Level = 1, IsUnlocked = false });
+        saveData.HeroCollection.Heroes.Add(new HeroSaveData { HeroId = 1004, Level = 1, IsUnlocked = false });
 
         return saveData;
     }
@@ -86,4 +92,22 @@ public sealed class CombatSlotSaveData
     public int Level; // 슬롯 성장 레벨
     public int EquippedHeroId; // 이 슬롯에 배치된 영웅 ID
     public bool IsUnlocked; // 슬롯 사용 가능 여부
+}
+
+// 영웅 저장 데이터 묶음입니다.
+// 해금 여부와 개별 레벨은 전투 슬롯 성장과 별도로 관리합니다.
+[Serializable]
+public sealed class HeroCollectionSaveData
+{
+    public List<HeroSaveData> Heroes = new(); // 보유하거나 해금 후보로 등록된 영웅 목록
+}
+
+// 영웅 하나의 저장 데이터입니다.
+// 레벨업과 수동 해금이 들어오면 이 값이 갱신됩니다.
+[Serializable]
+public sealed class HeroSaveData
+{
+    public int HeroId; // HeroData 테이블의 HeroId
+    public int Level = 1; // 영웅 개별 레벨
+    public bool IsUnlocked; // 플레이어가 실제로 사용할 수 있는지 여부
 }

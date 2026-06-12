@@ -11,7 +11,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     private readonly Dictionary<string, Button> buttonsByCommandKey = new(); // 버튼 오브젝트 이름을 명령 키로 쓰는 버튼 캐시
     private readonly List<ButtonBinding> activeBindings = new(); // OnDisable에서 제거할 런타임 버튼 연결 목록
 
-    public event Action<string> CommandRequested; // 눌린 버튼 이름을 Presenter로 전달하는 이벤트
+    public event Action<string> CommandRequested; // 눌린 버튼 이름을 Controller로 전달하는 이벤트
 
     // 씬에 배치된 로비 버튼들을 이름 기반 명령으로 묶습니다.
     private void Awake()
@@ -45,7 +45,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
         return buttonsByCommandKey.Count > 0;
     }
 
-    // Presenter가 특정 명령 버튼의 입력 가능 여부를 제어합니다.
+    // Controller가 특정 명령 버튼의 입력 가능 여부를 제어합니다.
     public void SetCommandInteractable(string commandKey, bool isInteractable)
     {
         if (string.IsNullOrWhiteSpace(commandKey))
@@ -77,7 +77,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
             Debug.LogWarning("[LobbyScreen] 로비 고정 UI 아래에서 Button 컴포넌트를 찾지 못했습니다.");
     }
 
-    // 캐시된 모든 버튼을 같은 방식으로 연결해 Presenter가 버튼 이름만 받게 합니다.
+    // 캐시된 모든 버튼을 같은 방식으로 연결해 Controller가 버튼 이름만 받게 합니다.
     private void RegisterCachedButtons()
     {
         UnregisterActiveBindings();
@@ -117,7 +117,7 @@ public sealed class LobbyScreen : MonoBehaviour, ILobbyScreenView
     {
         if (CommandRequested == null)
         {
-            Debug.LogError($"[LobbyScreen] {commandKey} 클릭을 처리할 Presenter 구독자가 없습니다.");
+            Debug.LogError($"[LobbyScreen] {commandKey} 클릭을 처리할 Controller 구독자가 없습니다.");
             return;
         }
 

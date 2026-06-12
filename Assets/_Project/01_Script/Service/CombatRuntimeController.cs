@@ -156,6 +156,8 @@ public sealed class CombatRuntimeController
 
         int attackPower = Math.Max(1, (int)Math.Ceiling(heroRow.BaseAttack * (1f + attackBonus / 100f)));
         float attackSpeed = Math.Max(0.01f, heroRow.BaseAttackSpeed * (1f + attackSpeedBonus / 100f));
+        int maxHealth = Math.Max(1, heroRow.BaseHealth);
+        int defense = Math.Max(0, heroRow.BaseDefense);
 
         return new CombatHeroSlotRuntimeState(
             slot.SlotIndex,
@@ -164,6 +166,8 @@ public sealed class CombatRuntimeController
             heroRow.HeroRole,
             heroRow.ElementType,
             heroRow.TargetingType,
+            maxHealth,
+            defense,
             attackPower,
             attackSpeed);
     }

@@ -44,8 +44,15 @@ public interface ICombatDataSource
     bool TryGetCombatSlotUpgrade(int upgradeGroupId, int level, out CombatSlotUpgradeDataRow row);
 }
 
+// 로비와 컬렉션 UI가 필요한 영웅 테이블 조회 계약입니다.
+public interface IHeroCatalogDataSource
+{
+    IReadOnlyList<HeroDataRow> GetHeroes();
+    bool TryGetHero(int heroId, out HeroDataRow row);
+}
+
 // DataTableManager를 도메인 서비스가 쓰는 조회 계약으로 감싸는 어댑터입니다.
-public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IDraftEffectDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource
+public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataSource, IDraftEffectDataSource, IRewardDataSource, IDayGrowthDataSource, ICombatDataSource, IHeroCatalogDataSource
 {
     private readonly DataTableManager dataTableManager; // 실제 테이블 보관소
 
@@ -157,6 +164,12 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
     {
         row = null;
         return dataTableManager?.HeroData?.TryGet(heroId, out row) == true;
+    }
+
+    // 모든 영웅 Row를 테이블 순서 그대로 반환합니다.
+    public IReadOnlyList<HeroDataRow> GetHeroes()
+    {
+        return dataTableManager?.HeroData?.Rows ?? System.Array.Empty<HeroDataRow>();
     }
 
     // 적 Row를 조회합니다.

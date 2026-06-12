@@ -4,7 +4,7 @@ using UnityEngine;
 // 팝업 요청과 결과 타입의 기본 계약을 검증합니다.
 public sealed class PopupRequestTests
 {
-    // 팝업 요청은 Key, 프리팹, 열기 정책, 딤 사용 여부를 그대로 보관해야 합니다.
+    // 팝업 요청은 Key, 프리팹, 열기 정책, 레이어 슬롯, 딤 사용 여부를 그대로 보관해야 합니다.
     [Test]
     public void Constructor_StoresRequestValues()
     {
@@ -15,12 +15,14 @@ public sealed class PopupRequestTests
             "notice",
             popup,
             PopupOpenPolicy.SingleInstance,
+            PopupLayerSlot.Overlay,
             PopupPriority.Important,
             false);
 
         Assert.That(request.Key, Is.EqualTo("notice"));
         Assert.That(request.Prefab, Is.EqualTo(popup));
         Assert.That(request.OpenPolicy, Is.EqualTo(PopupOpenPolicy.SingleInstance));
+        Assert.That(request.LayerSlot, Is.EqualTo(PopupLayerSlot.Overlay));
         Assert.That(request.Priority, Is.EqualTo(PopupPriority.Important));
         Assert.That(request.UseDim, Is.False);
 

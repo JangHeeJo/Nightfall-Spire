@@ -10,7 +10,6 @@ public sealed class LobbyDynamicUIRoot : MonoBehaviour
     [SerializeField] private Transform toastLayer; // 토스트 메시지 부모 레이어
     [SerializeField] private ScreenFadeView screenFadeView; // 씬 전환용 화면 페이드 View
 
-    private GameContext context; // 동적 UI가 참조할 현재 게임 상태
     private bool isInitialized; // 씬 루트와 자체 초기화가 중복 호출되는 일을 막습니다.
 
     public Transform PopupLayer => popupLayer;
@@ -34,7 +33,6 @@ public sealed class LobbyDynamicUIRoot : MonoBehaviour
             return;
         }
 
-        context = gameContext;
         isInitialized = true;
         GameRoot.Instance?.PopupManager.RegisterSceneLayers(this, gameObject.scene.name, popupLayer, dimLayer, toastLayer);
         GameRoot.Instance?.ScreenFadeManager.RegisterSceneFade(this, gameObject.scene.name, screenFadeView);

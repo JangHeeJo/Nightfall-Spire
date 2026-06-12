@@ -1,4 +1,4 @@
-// Nightfall Spire MVP 데이터 테이블에서 사용하는 enum 모음입니다.
+// Nightfall Spire 데이터 테이블에서 사용하는 enum 모음입니다.
 // 작은 컨텐츠 enum은 파일을 늘리지 않고 이 파일에 모아두며, 각 값의 테이블 의미를 주석으로 고정합니다.
 
 // 재화/자원 분류입니다.
@@ -13,9 +13,8 @@ public enum CurrencyType
 // 영웅의 전투 역할입니다.
 public enum HeroRole
 {
-    Dealer, // 주 피해 담당
-    Support, // 버프, 회복, 보조 효과 담당
-    Tank // 적 공격을 받아내는 방어 담당
+    Melee, // 성채 가까이에서 싸우는 근접 영웅
+    Ranged // 원거리 공격으로 후방에서 싸우는 영웅
 }
 
 // 공격, 스킬, 적 약점에 쓰는 속성입니다.

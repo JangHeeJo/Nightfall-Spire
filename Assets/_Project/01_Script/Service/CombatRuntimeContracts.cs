@@ -20,6 +20,8 @@ public sealed class CombatHeroSlotRuntimeState
     public HeroRole HeroRole { get; } // 영웅 역할
     public ElementType ElementType { get; } // 공격 속성
     public TargetingType TargetingType { get; } // 타겟 선택 규칙
+    public int MaxHealth { get; } // 영웅 기본 체력
+    public int Defense { get; } // 영웅 기본 방어력
     public int AttackPower { get; } // 슬롯 성장 보정이 반영된 공격력
     public float AttackSpeed { get; } // 슬롯 성장 보정이 반영된 초당 공격 횟수
     public float AttackTimer { get; private set; } // 다음 공격까지 누적된 시간
@@ -27,7 +29,7 @@ public sealed class CombatHeroSlotRuntimeState
     public bool CanAttack => AttackPower > 0 && AttackSpeed > 0f; // 공격 가능한 슬롯인지 여부
 
     // 영웅 슬롯의 전투 계산용 값을 보관합니다.
-    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, CombatSlotType slotType, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int attackPower, float attackSpeed)
+    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, CombatSlotType slotType, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int maxHealth, int defense, int attackPower, float attackSpeed)
     {
         SlotIndex = slotIndex;
         HeroId = heroId;
@@ -35,6 +37,8 @@ public sealed class CombatHeroSlotRuntimeState
         HeroRole = heroRole;
         ElementType = elementType;
         TargetingType = targetingType;
+        MaxHealth = maxHealth;
+        Defense = defense;
         AttackPower = attackPower;
         AttackSpeed = attackSpeed;
     }

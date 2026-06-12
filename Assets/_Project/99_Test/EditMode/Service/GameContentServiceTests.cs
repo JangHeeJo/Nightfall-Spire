@@ -277,7 +277,7 @@ public sealed class GameContentServiceTests
 
         private const string CombatSlotTsv =
             "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "2001\t0\tFront\t1\tDealer|Tank\t2101\t1001\tslot_front_01\tTRUE\n";
+            "2001\t0\tFront\t1\tMelee\t2101\t1001\tslot_front_01\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

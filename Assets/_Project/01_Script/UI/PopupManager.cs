@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -9,9 +10,10 @@ public sealed class PopupManager
     private readonly List<PopupHandle> openedPopups = new(); // 현재 열린 팝업 목록
     private readonly PopupTweenManager tweenManager = new(); // 팝업 열기/닫기 공통 연출 담당
 
-    private Object registeredOwner; // 레이어를 등록한 씬 Root
+    private UnityEngine.Object registeredOwner; // 레이어를 등록한 씬 Root
     private string registeredSceneName; // 디버깅용 씬 이름
     private GameContext context; // 팝업 상태를 기록할 현재 게임 Context
+    private IPopupControllerFactory controllerFactory; // 팝업별 Controller를 조립하는 Factory
     private int nextHandleId = 1; // 팝업 핸들 ID 발급값
 
     public Transform PopupLayer { get; private set; } // 팝업 생성 부모
@@ -21,6 +23,19 @@ public sealed class PopupManager
     public bool HasActiveLayers => PopupLayer != null && DimLayer != null && ToastLayer != null;
     public int OpenPopupCount => openedPopups.Count;
 
+    // 특정 슬롯에 현재 열린 팝업이 있는지 확인합니다.
+    // 로비 씬 진입 시 기본 Content 팝업을 자동으로 보장할 때 사용합니다.
+    public bool HasOpenPopupInSlot(PopupLayerSlot layerSlot)
+    {
+        for (int i = 0; i < openedPopups.Count; i++)
+        {
+            if (openedPopups[i].LayerSlot == layerSlot)
+                return true;
+        }
+
+        return false;
+    }
+
     // GameRoot가 GameContext를 만든 뒤 호출합니다.
     // PopupManager는 전역 시스템이지만 팝업 상태 값은 현재 Context에 기록해야 하므로 별도로 주입받습니다.
     public void SetContext(GameContext gameContext)
@@ -28,9 +43,16 @@ public sealed class PopupManager
         context = gameContext;
     }
 
+    // GameRoot가 팝업 Controller 조립 정책을 주입합니다.
+    // PopupManager 자체는 특정 팝업 타입을 알지 않고 수명 관리만 담당합니다.
+    public void SetControllerFactory(IPopupControllerFactory popupControllerFactory)
+    {
+        controllerFactory = popupControllerFactory;
+    }
+
     // 현재 씬이 가진 팝업/딤/토스트 레이어를 등록합니다.
     // 씬이 바뀌면 DynamicUIRoot가 새 레이어를 다시 등록하고, 이전 씬 레이어는 해제됩니다.
-    public void RegisterSceneLayers(Object owner, string sceneName, Transform popupLayer, CanvasGroup dimLayer, Transform toastLayer)
+    public void RegisterSceneLayers(UnityEngine.Object owner, string sceneName, Transform popupLayer, CanvasGroup dimLayer, Transform toastLayer)
     {
         registeredOwner = owner;
         registeredSceneName = sceneName;
@@ -44,7 +66,7 @@ public sealed class PopupManager
 
     // 등록한 씬 Root가 파괴될 때 레이어 참조를 해제합니다.
     // 현재 등록 주체가 아닌 오브젝트의 해제 요청은 무시해서 씬 전환 타이밍 충돌을 막습니다.
-    public void UnregisterSceneLayers(Object owner)
+    public void UnregisterSceneLayers(UnityEngine.Object owner)
     {
         if (registeredOwner != owner)
             return;
@@ -72,8 +94,6 @@ public sealed class PopupManager
     // 중복 처리 정책과 결과 핸들을 함께 관리합니다.
     public async UniTask<PopupHandle> OpenAsync<TPopup>(PopupRequest<TPopup> request) where TPopup : BasePopup
     {
-        Debug.Log($"[PopupManager] OpenAsync 요청. Key: {(request == null ? "NULL" : request.Key)}, Prefab: {(request == null || request.Prefab == null ? "NULL" : request.Prefab.name)}, HasActiveLayers: {HasActiveLayers}, PopupLayer: {(PopupLayer == null ? "NULL" : PopupLayer.name)}");
-
         if (request == null)
         {
             Debug.LogError("[PopupManager] 팝업 요청이 없습니다.");
@@ -89,28 +109,27 @@ public sealed class PopupManager
         PopupHandle existingHandle = FindOpenHandle(request.Key);
 
         if (existingHandle != null && request.OpenPolicy == PopupOpenPolicy.SingleInstance)
-        {
-            Debug.Log($"[PopupManager] 이미 열린 팝업을 재사용합니다. Key: {request.Key}");
             return existingHandle;
-        }
+
+        if (request.LayerSlot == PopupLayerSlot.Content)
+            await CloseSlotAsync(PopupLayerSlot.Content, PopupCloseReason.Replaced);
 
         if (request.OpenPolicy == PopupOpenPolicy.ReplaceTop)
             await CloseTopAsync(PopupCloseReason.Replaced);
         else if (request.OpenPolicy == PopupOpenPolicy.ReplaceAll)
             await CloseAllAsync(PopupCloseReason.Replaced);
 
-        Debug.Log($"[PopupManager] 팝업 생성 직전. Key: {request.Key}, Parent: {PopupLayer.name}");
-        TPopup popup = Object.Instantiate(request.Prefab, PopupLayer);
-        Debug.Log($"[PopupManager] 팝업 생성 완료. Key: {request.Key}, Instance: {popup.name}, Parent: {(popup.transform.parent == null ? "NULL" : popup.transform.parent.name)}");
-        popup.Initialize(this);
+        TPopup popup = UnityEngine.Object.Instantiate(request.Prefab, PopupLayer);
+        popup.Initialize(RequestCloseFromPopupAsync);
+        IDisposable popupController = CreatePopupController(popup);
+        request.ConfigureBeforeOpen?.Invoke(popup);
 
-        PopupHandle handle = new PopupHandle(nextHandleId++, request.Key, popup, request.Priority, request.UseDim);
+        PopupHandle handle = new PopupHandle(nextHandleId++, request.Key, popup, request.LayerSlot, request.Priority, request.UseDim, popupController);
         openedPopups.Add(handle);
         context?.PopupProgress.IncreaseOpenCount();
         RefreshDimLayer();
 
         await popup.OpenAsync(tweenManager);
-        Debug.Log($"[PopupManager] 팝업 열기 완료. Key: {request.Key}, OpenPopupCount: {openedPopups.Count}");
         return handle;
     }
 
@@ -133,10 +152,11 @@ public sealed class PopupManager
             return;
 
         await popup.CloseAsync(tweenManager);
+        handle.Controller?.Dispose();
         context?.PopupProgress.DecreaseOpenCount();
         RefreshDimLayer();
         handle.Complete(new PopupResult(closeReason, payload));
-        Object.Destroy(popup.gameObject);
+        UnityEngine.Object.Destroy(popup.gameObject);
     }
 
     // 팝업 핸들을 기준으로 팝업을 닫습니다.
@@ -177,6 +197,24 @@ public sealed class PopupManager
     {
         while (openedPopups.Count > 0)
             await CloseTopAsync(closeReason);
+    }
+
+    // 특정 슬롯에 열린 팝업만 닫습니다.
+    // 하단 탭 전환처럼 기본 로비 HUD는 유지하고 Content 화면만 갈아끼울 때 사용합니다.
+    public async UniTask CloseSlotAsync(PopupLayerSlot layerSlot, PopupCloseReason closeReason = PopupCloseReason.Dismissed)
+    {
+        for (int i = openedPopups.Count - 1; i >= 0; i--)
+        {
+            PopupHandle handle = openedPopups[i];
+            if (handle.LayerSlot == layerSlot)
+                await CloseAsync(handle, closeReason);
+        }
+    }
+
+    // 로비 하단 탭에서 열린 콘텐츠 팝업을 닫고 기본 화면으로 돌아갑니다.
+    public UniTask CloseContentAsync()
+    {
+        return CloseSlotAsync(PopupLayerSlot.Content, PopupCloseReason.Dismissed);
     }
 
     // 딤 레이어를 닫힌 기본 상태로 되돌립니다.
@@ -247,7 +285,10 @@ public sealed class PopupManager
         int openCount = openedPopups.Count;
 
         for (int i = 0; i < openedPopups.Count; i++)
+        {
+            openedPopups[i].Controller?.Dispose();
             openedPopups[i].Complete(new PopupResult(PopupCloseReason.SceneChanged));
+        }
 
         openedPopups.Clear();
 
@@ -255,5 +296,21 @@ public sealed class PopupManager
             context?.PopupProgress.DecreaseOpenCount();
 
         ResetDimLayer();
+    }
+
+    // 팝업 View가 요청한 닫기를 Manager의 닫기 정책으로 연결합니다.
+    private UniTask RequestCloseFromPopupAsync(BasePopup popup, PopupCloseReason closeReason, object payload)
+    {
+        return CloseAsync(popup, closeReason, payload);
+    }
+
+    // 등록된 Factory가 팝업 타입에 맞는 Controller를 만들면 Manager가 생명주기를 맡습니다.
+    private IDisposable CreatePopupController(BasePopup popup)
+    {
+        if (controllerFactory == null)
+            return null;
+
+        PopupControllerContext popupControllerContext = new PopupControllerContext(context, this);
+        return controllerFactory.CreateController(popup, popupControllerContext);
     }
 }

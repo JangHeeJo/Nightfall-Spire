@@ -30,35 +30,45 @@ public sealed class HeroDataRow : ITableRow
 {
     public int Id => HeroId; // DataTable 기본 키
     public int HeroId { get; private set; } // 영웅 ID
-    public string NameKey { get; private set; } // 로컬라이징 이름 키
+    public string CharacterName { get; private set; } // 프리팹 이름과 맞춘 캐릭터 이름
     public HeroRole HeroRole { get; private set; } // 영웅 역할
     public ElementType ElementType { get; private set; } // 속성
+    public Rarity Rarity { get; private set; } // 카드 프레임에 표시할 캐릭터 등급
     public List<string> HeroTagList { get; private set; } = new(); // 시너지와 필터에 쓰는 영웅 태그
+    public int BaseHealth { get; private set; } // 기본 체력
+    public int BaseDefense { get; private set; } // 기본 방어력
     public int BaseAttack { get; private set; } // 기본 공격력
     public float BaseAttackSpeed { get; private set; } // 기본 공격 속도
+    public float BaseAttackRange { get; private set; } // 기본 공격 사거리
     public int AttackPatternId { get; private set; } // 기본 공격 패턴 ID
     public int SkillId { get; private set; } // 스킬 ID
     public TargetingType TargetingType { get; private set; } // 타겟 선택 규칙
     public int UnlockFloorId { get; private set; } // 해금 층 ID
     public string PrefabKey { get; private set; } // 프리팹 리소스 키
     public string IconKey { get; private set; } // 아이콘 리소스 키
+    public int StartLevel { get; private set; } // 최초 획득 레벨
 
     // TSV 한 줄에서 영웅 전투 기본값을 읽어옵니다.
     public void Load(TsvRow row)
     {
         HeroId = row.GetInt("HeroId");
-        NameKey = row.GetString("NameKey");
+        CharacterName = row.GetString("CharacterName");
         HeroRole = row.GetEnum<HeroRole>("HeroRole");
         ElementType = row.GetEnum<ElementType>("ElementType");
+        Rarity = row.GetEnum<Rarity>("Rarity");
         HeroTagList = row.GetStringList("HeroTagList");
+        BaseHealth = row.GetInt("BaseHealth");
+        BaseDefense = row.GetInt("BaseDefense");
         BaseAttack = row.GetInt("BaseAttack");
         BaseAttackSpeed = row.GetFloat("BaseAttackSpeed");
+        BaseAttackRange = row.GetFloat("BaseAttackRange");
         AttackPatternId = row.GetInt("AttackPatternId");
         SkillId = row.GetInt("SkillId");
         TargetingType = row.GetEnum<TargetingType>("TargetingType");
         UnlockFloorId = row.GetInt("UnlockFloorId");
         PrefabKey = row.GetString("PrefabKey");
         IconKey = row.GetString("IconKey");
+        StartLevel = row.GetInt("StartLevel");
     }
 }
 

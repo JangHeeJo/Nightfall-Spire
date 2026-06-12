@@ -19,6 +19,8 @@ public sealed class CombatRuntimeControllerTests
         Assert.That(controller.HeroSlots.Count, Is.EqualTo(1));
         Assert.That(controller.HeroSlots[0].SlotIndex, Is.EqualTo(0));
         Assert.That(controller.HeroSlots[0].HeroId, Is.EqualTo(1));
+        Assert.That(controller.HeroSlots[0].MaxHealth, Is.EqualTo(150));
+        Assert.That(controller.HeroSlots[0].Defense, Is.EqualTo(10));
         Assert.That(controller.HeroSlots[0].AttackPower, Is.EqualTo(20));
     }
 
@@ -159,8 +161,8 @@ public sealed class CombatRuntimeControllerTests
         }
 
         private const string HeroTsv =
-            "HeroId\tNameKey\tHeroRole\tElementType\tHeroTagList\tBaseAttack\tBaseAttackSpeed\tAttackPatternId\tSkillId\tTargetingType\tUnlockFloorId\tPrefabKey\tIconKey\n" +
-            "1\thero_guardian\tDealer\tPhysical\tStarter|Slot\t20\t1.0\t1\t0\tNearest\t1\tHero_Guardian\tIcon_Hero_Guardian\n";
+            "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockFloorId\tPrefabKey\tIconKey\tStartLevel\n" +
+            "1\tHero_Guardian\tMelee\tPhysical\tCommon\tStarter|Slot\t150\t10\t20\t1.0\t2.0\t1\t0\tNearest\t1\tHero_Guardian\tIcon_Hero_Guardian\t1\n";
 
         private const string EnemyTsv =
             "EnemyId\tNameKey\tEnemyRank\tElementType\tMaxHp\tMoveSpeed\tAttackPower\tArmor\tAbilityTagList\tRewardScore\tPrefabKey\n" +
@@ -168,7 +170,7 @@ public sealed class CombatRuntimeControllerTests
 
         private const string CombatSlotTsv =
             "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "1001\t0\tFront\t1\tDealer|Support|Tank\t2001\t1\tSlot_Front_01\tTRUE\n";
+            "1001\t0\tFront\t1\tMelee|Ranged\t2001\t1\tSlot_Front_01\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

@@ -11,8 +11,6 @@ public sealed class BattleDynamicUIRoot : MonoBehaviour
     [SerializeField] private Transform floatingTextLayer; // 데미지/회복 텍스트 부모 레이어
     [SerializeField] private Transform unitHpBarLayer; // 유닛 머리 위 HP바 부모 레이어
 
-    private GameContext context; // 전투 Dynamic UI가 참조할 현재 게임 상태
-
     public Transform PopupLayer => popupLayer;
     public CanvasGroup DimLayer => dimLayer;
     public Transform ToastLayer => toastLayer;
@@ -24,7 +22,12 @@ public sealed class BattleDynamicUIRoot : MonoBehaviour
     // 전투 중 팝업, 토스트, 페이드, 플로팅 텍스트가 모두 이 Root 기준으로 확장됩니다.
     public void Initialize(GameContext gameContext)
     {
-        context = gameContext;
+        if (gameContext == null)
+        {
+            Debug.LogError("[BattleDynamicUIRoot] GameContext가 없어 전투 Dynamic UI를 초기화할 수 없습니다.");
+            return;
+        }
+
         GameRoot.Instance?.PopupManager.RegisterSceneLayers(this, gameObject.scene.name, popupLayer, dimLayer, toastLayer);
         GameRoot.Instance?.ScreenFadeManager.RegisterSceneFade(this, gameObject.scene.name, screenFadeView);
     }

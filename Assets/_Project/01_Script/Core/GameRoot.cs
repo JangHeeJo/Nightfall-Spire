@@ -18,7 +18,7 @@ public sealed class GameRoot : MonoBehaviour
     public ScreenFadeManager ScreenFadeManager { get; private set; } // 현재 씬 화면 페이드 관리자
     public GameFlowController GameFlowController { get; private set; } // 낮/밤 흐름 제어자
 
-    private BootLoadingPresenter bootLoadingPresenter; // BootScene 로딩 화면 표시 담당
+    private BootLoadingController bootLoadingController; // BootScene 로딩 화면 제어 담당
 
     // 앱 시작 시 GameRoot 단일 인스턴스를 만들고 전체 초기화 흐름을 시작합니다.
     private void Awake()
@@ -47,22 +47,23 @@ public sealed class GameRoot : MonoBehaviour
         Debug.Log("[GameRoot] 초기화 시작");
 
         CreateCoreSystems();
-        CreateBootLoadingPresenter();
+        CreateBootLoadingController();
 
         // 밸런스 테이블을 먼저 읽어야 저장 데이터와 런타임 시스템이 같은 기준 데이터를 참조할 수 있습니다.
-        bootLoadingPresenter?.Report(0.15f, "Loading data...");
+        bootLoadingController?.Report(0.15f, "Loading data...");
         await DataTableManager.LoadAllAsync();
 
         // 저장 데이터를 먼저 불러옵니다.
-        bootLoadingPresenter?.Report(0.45f, "Loading save...");
+        bootLoadingController?.Report(0.45f, "Loading save...");
         SaveData saveData = await SaveManager.LoadAsync();
 
         // 저장 데이터와 테이블 조회 어댑터를 기반으로 현재 게임 진행 Context와 도메인 서비스를 생성합니다.
-        bootLoadingPresenter?.Report(0.65f, "Preparing systems...");
+        bootLoadingController?.Report(0.65f, "Preparing systems...");
         GameContentDataSource contentDataSource = new GameContentDataSource(DataTableManager);
         Context = new GameContext(saveData, contentDataSource);
         GameFlowController = new GameFlowController(Context, SceneLoadManager);
         PopupManager.SetContext(Context);
+        PopupManager.SetControllerFactory(new PopupControllerFactory());
 
         // 현재 상태를 Boot로 설정합니다.
         Context.GameProgress.ChangeState(GameState.Boot);
@@ -71,9 +72,9 @@ public sealed class GameRoot : MonoBehaviour
         Context.GameProgress.ChangeState(GameState.DayPreparationLoading);
 
         // BootScene에서 LobbyScene으로 이동합니다. LobbyScene은 낮 준비 화면 역할을 먼저 맡습니다.
-        bootLoadingPresenter?.Report(0.85f, "Loading lobby...");
+        bootLoadingController?.Report(0.85f, "Loading lobby...");
         await WaitForMinimumBootLoadingTimeAsync(bootStartTime);
-        bootLoadingPresenter?.Complete();
+        bootLoadingController?.Complete();
         await WaitRealtimeSecondsAsync(0.25f);
         await SceneLoadManager.LoadLobbySceneAsync();
 
@@ -111,16 +112,16 @@ public sealed class GameRoot : MonoBehaviour
         ScreenFadeManager = new ScreenFadeManager();
     }
 
-    // BootScene에 로딩 View가 있으면 Presenter를 연결합니다.
-    private void CreateBootLoadingPresenter()
+    // BootScene에 로딩 View가 있으면 Controller를 연결합니다.
+    private void CreateBootLoadingController()
     {
         BootLoadingView bootLoadingView = FindFirstObjectByType<BootLoadingView>();
 
         if (bootLoadingView == null)
             return;
 
-        bootLoadingPresenter = new BootLoadingPresenter(bootLoadingView);
-        bootLoadingPresenter.Initialize($"v{Application.version}");
+        bootLoadingController = new BootLoadingController(bootLoadingView);
+        bootLoadingController.Initialize($"v{Application.version}");
     }
 
     // 앱이 백그라운드로 내려가거나 돌아올 때 저장과 상태 복구를 처리합니다.

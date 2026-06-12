@@ -1,4 +1,4 @@
-# Nightfall Spire Codex 작업 요약
+﻿# Nightfall Spire Codex 작업 요약
 
 이 문서는 Codex와 ChatGPT가 같은 기준으로 프로젝트를 검토할 수 있도록 만든 공유 요약 문서입니다.
 현재 프로젝트는 기존 모바일 게임 Nightfall Spire 스타일을 참고하되, 그대로 복제하지 않고 출시 가능한 독자 Unity 모바일 게임으로 재설계하는 방향입니다.
@@ -8,12 +8,12 @@
 - 답변과 작업 요약은 한국어로 작성한다.
 - 사용자의 말에 무조건 동의하지 않고, 출시 기준에서 더 나은 구조가 있으면 먼저 제안한다.
 - 실제 Unity 프로젝트 파일과 현재 코드 기준으로 판단한다.
-- `GameRoot`, `GameContext`, 순수 Model, 씬별 Root, MVP UI 구조를 기본 골격으로 사용한다.
+- `GameRoot`, `GameContext`, 순수 Model, 씬별 Root, MVC UI 구조를 기본 골격으로 사용한다.
 - `GameRoot`는 전역 시작점이지만 Canvas를 들고 다니지 않는다.
 - 실제 UI Canvas와 Layer는 각 씬이 소유한다.
 - 팝업은 씬에 미리 배치하지 않고 Prefab으로 생성하고 닫으면 파괴한다.
 - 비동기 흐름은 `UniTask`를 사용한다.
-- 상태 구독은 `R3`를 사용하되, UI에서는 Presenter가 구독을 소유한다.
+- 상태 구독은 `R3`를 사용하되, UI에서는 Controller가 구독과 입력 흐름을 소유한다.
 - UI 연출은 `DOTween`을 사용한다.
 - Coroutine 사용은 금지한다.
 - 불필요한 `MonoBehaviour` 매니저를 늘리지 않는다.
@@ -22,6 +22,45 @@
 - 스크립트 이름과 Unity 하이어라키 오브젝트 이름은 가능한 맞춘다.
 - Git 작업은 작은 단위 커밋과 PR 기준으로 진행한다.
 - `main`은 안정 버전으로 유지하고, 작업은 브랜치에서 진행한다.
+
+## 현재 아키텍처 기준
+
+- Model은 저장 데이터, 진행 상태, 테이블 Row처럼 게임 상태와 규칙 데이터를 담는다.
+- View는 Unity UI 표시, 버튼 이벤트 전달, 이미지/텍스트 반영만 맡는다.
+- Controller는 View 이벤트를 받아 Model/Service/Popup/Scene 흐름을 실행한다.
+- Scene Root는 Unity 씬에 배치된 오브젝트 참조를 모아 Controller와 View를 조립한다.
+- PopupManager는 팝업 생성, 닫기, 슬롯, 딤 처리, 생명주기만 담당한다.
+- 팝업별 Controller 생성은 `PopupControllerFactory`가 담당한다.
+- 팝업 View는 자기 Controller 타입을 직접 생성하지 않는다.
+- 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
+- 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
+
+## 완료된 작업: MVC에서 MVC 구조로 전환
+
+### 변경 방향
+
+- `Controller` 폴더와 Controller 계열 클래스를 제거했다.
+- `Controller` 폴더를 만들고 화면 흐름 제어 클래스를 이쪽으로 모았다.
+- UI 인터페이스와 ViewState는 `UI` 폴더로 옮겼다.
+- View가 `PopupManager`나 `GameContext`를 직접 쥐지 않도록 줄였다.
+- 팝업 View가 Controller를 직접 생성하던 구조를 제거하고 `PopupControllerFactory`로 분리했다.
+
+### 핵심 Controller
+
+- `BootLoadingController`: 부트 로딩 화면 표시 흐름 제어
+- `CurrencyHudController`: 재화 모델 구독과 HUD 표시 제어
+- `LobbyController`: 로비 버튼 입력을 명령으로 전달
+- `LobbyNavigationController`: 로비 명령을 팝업/씬 전환으로 실행
+- `HeroListController`: 영웅 목록 데이터 조회와 상세 팝업 요청
+- `HeroDetailController`: 영웅 상세 PREV/NEXT/닫기 흐름 제어
+- `BattleSceneController`: 전투 씬 진입, 밤 방어 세션 시작/정리 제어
+- `PopupControllerFactory`: 팝업 View와 팝업 Controller 조립
+
+### 검증 상태
+
+- `Controller`, `controller`, `MVC` 문자열은 현재 코드 검색 기준으로 남아 있지 않다.
+- `dotnet build "Nightfall Spire.sln"` 기준 오류 0개로 컴파일된다.
+- 남은 경고는 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고이며 이번 MVC 전환으로 생긴 오류는 아니다.
 
 ## 현재 Git 상태
 
@@ -38,7 +77,7 @@
   - `Connect scene root components`
   - `Add popup layer registration`
   - `Add popup lifecycle foundation`
-  - `Add currency HUD MVP presenter`
+  - `Add currency HUD MVC controller`
   - `Add screen fade foundation`
   - `Add DOTween package and UI tweens`
 
@@ -317,35 +356,35 @@ BasePopup.RequestCloseAsync()
 DOTween은 아직 `Packages/manifest.json`에 없으므로 바로 의존성을 추가하지 않았다.
 나중에 DOTween을 설치하면 `PopupTweenManager` 내부만 교체해서 열기/닫기 연출을 붙이면 된다.
 
-## 완료된 작업 8: Currency HUD MVP 샘플 추가
+## 완료된 작업 8: Currency HUD MVC 샘플 추가
 
-커밋: `Add currency HUD MVP presenter`
+커밋: `Add currency HUD MVC controller`
 
 ### 변경된 파일
 
 - `Assets/_Project/01_Script/UI/CurrencyHudView.cs`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs`
-- `Assets/_Project/01_Script/Presenter.meta`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs.meta`
+- `Assets/_Project/01_Script/Controller/CurrencyHudController.cs`
+- `Assets/_Project/01_Script/Controller.meta`
+- `Assets/_Project/01_Script/Controller/CurrencyHudController.cs.meta`
 - `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
 - `Assets/_Project/00_Scenes/LobbyScene.unity`
 
 ### 주요 변경
 
-- `CurrencyHudView`를 MVP View로 정리했다.
-- `CurrencyHudPresenter`를 추가해 `CurrencyProgress`와 `CurrencyHudView`를 연결하게 했다.
-- `CurrencyHudPresenter`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
-- Presenter가 숫자 포맷을 담당하고 `CurrencyHudViewState`를 만들어 View에 전달한다.
+- `CurrencyHudView`를 MVC View로 정리했다.
+- `CurrencyHudController`를 추가해 `CurrencyProgress`와 `CurrencyHudView`를 연결하게 했다.
+- `CurrencyHudController`가 `CurrencyProgress.Gold`, `CurrencyProgress.Gem`을 R3로 구독한다.
+- Controller가 숫자 포맷을 담당하고 `CurrencyHudViewState`를 만들어 View에 전달한다.
 - `CurrencyHudView`는 Model, R3, 숫자 포맷을 알지 않고 `Render()`로 전달받은 문자열만 표시한다.
-- `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudPresenter`를 생성한다.
-- `LobbyStaticUIRoot.OnDestroy()`에서 Presenter 구독을 해제한다.
+- `LobbyStaticUIRoot`가 `GameContext`를 받은 뒤 `CurrencyHudController`를 생성한다.
+- `LobbyStaticUIRoot.OnDestroy()`에서 Controller 구독을 해제한다.
 - `LobbyScene`의 `TopCurrencyHud` 오브젝트에 `CurrencyHudView` 컴포넌트를 연결했다.
 
 ### 왜 이렇게 했는지
 
-이 프로젝트는 전통 MVC를 그대로 쓰기보다 Unity에서 운용하기 쉬운 MVP 구조가 더 적합하다.
+이 프로젝트는 전통 MVC를 그대로 쓰기보다 Unity에서 운용하기 쉬운 MVC 구조가 더 적합하다.
 Unity View는 씬/프리팹과 Inspector 참조를 가져야 하므로, View가 Model을 직접 구독하기 시작하면 UI 코드가 점점 무거워진다.
-따라서 UI는 MVP 기준으로 두고 Presenter가 Model 구독, 표시 문자열 생성, View 갱신을 맡는다.
+따라서 UI는 MVC 기준으로 두고 Controller가 Model 구독, 표시 문자열 생성, View 갱신을 맡는다.
 
 이번 변경으로 첫 UI 바인딩 기준을 아래처럼 잡았다.
 
@@ -354,43 +393,43 @@ CurrencyProgress
 = Model. 골드/젬 상태와 변경 규칙을 가진다.
 
 CurrencyHudView
-= View. Presenter가 넘긴 표시 상태만 화면에 반영한다.
+= View. Controller가 넘긴 표시 상태만 화면에 반영한다.
 
-CurrencyHudPresenter
-= Presenter. Model을 구독하고 화면 표시 상태를 만들어 View에 전달한다.
+CurrencyHudController
+= Controller. Model을 구독하고 화면 표시 상태를 만들어 View에 전달한다.
 ```
 
 현재 `TopCurrencyHud`에는 아직 실제 골드/젬 텍스트 자식이 없다.
 그래서 `CurrencyHudView`의 `goldText`, `gemText` 참조는 비워둔 상태다.
 나중에 UI 배치 단계에서 텍스트 오브젝트를 만든 뒤 Inspector에 연결하면 된다.
 
-## 완료된 작업 8-1: Currency HUD MVP 라이브 기준 보강
+## 완료된 작업 8-1: Currency HUD MVC 라이브 기준 보강
 
-커밋: `Harden currency HUD MVP structure`
+커밋: `Harden currency HUD MVC structure`
 
 ### 변경된 파일
 
 - `Assets/_Project/01_Script/UI/CurrencyHudView.cs`
-- `Assets/_Project/01_Script/Presenter/ICurrencyHudView.cs`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudViewState.cs`
-- `Assets/_Project/01_Script/Presenter/CurrencyHudPresenter.cs`
+- `Assets/_Project/01_Script/Controller/ICurrencyHudView.cs`
+- `Assets/_Project/01_Script/Controller/CurrencyHudViewState.cs`
+- `Assets/_Project/01_Script/Controller/CurrencyHudController.cs`
 - `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
-- `Assets/_Project/99_Test/EditMode/Presenter/CurrencyHudPresenterTests.cs`
+- `Assets/_Project/99_Test/EditMode/Controller/CurrencyHudControllerTests.cs`
 
 ### 주요 변경
 
 - `CurrencyHud` 이름을 `CurrencyHudView`로 바꿔 View 역할이 이름에 드러나게 했다.
 - Unity 씬의 Missing Script를 막기 위해 기존 `CurrencyHud` `.meta` GUID를 `CurrencyHudView`가 유지하게 했다.
-- `ICurrencyHudView`를 별도 파일로 분리해 Presenter가 Unity 컴포넌트 구체 타입에 직접 묶이지 않게 했다.
-- `CurrencyHudViewState`를 별도 파일로 분리해 Presenter가 만든 표시 상태를 명확히 했다.
-- `CurrencyHudPresenter`는 생성자에서 바로 구독하지 않고 `Initialize()`에서 명시적으로 시작하게 했다.
-- `CurrencyHudPresenter`에 중복 초기화 방지와 Dispose 이후 갱신 차단을 추가했다.
+- `ICurrencyHudView`를 별도 파일로 분리해 Controller가 Unity 컴포넌트 구체 타입에 직접 묶이지 않게 했다.
+- `CurrencyHudViewState`를 별도 파일로 분리해 Controller가 만든 표시 상태를 명확히 했다.
+- `CurrencyHudController`는 생성자에서 바로 구독하지 않고 `Initialize()`에서 명시적으로 시작하게 했다.
+- `CurrencyHudController`에 중복 초기화 방지와 Dispose 이후 갱신 차단을 추가했다.
 - `LobbyStaticUIRoot`는 `FormerlySerializedAs("currencyHud")`를 사용해 기존 Inspector 직렬화 값을 `currencyHudView`로 이어받게 했다.
-- `CurrencyHudPresenterTests`를 추가해 초기 렌더링, Model 변경 반영, 중복 초기화 방지, Dispose 후 갱신 차단, null 의존성 거부를 검증하게 했다.
+- `CurrencyHudControllerTests`를 추가해 초기 렌더링, Model 변경 반영, 중복 초기화 방지, Dispose 후 갱신 차단, null 의존성 거부를 검증하게 했다.
 
 ### 왜 이렇게 바꿨는지
 
-출시용 UI 구조에서는 View, Presenter, ViewState, View Interface가 한 파일에 섞이면 규모가 커질 때 책임이 흐려진다.
+출시용 UI 구조에서는 View, Controller, ViewState, View Interface가 한 파일에 섞이면 규모가 커질 때 책임이 흐려진다.
 그래서 Currency HUD를 앞으로 다른 UI가 따라갈 기준 구조로 정리했다.
 
 ```text
@@ -398,7 +437,7 @@ CurrencyProgress
 = Model. 재화 값과 변경 규칙을 가진다.
 
 ICurrencyHudView
-= Presenter가 기대하는 View 계약이다.
+= Controller가 기대하는 View 계약이다.
 
 CurrencyHudView
 = Unity View. Text 참조와 Render만 담당한다.
@@ -406,14 +445,14 @@ CurrencyHudView
 CurrencyHudViewState
 = View에 넘길 완성된 표시 상태다.
 
-CurrencyHudPresenter
-= Presenter. Model 구독, 숫자 포맷, ViewState 생성, View 갱신, 구독 해제를 담당한다.
+CurrencyHudController
+= Controller. Model 구독, 숫자 포맷, ViewState 생성, View 갱신, 구독 해제를 담당한다.
 ```
 
 ### 검증
 
 - `dotnet build "Nightfall Spire.sln"` 통과.
-- `CurrencyHudPresenterTests.cs` 컴파일 통과.
+- `CurrencyHudControllerTests.cs` 컴파일 통과.
 - Unity EditMode Test Runner는 현재 로컬에 Unity 프로세스가 여러 개 떠 있어 batchmode 실행이 종료 코드 127로 실패했다.
 - Unity 에디터를 닫은 뒤 EditMode 테스트를 다시 실행해야 한다.
 
@@ -459,7 +498,7 @@ CurrencyHudPresenter
 Table Row
 → Domain Service
 → Progress Model
-→ Presenter/UI 또는 전투 런타임
+→ Controller/UI 또는 전투 런타임
 ```
 
 ### 현재 각 서비스 책임
@@ -783,7 +822,7 @@ dotnet build "Nightfall Spire.sln"
 현재는 `LobbyScene`과 `BattleScene`의 SceneRoot, StaticUIRoot, DynamicUIRoot 연결이 완료되었다.
 각 씬의 Dynamic UI Root는 현재 씬의 `PopupLayer`, `DimLayer`, `ToastLayer`를 `PopupManager`에 등록한다.
 각 씬의 Dynamic UI Root는 현재 씬의 `ScreenFade`를 `ScreenFadeManager`에 등록한다.
-`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHudView`가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudPresenter`를 통해 `CurrencyProgress`와 연결한다.
+`LobbyScene`의 `TopCurrencyHud`에는 `CurrencyHudView`가 연결되어 있고, `LobbyStaticUIRoot`가 `CurrencyHudController`를 통해 `CurrencyProgress`와 연결한다.
 
 ## 다음 작업 계획
 
@@ -931,9 +970,9 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 그래서 낮/밤 루프의 흐름은 `GameFlowController`가 지휘하고, Progress 모델은 현재 값을 담는 역할에 집중하게 분리했다.
 
-## 완료된 작업 13: MVP 데이터 테이블 로더 추가
+## 완료된 작업 13: MVC 데이터 테이블 로더 추가
 
-커밋 예정: `Add MVP data table loader`
+커밋 예정: `Add MVC data table loader`
 
 ### 변경된 파일
 
@@ -954,9 +993,9 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 ### 주요 변경
 
-- ChatGPT에서 받아온 MVP TSV 테이블을 프로젝트 데이터 폴더에 반영했다.
+- ChatGPT에서 받아온 MVC TSV 테이블을 프로젝트 데이터 폴더에 반영했다.
 - TSV를 런타임 Row 객체로 바꾸는 `TsvParser`, `TsvRow`, `DataTable<T>` 구조를 추가했다.
-- 모든 MVP 테이블에 대응하는 Row 클래스를 추가했다.
+- 모든 MVC 테이블에 대응하는 Row 클래스를 추가했다.
 - `DataTableManager`가 게임 시작 시 모든 TSV를 읽고 조회 인덱스를 구성하게 바꿨다.
 - 밤 방어전 핵심 연결인 세션, 웨이브, 드래프트 카드 효과, 보상, 슬롯 업그레이드 조회 함수를 추가했다.
 - `GameRoot` 초기화 흐름에서 저장 데이터를 읽기 전에 데이터 테이블을 먼저 로드하게 했다.
@@ -1017,37 +1056,37 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 ## 완료된 작업 19: 로비 화면 단위 전투 시작 연결
 
-커밋 예정: `Refactor lobby MVP to screen presenter`
+커밋 예정: `Refactor lobby MVC to screen controller`
 
 ### 변경된 파일
 
-- `Assets/_Project/01_Script/Presenter/ILobbyScreenView.cs`
-- `Assets/_Project/01_Script/Presenter/LobbyPresenter.cs`
+- `Assets/_Project/01_Script/Controller/ILobbyScreenView.cs`
+- `Assets/_Project/01_Script/Controller/LobbyController.cs`
 - `Assets/_Project/01_Script/UI/LobbyScreen.cs`
 - `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
-- `Assets/_Project/99_Test/EditMode/Presenter/LobbyPresenterTests.cs`
+- `Assets/_Project/99_Test/EditMode/Controller/LobbyControllerTests.cs`
 - `Docs/ARCHITECTURE_BASELINE.md`
 - `Docs/CODEX_SUMMARY.md`
 
 ### 주요 변경
 
-- 잘못 쪼갠 `FightStartView`, `FightStartPresenter`, `IFightStartView`를 제거했다.
+- 잘못 쪼갠 `FightStartView`, `FightStartController`, `IFightStartView`를 제거했다.
 - 로비 화면 전체 View인 `LobbyScreen`을 기준으로 밤 방어 시작 입력을 받게 했다.
-- `LobbyPresenter`를 추가해 로비 화면 액션이 `GameFlowController.LoadNightDefenseAsync()`로 이어지게 했다.
-- `LobbyStaticUIRoot`가 부모 Canvas에 `LobbyScreen` 컴포넌트를 보장하고 `LobbyPresenter`를 조립하게 바꿨다.
+- `LobbyController`를 추가해 로비 화면 액션이 `GameFlowController.LoadNightDefenseAsync()`로 이어지게 했다.
+- `LobbyStaticUIRoot`가 부모 Canvas에 `LobbyScreen` 컴포넌트를 보장하고 `LobbyController`를 조립하게 바꿨다.
 - 씬에 Button/Image 컴포넌트가 아직 없어도 `LobbyScreen`이 기존 `FightStartView` 이름 오브젝트를 찾아 최소 클릭 가능한 Button/Image를 보장하게 했다.
-- `LobbyPresenterTests`를 추가해 초기화, 클릭 시 로드 요청, 로드 거부 시 재활성화, Dispose 후 클릭 차단을 검증했다.
+- `LobbyControllerTests`를 추가해 초기화, 클릭 시 로드 요청, 로드 거부 시 재활성화, Dispose 후 클릭 차단을 검증했다.
 
 ### 왜 이렇게 바꿨는지
 
-로비에서 전투 씬으로 넘어가지 않았던 이유는 `FightStartView`라는 오브젝트는 있었지만 실제 Button, View 스크립트, Presenter, `GameFlowController.LoadNightDefenseAsync()` 호출 연결이 없었기 때문이다.
+로비에서 전투 씬으로 넘어가지 않았던 이유는 `FightStartView`라는 오브젝트는 있었지만 실제 Button, View 스크립트, Controller, `GameFlowController.LoadNightDefenseAsync()` 호출 연결이 없었기 때문이다.
 
-처음에는 버튼 단위 View/Presenter로 너무 잘게 쪼개는 잘못된 방향으로 갔다.
-출시용 구조에서는 버튼 하나마다 스크립트와 Presenter를 만드는 방식이 유지보수에 불리하다.
+처음에는 버튼 단위 View/Controller로 너무 잘게 쪼개는 잘못된 방향으로 갔다.
+출시용 구조에서는 버튼 하나마다 스크립트와 Controller를 만드는 방식이 유지보수에 불리하다.
 
-그래서 로비는 화면 단위 MVP로 정리했다.
-`LobbyScreen`은 로비 화면의 주요 입력을 모으고, `LobbyPresenter`가 그 입력을 게임 흐름으로 연결한다.
-재화 HUD처럼 독립적으로 재사용되거나 상태 구독이 필요한 위젯만 별도 Presenter를 유지한다.
+그래서 로비는 화면 단위 MVC로 정리했다.
+`LobbyScreen`은 로비 화면의 주요 입력을 모으고, `LobbyController`가 그 입력을 게임 흐름으로 연결한다.
+재화 HUD처럼 독립적으로 재사용되거나 상태 구독이 필요한 위젯만 별도 Controller를 유지한다.
 
 ### 검증
 
@@ -1090,7 +1129,7 @@ Unity 씬 연결과 `.meta` 리스크를 줄이기 위해 이번 작업에서는
 
 이번 변경으로 팝업은 단순 UI 오브젝트가 아니라 `PopupRequest -> PopupManager -> BasePopup 상속 팝업 스크립트 -> PopupHandle -> PopupResult` 흐름을 갖는다.
 공용 알림/확인 팝업 프리팹을 기본 전제로 두지 않고, 실제 팝업 UI마다 자기 스크립트 하나를 갖는 기준으로 간다.
-Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델 상태와 선택 결과 흐름이 복잡한 경우에만 검토한다.
+Controller는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델 상태와 선택 결과 흐름이 복잡한 경우에만 검토한다.
 
 ### 검증
 
@@ -1112,7 +1151,7 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 - `PopupManager`는 최상단 팝업 관리자이며 씬 레이어, 딤, 스택, 중복 정책, 결과 완료만 담당한다고 정리했다.
 - `BasePopup`은 모든 팝업 UI 스크립트가 상속받는 생명주기 기반이라고 정리했다.
 - 실제 기능은 각 팝업 UI 스크립트가 직접 소유한다고 정리했다.
-- Presenter는 모든 팝업에 붙이지 않고, 모델 상태와 선택 결과 흐름이 복잡한 팝업에서만 검토한다고 정리했다.
+- Controller는 모든 팝업에 붙이지 않고, 모델 상태와 선택 결과 흐름이 복잡한 팝업에서만 검토한다고 정리했다.
 
 ### 왜 이렇게 바꿨는지
 
@@ -1167,7 +1206,7 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 - 전투 런타임 테스트 파일을 추가해 슬롯 구성, 기본 공격, 처치 제거, 슬롯 성장 보정 시나리오를 고정했다.
 - 기존 외부 패키지 경고 `System.Threading.Tasks.Extensions` 버전 충돌은 남아 있지만, 이번 변경으로 인한 컴파일 오류는 없다.
 
-## 완료된 작업 24: Boot 로딩 MVP와 전투 보상/드래프트 효과 연결
+## 완료된 작업 24: Boot 로딩 MVC와 전투 보상/드래프트 효과 연결
 
 커밋 예정: `Add boot loading and reward completion flow`
 
@@ -1176,8 +1215,8 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 - `Assets/_Project/01_Script/Core/GameRoot.cs`
 - `Assets/_Project/01_Script/Core/GameContext.cs`
 - `Assets/_Project/01_Script/Core/GameFlowController.cs`
-- `Assets/_Project/01_Script/Presenter/IBootLoadingView.cs`
-- `Assets/_Project/01_Script/Presenter/BootLoadingPresenter.cs`
+- `Assets/_Project/01_Script/Controller/IBootLoadingView.cs`
+- `Assets/_Project/01_Script/Controller/BootLoadingController.cs`
 - `Assets/_Project/01_Script/UI/BootLoadingView.cs`
 - `Assets/_Project/01_Script/Model/DraftProgress.cs`
 - `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
@@ -1195,8 +1234,8 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 
 ### 주요 변경
 
-- `BootLoadingView`, `IBootLoadingView`, `BootLoadingPresenter`를 추가해 BootScene 로딩 UI를 MVP 구조로 연결할 수 있게 했다.
-- `GameRoot` 초기화 단계에서 데이터 로드, 저장 로드, 시스템 준비, 로비 씬 로드 진행률을 Boot 로딩 Presenter에 보고하게 했다.
+- `BootLoadingView`, `IBootLoadingView`, `BootLoadingController`를 추가해 BootScene 로딩 UI를 MVC 구조로 연결할 수 있게 했다.
+- `GameRoot` 초기화 단계에서 데이터 로드, 저장 로드, 시스템 준비, 로비 씬 로드 진행률을 Boot 로딩 Controller에 보고하게 했다.
 - BootScene에 로딩 View가 없어도 초기화가 조용히 진행되도록 null 허용 구조로 만들었다.
 - `DraftEffectResolver`를 추가해 선택한 드래프트 카드 효과 Row를 전투 보정값으로 변환하게 했다.
 - `CombatRuntimeModifierSet`을 추가해 드래프트, 시너지, 장비에서 생기는 전투 보정값을 누적 보관하게 했다.
@@ -1209,7 +1248,7 @@ Presenter는 모든 팝업에 붙이지 않고, 드래프트 선택처럼 모델
 ### 왜 이렇게 바꿨는지
 
 BootScene은 앞으로 첫 화면 UI를 붙일 시작점이다.
-씬 내부 UI 배치는 사용자가 직접 하므로, 이번 작업에서는 Unity UI 컴포넌트 참조만 받는 View와 표시 상태를 관리하는 Presenter만 추가했다.
+씬 내부 UI 배치는 사용자가 직접 하므로, 이번 작업에서는 Unity UI 컴포넌트 참조만 받는 View와 표시 상태를 관리하는 Controller만 추가했다.
 이렇게 해두면 실제 로딩 화면 디자인을 만들 때 Slider, Fill Image, TextMeshPro만 Inspector에 연결하면 된다.
 
 드래프트 카드는 밤 방어전의 핵심이므로 선택 상태만 저장하고 끝내면 안 된다.
@@ -1446,7 +1485,7 @@ BootScene은 첫 인상을 주는 화면이므로, 실제 작업 시간이 짧�
 - `LobbyScreen`은 `Lobby_Default` 안의 `Button_03_Red` 또는 `START/FIGHT` 라벨 버튼을 밤 방어 시작 버튼으로 찾는다.
 - `Button_03_Red`에 Button 컴포넌트가 빠져 있어도 기존 Graphic을 유지한 채 클릭 가능한 Button을 보강한다.
 - 이전 placeholder HUD인 `TopCurrencyHud`를 씬에서 제거하고, `LobbyStaticUIRoot`는 `LobbyScreen`을 직접 참조한다.
-- `Lobby_Default`의 `ResourceBar_Group`을 실제 재화 View로 연결하기 전까지 `CurrencyHudPresenter` 생성은 조용히 건너뛴다.
+- `Lobby_Default`의 `ResourceBar_Group`을 실제 재화 View로 연결하기 전까지 `CurrencyHudController` 생성은 조용히 건너뛴다.
 - 데모 문구 일부를 프로젝트 문구로 바꾼다.
   - `START` → `FIGHT`
   - `Battle 5` → `Week 1 Night 1`
@@ -1461,7 +1500,7 @@ BootScene은 첫 인상을 주는 화면이므로, 실제 작업 시간이 짧�
 사용자가 제공한 프리팹에는 로비 레이아웃, 재화바, 좌우 버튼, 하단 탭, 시작 버튼이 이미 들어 있으므로 이것을 기준으로 쓰는 편이 낫다.
 
 그래서 임시 placeholder 자동 생성 방식은 폐기하고, `Lobby_Default`를 우리 프로젝트 로비 고정 UI 원본으로 채택한다.
-기능 스크립트는 계속 최소화해서, 버튼 하나마다 별도 View/Presenter를 만들지 않고 실제 기능이 확정되는 묶음 단위로만 추가한다.
+기능 스크립트는 계속 최소화해서, 버튼 하나마다 별도 View/Controller를 만들지 않고 실제 기능이 확정되는 묶음 단위로만 추가한다.
 
 ### 검증
 
