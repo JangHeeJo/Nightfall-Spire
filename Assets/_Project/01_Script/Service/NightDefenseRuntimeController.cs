@@ -52,7 +52,6 @@ public sealed class NightDefenseRuntimeController
         return new NightDefenseRuntimeTickResult(
             spawnResult.SpawnedCount,
             spawnResult.IsWaveSpawnComplete,
-            spawnResult.IsWaveSpawnComplete && currentWavePlan.DraftAfterWave,
             currentWavePlan.IsLastWave,
             progress.ElapsedSeconds.Value,
             spawnResult.WaveElapsedSec);
@@ -68,6 +67,6 @@ public sealed class NightDefenseRuntimeController
     // 실행 중인 세션이나 웨이브가 없을 때 반환할 빈 Tick 결과를 만듭니다.
     private NightDefenseRuntimeTickResult CreateEmptyTickResult()
     {
-        return new NightDefenseRuntimeTickResult(0, false, false, false, progress.ElapsedSeconds.Value, 0f);
+        return new NightDefenseRuntimeTickResult(0, false, false, progress.ElapsedSeconds.Value, 0f);
     }
 }

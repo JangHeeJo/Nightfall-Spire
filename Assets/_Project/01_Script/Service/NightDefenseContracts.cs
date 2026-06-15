@@ -102,11 +102,10 @@ public readonly struct NightDefenseWaveResult
     public IReadOnlyList<WaveDataRow> WaveRows { get; } // 해당 웨이브 스폰 Row
     public NightDefenseWavePlan WavePlan { get; } // 스폰러가 사용할 시간표
     public bool IsBossWave { get; } // 보스 웨이브 여부
-    public bool DraftAfterWave { get; } // 웨이브 종료 후 드래프트 여부
     public bool IsLastWave { get; } // 마지막 웨이브 여부
 
     // 웨이브 진행 결과에 필요한 모든 상태 값을 보관합니다.
-    private NightDefenseWaveResult(bool isSuccess, NightDefenseFailureReason failureReason, int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool draftAfterWave, bool isLastWave)
+    private NightDefenseWaveResult(bool isSuccess, NightDefenseFailureReason failureReason, int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool isLastWave)
     {
         IsSuccess = isSuccess;
         FailureReason = failureReason;
@@ -114,20 +113,19 @@ public readonly struct NightDefenseWaveResult
         WaveRows = waveRows;
         WavePlan = wavePlan;
         IsBossWave = isBossWave;
-        DraftAfterWave = draftAfterWave;
         IsLastWave = isLastWave;
     }
 
     // 성공한 웨이브 진행 결과를 만듭니다.
-    public static NightDefenseWaveResult Success(int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool draftAfterWave, bool isLastWave)
+    public static NightDefenseWaveResult Success(int waveIndex, IReadOnlyList<WaveDataRow> waveRows, NightDefenseWavePlan wavePlan, bool isBossWave, bool isLastWave)
     {
-        return new NightDefenseWaveResult(true, NightDefenseFailureReason.None, waveIndex, waveRows, wavePlan, isBossWave, draftAfterWave, isLastWave);
+        return new NightDefenseWaveResult(true, NightDefenseFailureReason.None, waveIndex, waveRows, wavePlan, isBossWave, isLastWave);
     }
 
     // 실패한 웨이브 진행 결과를 만듭니다.
     public static NightDefenseWaveResult Fail(NightDefenseFailureReason failureReason)
     {
-        return new NightDefenseWaveResult(false, failureReason, 0, Array.Empty<WaveDataRow>(), NightDefenseWavePlan.Empty(), false, false, false);
+        return new NightDefenseWaveResult(false, failureReason, 0, Array.Empty<WaveDataRow>(), NightDefenseWavePlan.Empty(), false, false);
     }
 }
 
@@ -164,17 +162,15 @@ public readonly struct NightDefenseRuntimeTickResult
 {
     public int SpawnedCount { get; } // 이번 Tick에서 발생한 스폰 요청 수
     public bool IsWaveSpawnComplete { get; } // 현재 웨이브의 스폰 요청이 모두 발생했는지 여부
-    public bool ShouldOpenDraft { get; } // 웨이브 스폰 완료 후 드래프트를 열어야 하는지 여부
     public bool IsLastWave { get; } // 현재 웨이브가 마지막 웨이브인지 여부
     public float SessionElapsedSec { get; } // 세션 전체 경과 시간
     public float WaveElapsedSec { get; } // 현재 웨이브 경과 시간
 
     // Tick 결과 값을 만듭니다.
-    public NightDefenseRuntimeTickResult(int spawnedCount, bool isWaveSpawnComplete, bool shouldOpenDraft, bool isLastWave, float sessionElapsedSec, float waveElapsedSec)
+    public NightDefenseRuntimeTickResult(int spawnedCount, bool isWaveSpawnComplete, bool isLastWave, float sessionElapsedSec, float waveElapsedSec)
     {
         SpawnedCount = spawnedCount;
         IsWaveSpawnComplete = isWaveSpawnComplete;
-        ShouldOpenDraft = shouldOpenDraft;
         IsLastWave = isLastWave;
         SessionElapsedSec = sessionElapsedSec;
         WaveElapsedSec = waveElapsedSec;

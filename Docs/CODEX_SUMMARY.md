@@ -103,6 +103,48 @@
 
 - 데이터 테이블 구조를 현재 `NightDefenseSessionService`와 `NightDefenseWavePlanBuilder`가 읽을 수 있는 형태로 맞췄다.
 
+## 완료된 작업 42: 웨이브 종료 드래프트 컬럼과 런타임 분기 제거
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/05_Data/Tables/WaveData.tsv`
+- `Assets/_Project/05_Data/Tables/WaveGroupData.tsv`
+- `Assets/_Project/01_Script/Data/Rows/GameDataRows.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseContracts.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseWavePlan.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseWavePlanBuilder.cs`
+- `Assets/_Project/01_Script/Service/BattleSessionRuntimeController.cs`
+- `Assets/_Project/99_Test/EditMode/Service/GameContentServiceTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/NightDefenseRuntimeControllerTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/NightDefenseWavePlanTests.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `WaveData.tsv`에서 `DraftAfterWave` 컬럼을 제거했다.
+- `WaveGroupData.tsv`에서 `DraftIntervalWave` 컬럼을 제거했다.
+- `WaveGroupData.tsv`에 `BattleDurationSec` 컬럼을 추가해 카드 선택 시간을 제외한 순수 전투 시간을 명시했다.
+- `WaveDataRow`, `WaveGroupDataRow` 파서를 새 테이블 헤더에 맞췄다.
+- `NightDefenseWavePlan`, `NightDefenseWaveResult`, `NightDefenseRuntimeTickResult`에서 웨이브 종료 드래프트 값을 제거했다.
+- `BattleSessionRuntimeController`에서 웨이브 클리어 후 드래프트를 여는 분기를 제거했다.
+- 관련 EditMode 테스트의 가짜 TSV와 기대값을 새 구조에 맞췄다.
+
+### 왜 이렇게 바꿨는지
+
+드래프트는 웨이브가 끝났을 때 열리는 시스템이 아니라, 전투 중 적 처치로 경험치를 얻고 레벨업했을 때 열리는 시스템이다.
+
+그래서 웨이브 테이블은 스폰 구성과 스폰 타이밍만 담당하게 정리했다.
+골드, 젬, 경험치는 이후 몬스터 처치 결과에서 직접 지급하고, 경험치가 누적되어 최대 전투 레벨 10까지 오를 때마다 전투를 멈추고 카드 드래프트를 여는 구조로 이어가야 한다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 38: 성채 공격형 몬스터 흐름과 스폰 겹침 완화
 
 커밋 예정: `codex/architecture-cleanup`

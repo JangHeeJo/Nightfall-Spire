@@ -26,7 +26,6 @@ public sealed class NightDefenseRuntimeControllerTests
         Assert.That(secondTick.SpawnedCount, Is.EqualTo(1));
         Assert.That(thirdTick.SpawnedCount, Is.EqualTo(1));
         Assert.That(thirdTick.IsWaveSpawnComplete, Is.True);
-        Assert.That(thirdTick.ShouldOpenDraft, Is.True);
         Assert.That(spawnSink.Requests.Count, Is.EqualTo(3));
         Assert.That(spawnSink.Requests[0].EnemyId, Is.EqualTo(1102));
         Assert.That(spawnSink.Requests[1].EnemyId, Is.EqualTo(1101));
@@ -131,12 +130,12 @@ public sealed class NightDefenseRuntimeControllerTests
             "101\t1\t1\tsession_night_01\t8001\t7001\t9001\t1\tClearAllWaves\t0\t0\tForest|Early\n";
 
         private const string WaveGroupTsv =
-            "WaveGroupId\tNameKey\tMaxWaveIndex\tDraftIntervalWave\tBossWaveIndex\tBaseSpawnBudget\tScalingGroupId\n" +
-            "8001\twave_group_early_01\t1\t1\t0\t100\t0\n";
+            "WaveGroupId\tNameKey\tMaxWaveIndex\tBattleDurationSec\tBossWaveIndex\tBaseSpawnBudget\tScalingGroupId\n" +
+            "8001\twave_group_early_01\t1\t120\t0\t100\t0\n";
 
         private const string WaveTsv =
-            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\tDraftAfterWave\n" +
-            "810001\t8001\t1\t1101\t2\t1.0\t0.5\t1\tFALSE\tTRUE\n" +
-            "810002\t8001\t1\t1102\t1\t0.25\t0.0\t2\tFALSE\tTRUE\n";
+            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\n" +
+            "810001\t8001\t1\t1101\t2\t1.0\t0.5\t1\tFALSE\n" +
+            "810002\t8001\t1\t1102\t1\t0.25\t0.0\t2\tFALSE\n";
     }
 }

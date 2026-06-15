@@ -148,12 +148,6 @@ public sealed class BattleSessionRuntimeController
             return;
         }
 
-        if (waveTick.ShouldOpenDraft && TryOpenDraftSelection())
-        {
-            context.BattleProgress.ChangeState(BattleRuntimeState.WaitingForDraft);
-            return;
-        }
-
         StartNextWaveOrFail();
     }
 

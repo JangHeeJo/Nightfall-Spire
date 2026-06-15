@@ -14,7 +14,7 @@ public sealed class NightDefenseWavePlanTests
             CreateWaveRow(2, 1, 1102, 1, 0.25f, 0.0f, 2)
         };
 
-        bool built = builder.TryBuild(1, rows, false, true, false, out NightDefenseWavePlan plan);
+        bool built = builder.TryBuild(1, rows, false, false, out NightDefenseWavePlan plan);
 
         Assert.That(built, Is.True);
         Assert.That(plan.TotalSpawnCount, Is.EqualTo(3));
@@ -23,7 +23,6 @@ public sealed class NightDefenseWavePlanTests
         Assert.That(plan.SpawnEvents[1].EnemyId, Is.EqualTo(1101));
         Assert.That(plan.SpawnEvents[1].SpawnTimeSec, Is.EqualTo(1.0f));
         Assert.That(plan.SpawnEvents[2].SpawnTimeSec, Is.EqualTo(1.5f));
-        Assert.That(plan.DraftAfterWave, Is.True);
         Assert.That(plan.IsLastWave, Is.False);
     }
 
@@ -37,7 +36,7 @@ public sealed class NightDefenseWavePlanTests
             CreateWaveRow(1, 1, 1101, 0, 0f, 0.5f, 1)
         };
 
-        bool built = builder.TryBuild(1, rows, false, false, false, out NightDefenseWavePlan plan);
+        bool built = builder.TryBuild(1, rows, false, false, out NightDefenseWavePlan plan);
 
         Assert.That(built, Is.False);
         Assert.That(plan.TotalSpawnCount, Is.EqualTo(0));
@@ -47,8 +46,8 @@ public sealed class NightDefenseWavePlanTests
     private static WaveDataRow CreateWaveRow(int rowId, int waveIndex, int enemyId, int count, float startSec, float intervalSec, int laneId)
     {
         string tsv =
-            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\tDraftAfterWave\n" +
-            $"{rowId}\t8001\t{waveIndex}\t{enemyId}\t{count}\t{startSec}\t{intervalSec}\t{laneId}\tFALSE\tFALSE\n";
+            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\n" +
+            $"{rowId}\t8001\t{waveIndex}\t{enemyId}\t{count}\t{startSec}\t{intervalSec}\t{laneId}\tFALSE\n";
 
         return TsvParser.Parse<WaveDataRow>("WaveData", tsv).Rows[0];
     }

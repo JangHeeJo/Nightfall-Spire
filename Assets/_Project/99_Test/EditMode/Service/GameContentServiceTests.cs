@@ -250,15 +250,15 @@ public sealed class GameContentServiceTests
             "103\t3\t3\tsession_night_03\t8003\t7002\t9003\t2\tDefeatBoss\t0\t1301\tForest|Boss\n";
 
         private const string WaveGroupTsv =
-            "WaveGroupId\tNameKey\tMaxWaveIndex\tDraftIntervalWave\tBossWaveIndex\tBaseSpawnBudget\tScalingGroupId\n" +
-            "8001\twave_group_early_01\t2\t2\t0\t100\t0\n" +
-            "8003\twave_group_boss_01\t7\t2\t7\t180\t0\n";
+            "WaveGroupId\tNameKey\tMaxWaveIndex\tBattleDurationSec\tBossWaveIndex\tBaseSpawnBudget\tScalingGroupId\n" +
+            "8001\twave_group_early_01\t2\t120\t0\t100\t0\n" +
+            "8003\twave_group_boss_01\t7\t120\t7\t180\t0\n";
 
         private const string WaveTsv =
-            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\tDraftAfterWave\n" +
-            "810001\t8001\t1\t1101\t12\t0.0\t0.6\t1\tFALSE\tFALSE\n" +
-            "810002\t8001\t2\t1101\t16\t0.0\t0.5\t1\tFALSE\tTRUE\n" +
-            "810201\t8003\t7\t1301\t1\t1.0\t0.0\t1\tTRUE\tFALSE\n";
+            "WaveRowId\tWaveGroupId\tWaveIndex\tEnemyId\tCount\tSpawnStartSec\tSpawnIntervalSec\tLaneId\tIsBossWave\n" +
+            "810001\t8001\t1\t1101\t12\t0.0\t0.6\t1\tFALSE\n" +
+            "810002\t8001\t2\t1101\t16\t0.0\t0.5\t1\tFALSE\n" +
+            "810201\t8003\t7\t1301\t1\t1.0\t0.0\t1\tTRUE\n";
 
         private const string DraftPoolTsv =
             "DraftPoolId\tNameKey\tIncludeTagList\tExcludeTagList\tGradeWeightCommon\tGradeWeightRare\tGradeWeightEpic\tPickCount\tRerollCostCurrencyId\tRerollCostAmount\n" +

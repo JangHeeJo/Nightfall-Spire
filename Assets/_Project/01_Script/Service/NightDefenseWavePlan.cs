@@ -9,18 +9,16 @@ public sealed class NightDefenseWavePlan
 
     public int WaveIndex { get; } // 웨이브 번호
     public bool IsBossWave { get; } // 보스 웨이브 여부
-    public bool DraftAfterWave { get; } // 웨이브 종료 뒤 드래프트를 열지 여부
     public bool IsLastWave { get; } // 세션의 마지막 웨이브 여부
     public int TotalSpawnCount { get; } // 이 웨이브에서 생성될 총 적 수
     public float LastSpawnTimeSec { get; } // 마지막 스폰 이벤트 시간
     public IReadOnlyList<NightDefenseSpawnEvent> SpawnEvents => spawnEvents; // 외부 읽기 전용 스폰 이벤트 목록
 
     // 계산이 끝난 스폰 이벤트 목록과 웨이브 메타 정보를 보관합니다.
-    public NightDefenseWavePlan(int waveIndex, bool isBossWave, bool draftAfterWave, bool isLastWave, IReadOnlyList<NightDefenseSpawnEvent> spawnEvents)
+    public NightDefenseWavePlan(int waveIndex, bool isBossWave, bool isLastWave, IReadOnlyList<NightDefenseSpawnEvent> spawnEvents)
     {
         WaveIndex = waveIndex;
         IsBossWave = isBossWave;
-        DraftAfterWave = draftAfterWave;
         IsLastWave = isLastWave;
         this.spawnEvents = new List<NightDefenseSpawnEvent>(spawnEvents ?? Array.Empty<NightDefenseSpawnEvent>());
 
@@ -31,6 +29,6 @@ public sealed class NightDefenseWavePlan
     // 실패 결과나 아직 웨이브가 없는 상태에서 사용할 빈 계획을 만듭니다.
     public static NightDefenseWavePlan Empty()
     {
-        return new NightDefenseWavePlan(0, false, false, false, Array.Empty<NightDefenseSpawnEvent>());
+        return new NightDefenseWavePlan(0, false, false, Array.Empty<NightDefenseSpawnEvent>());
     }
 }

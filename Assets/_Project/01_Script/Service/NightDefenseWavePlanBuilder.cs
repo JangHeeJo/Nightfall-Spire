@@ -10,7 +10,6 @@ public sealed class NightDefenseWavePlanBuilder
         int waveIndex,
         IReadOnlyList<WaveDataRow> waveRows,
         bool isBossWave,
-        bool draftAfterWave,
         bool isLastWave,
         out NightDefenseWavePlan plan)
     {
@@ -39,7 +38,7 @@ public sealed class NightDefenseWavePlanBuilder
 
         spawnEvents.Sort(CompareSpawnEvent);
         ApplySameLaneSpawnSpacing(spawnEvents);
-        plan = new NightDefenseWavePlan(waveIndex, isBossWave, draftAfterWave, isLastWave, spawnEvents);
+        plan = new NightDefenseWavePlan(waveIndex, isBossWave, isLastWave, spawnEvents);
         return plan.TotalSpawnCount > 0;
     }
 

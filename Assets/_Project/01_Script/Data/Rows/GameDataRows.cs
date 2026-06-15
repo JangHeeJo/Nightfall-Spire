@@ -198,14 +198,14 @@ public sealed class DefenseSessionDataRow : ITableRow
 }
 
 // 웨이브 그룹 테이블 한 줄입니다.
-// 한 방어 세션이 몇 웨이브로 구성되는지, 드래프트와 보스 위치를 정의합니다.
+// 한 방어 세션의 전투 시간, 웨이브 수, 보스 위치를 정의합니다.
 public sealed class WaveGroupDataRow : ITableRow
 {
     public int Id => WaveGroupId; // DataTable 기본 키
     public int WaveGroupId { get; private set; } // 웨이브 그룹 ID
     public string NameKey { get; private set; } // 로컬라이징 이름 키
     public int MaxWaveIndex { get; private set; } // 마지막 웨이브 번호
-    public int DraftIntervalWave { get; private set; } // 드래프트 발생 간격
+    public float BattleDurationSec { get; private set; } // 카드 선택 시간을 제외한 순수 전투 시간
     public int BossWaveIndex { get; private set; } // 보스 웨이브 번호
     public int BaseSpawnBudget { get; private set; } // 스폰 예산 기준값
     public int ScalingGroupId { get; private set; } // 난이도 스케일링 그룹 ID
@@ -216,7 +216,7 @@ public sealed class WaveGroupDataRow : ITableRow
         WaveGroupId = row.GetInt("WaveGroupId");
         NameKey = row.GetString("NameKey");
         MaxWaveIndex = row.GetInt("MaxWaveIndex");
-        DraftIntervalWave = row.GetInt("DraftIntervalWave");
+        BattleDurationSec = row.GetFloat("BattleDurationSec");
         BossWaveIndex = row.GetInt("BossWaveIndex");
         BaseSpawnBudget = row.GetInt("BaseSpawnBudget");
         ScalingGroupId = row.GetInt("ScalingGroupId");
@@ -237,7 +237,6 @@ public sealed class WaveDataRow : ITableRow
     public float SpawnIntervalSec { get; private set; } // 반복 스폰 간격
     public int LaneId { get; private set; } // 라인 ID
     public bool IsBossWave { get; private set; } // 보스 웨이브 여부
-    public bool DraftAfterWave { get; private set; } // 웨이브 종료 후 드래프트 여부
 
     // TSV 한 줄에서 웨이브 스폰 정보를 읽어옵니다.
     public void Load(TsvRow row)
@@ -251,7 +250,6 @@ public sealed class WaveDataRow : ITableRow
         SpawnIntervalSec = row.GetFloat("SpawnIntervalSec");
         LaneId = row.GetInt("LaneId");
         IsBossWave = row.GetBool("IsBossWave");
-        DraftAfterWave = row.GetBool("DraftAfterWave");
     }
 }
 

@@ -79,26 +79,13 @@ public sealed class NightDefenseSessionService
             return NightDefenseWaveResult.Fail(NightDefenseFailureReason.WaveRowsNotFound);
 
         bool isBossWave = waveGroupRow.BossWaveIndex > 0 && nextWaveIndex == waveGroupRow.BossWaveIndex;
-        bool draftAfterWave = HasDraftAfterWave(waveRows);
         bool isLastWave = nextWaveIndex >= waveGroupRow.MaxWaveIndex;
 
-        if (!wavePlanBuilder.TryBuild(nextWaveIndex, waveRows, isBossWave, draftAfterWave, isLastWave, out NightDefenseWavePlan wavePlan))
+        if (!wavePlanBuilder.TryBuild(nextWaveIndex, waveRows, isBossWave, isLastWave, out NightDefenseWavePlan wavePlan))
             return NightDefenseWaveResult.Fail(NightDefenseFailureReason.InvalidWaveData);
 
         context.NightDefenseProgress.AdvanceWave(isBossWave);
 
-        return NightDefenseWaveResult.Success(nextWaveIndex, waveRows, wavePlan, isBossWave, draftAfterWave, isLastWave);
-    }
-
-    // 현재 웨이브 Row 중 드래프트 발생 플래그가 있는지 확인합니다.
-    private static bool HasDraftAfterWave(IReadOnlyList<WaveDataRow> waveRows)
-    {
-        for (int i = 0; i < waveRows.Count; i++)
-        {
-            if (waveRows[i].DraftAfterWave)
-                return true;
-        }
-
-        return false;
+        return NightDefenseWaveResult.Success(nextWaveIndex, waveRows, wavePlan, isBossWave, isLastWave);
     }
 }
