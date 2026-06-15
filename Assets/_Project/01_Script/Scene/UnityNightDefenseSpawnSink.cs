@@ -9,29 +9,42 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     [SerializeField] private Transform enemyLayer; // 전투 중 생성되는 몬스터 오브젝트를 모아둘 부모입니다.
     [SerializeField] private EnemyPrefabBinding[] enemyPrefabs = Array.Empty<EnemyPrefabBinding>(); // EnemyData.PrefabKey와 실제 몬스터 프리팹의 연결 목록입니다.
     [SerializeField] private BattleLanePath[] lanePaths = Array.Empty<BattleLanePath>(); // LaneId별 몬스터 시작 위치와 성채 도착 위치입니다.
+    [SerializeField] private int preloadCountPerPrefab = 3; // 프리팹별로 미리 만들어둘 풀 오브젝트 수입니다.
+    [SerializeField] private float despawnDelaySeconds = 0.25f; // 처치나 성채 도착 상태를 짧게 보여준 뒤 풀로 반납하기까지의 시간입니다.
     [SerializeField] private bool logRuntimeEvents = true; // 전투 표시 흐름을 확인하기 위한 로그 출력 여부입니다.
 
     private readonly Dictionary<string, GameObject> prefabByKey = new(); // PrefabKey로 실제 프리팹을 빠르게 찾기 위한 캐시입니다.
     private readonly Dictionary<int, BattleLanePath> laneById = new(); // LaneId로 이동 경로를 빠르게 찾기 위한 캐시입니다.
-    private readonly Dictionary<int, ActiveEnemyView> activeEnemies = new(); // RuntimeId별 현재 생성된 몬스터 표시 오브젝트입니다.
+    private readonly Dictionary<string, Stack<PooledEnemyView>> pooledEnemiesByKey = new(); // PrefabKey별 재사용 대기 중인 몬스터 표시 오브젝트입니다.
+    private readonly Dictionary<int, ActiveEnemyView> activeEnemiesByRuntimeId = new(); // RuntimeId별 현재 전장에 배치된 몬스터 표시 오브젝트입니다.
+    private readonly List<PendingPoolReturn> pendingPoolReturns = new(); // 제거 연출 후 풀로 반납할 몬스터 표시 오브젝트입니다.
 
     // 인스펙터에 연결된 프리팹과 라인 정보를 전투 중 조회하기 쉬운 형태로 준비합니다.
     private void Awake()
     {
         BuildPrefabCache();
         BuildLaneCache();
+        PreloadEnemyPools();
     }
 
-    // 새 전투가 시작될 때 기존 전투 표시 오브젝트를 모두 정리합니다.
+    // 제거 상태를 잠깐 보여준 몬스터를 시간이 지난 뒤 풀로 반납합니다.
+    private void Update()
+    {
+        ProcessPendingPoolReturns(Time.deltaTime);
+    }
+
+    // 새 전투가 시작될 때 기존 전투 표시 오브젝트를 풀로 되돌립니다.
     public void ClearBattleViews()
     {
-        foreach (ActiveEnemyView activeEnemy in activeEnemies.Values)
-        {
-            if (activeEnemy.Instance != null)
-                Destroy(activeEnemy.Instance);
-        }
+        for (int i = pendingPoolReturns.Count - 1; i >= 0; i--)
+            ReturnToPoolImmediately(pendingPoolReturns[i].ActiveEnemy);
 
-        activeEnemies.Clear();
+        pendingPoolReturns.Clear();
+
+        foreach (ActiveEnemyView activeEnemy in activeEnemiesByRuntimeId.Values)
+            ReturnToPoolImmediately(activeEnemy);
+
+        activeEnemiesByRuntimeId.Clear();
 
         if (logRuntimeEvents)
             Debug.Log("[BattleViewSink] 전투 표시 오브젝트를 초기화했습니다.");
@@ -46,8 +59,10 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         if (!TryCreateEnemyView(enemy, request, out ActiveEnemyView activeEnemy))
             return;
 
-        activeEnemies[enemy.RuntimeId] = activeEnemy;
+        activeEnemy.ChangeState(EnemyViewState.Spawned);
+        activeEnemiesByRuntimeId[enemy.RuntimeId] = activeEnemy;
         SyncEnemyTransform(activeEnemy, enemy);
+        activeEnemy.ChangeState(EnemyViewState.Moving);
 
         if (logRuntimeEvents)
             Debug.Log($"[BattleViewSink] Enemy Spawn Runtime:{enemy.RuntimeId} Enemy:{enemy.EnemyId} Wave:{request.WaveIndex} Lane:{request.LaneId}");
@@ -63,35 +78,50 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         {
             CombatEnemyRuntimeState enemy = enemies[i];
 
-            if (enemy == null || !activeEnemies.TryGetValue(enemy.RuntimeId, out ActiveEnemyView activeEnemy))
+            if (enemy == null || !activeEnemiesByRuntimeId.TryGetValue(enemy.RuntimeId, out ActiveEnemyView activeEnemy))
                 continue;
 
             SyncEnemyTransform(activeEnemy, enemy);
+
+            if (activeEnemy.State != EnemyViewState.Moving)
+                activeEnemy.ChangeState(EnemyViewState.Moving);
         }
     }
 
-    // 데미지 결과를 표시합니다. 현재는 전투 흐름 검증용 로그만 남기고, 이후 데미지 숫자와 피격 연출이 여기 붙습니다.
+    // 데미지 결과를 표시하고, 피해를 받은 몬스터 표시 상태를 갱신합니다.
     public void ShowDamageResults(IReadOnlyList<CombatDamageResult> damageResults)
     {
-        if (!logRuntimeEvents || damageResults == null || damageResults.Count == 0)
+        if (damageResults == null || damageResults.Count == 0)
             return;
 
-        Debug.Log($"[BattleViewSink] Damage Count:{damageResults.Count}");
+        for (int i = 0; i < damageResults.Count; i++)
+        {
+            CombatDamageResult damageResult = damageResults[i];
+
+            if (!activeEnemiesByRuntimeId.TryGetValue(damageResult.TargetRuntimeId, out ActiveEnemyView activeEnemy))
+                continue;
+
+            activeEnemy.ChangeState(damageResult.IsTargetDefeated ? EnemyViewState.Defeated : EnemyViewState.Hit);
+        }
+
+        if (logRuntimeEvents)
+            Debug.Log($"[BattleViewSink] Damage Count:{damageResults.Count}");
     }
 
-    // 사망하거나 성채에 도착한 몬스터 표시 오브젝트를 제거합니다.
+    // 사망하거나 성채에 도착한 몬스터 표시 오브젝트를 풀로 반납합니다.
     public void DespawnEnemyView(CombatEnemyRuntimeState enemy, CombatEnemyDespawnReason reason)
     {
         if (enemy == null)
             return;
 
-        if (activeEnemies.TryGetValue(enemy.RuntimeId, out ActiveEnemyView activeEnemy))
-        {
-            activeEnemies.Remove(enemy.RuntimeId);
+        if (!activeEnemiesByRuntimeId.TryGetValue(enemy.RuntimeId, out ActiveEnemyView activeEnemy))
+            return;
 
-            if (activeEnemy.Instance != null)
-                Destroy(activeEnemy.Instance);
-        }
+        if (reason == CombatEnemyDespawnReason.ReachedGoal)
+            SyncEnemyTransform(activeEnemy, enemy);
+
+        activeEnemiesByRuntimeId.Remove(enemy.RuntimeId);
+        ScheduleReturnToPool(activeEnemy, reason);
 
         if (logRuntimeEvents)
             Debug.Log($"[BattleViewSink] Enemy Despawn Runtime:{enemy.RuntimeId} Reason:{reason}");
@@ -117,10 +147,14 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
             return false;
         }
 
-        GameObject instance = Instantiate(prefab, enemyLayer);
+        PooledEnemyView pooledEnemy = RentFromPool(prefabKey, prefab);
+        GameObject instance = pooledEnemy.Instance;
+        instance.transform.SetParent(enemyLayer, false);
         instance.name = $"{prefab.name}_Runtime_{enemy.RuntimeId}";
+        pooledEnemy.ResetForRent();
+        instance.SetActive(true);
         SetSortingOrder(instance, 100 + request.LaneId * 10 + request.SpawnOrder);
-        activeEnemy = new ActiveEnemyView(instance, lanePath);
+        activeEnemy = new ActiveEnemyView(prefabKey, pooledEnemy, lanePath);
         return true;
     }
 
@@ -160,7 +194,7 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         activeEnemy.Instance.transform.localScale = new Vector3(Mathf.Abs(scale.x) * direction, scale.y, scale.z);
     }
 
-    // 생성된 몬스터 프리팹 안의 SpriteRenderer 정렬값을 라인과 생성 순서 기준으로 보정합니다.
+    // 생성된 몬스터 프리팹 안의 SpriteRenderer 정렬값을 라인과 생성 순서 기준으로 절대값 세팅합니다.
     private static void SetSortingOrder(GameObject instance, int baseOrder)
     {
         if (instance == null)
@@ -168,7 +202,7 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
         SpriteRenderer[] renderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
         for (int i = 0; i < renderers.Length; i++)
-            renderers[i].sortingOrder += baseOrder;
+            renderers[i].sortingOrder = baseOrder + i;
     }
 
     // EnemyData.PrefabKey와 실제 Unity 프리팹 연결 목록을 캐시합니다.
@@ -187,6 +221,21 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         }
     }
 
+    // 전투 중 Instantiate가 몰리지 않도록 프리팹별 몬스터 표시 오브젝트를 미리 만들어 둡니다.
+    private void PreloadEnemyPools()
+    {
+        pooledEnemiesByKey.Clear();
+
+        foreach (KeyValuePair<string, GameObject> pair in prefabByKey)
+        {
+            Stack<PooledEnemyView> pool = GetOrCreatePool(pair.Key);
+            int preloadCount = Mathf.Max(0, preloadCountPerPrefab);
+
+            for (int i = 0; i < preloadCount; i++)
+                pool.Push(CreatePooledEnemy(pair.Key, pair.Value));
+        }
+    }
+
     // LaneId와 전투 경로 연결 목록을 캐시합니다.
     private void BuildLaneCache()
     {
@@ -201,6 +250,94 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
             laneById[lanePath.LaneId] = lanePath;
         }
+    }
+
+    // 풀에서 몬스터 표시 오브젝트를 꺼내고, 비어 있으면 같은 규칙으로 추가 생성합니다.
+    private PooledEnemyView RentFromPool(string prefabKey, GameObject prefab)
+    {
+        Stack<PooledEnemyView> pool = GetOrCreatePool(prefabKey);
+
+        while (pool.Count > 0)
+        {
+            PooledEnemyView pooledEnemy = pool.Pop();
+
+            if (pooledEnemy.Instance != null)
+                return pooledEnemy;
+        }
+
+        return CreatePooledEnemy(prefabKey, prefab);
+    }
+
+    // 제거 사유에 맞는 상태를 보여준 뒤 일정 시간이 지나면 풀로 반납하도록 예약합니다.
+    private void ScheduleReturnToPool(ActiveEnemyView activeEnemy, CombatEnemyDespawnReason reason)
+    {
+        if (activeEnemy.Instance == null)
+            return;
+
+        EnemyViewState state = reason switch
+        {
+            CombatEnemyDespawnReason.Defeated => EnemyViewState.Defeated,
+            CombatEnemyDespawnReason.ReachedGoal => EnemyViewState.ReachedGoal,
+            _ => EnemyViewState.Pooled
+        };
+
+        activeEnemy.ChangeState(state);
+        pendingPoolReturns.Add(new PendingPoolReturn(activeEnemy, Mathf.Max(0f, despawnDelaySeconds)));
+    }
+
+    // 풀 반납 대기열을 갱신합니다.
+    private void ProcessPendingPoolReturns(float deltaSeconds)
+    {
+        if (pendingPoolReturns.Count == 0)
+            return;
+
+        for (int i = pendingPoolReturns.Count - 1; i >= 0; i--)
+        {
+            PendingPoolReturn pendingReturn = pendingPoolReturns[i];
+            pendingReturn.RemainingSeconds -= deltaSeconds;
+
+            if (pendingReturn.RemainingSeconds > 0f)
+                continue;
+
+            pendingPoolReturns.RemoveAt(i);
+            ReturnToPoolImmediately(pendingReturn.ActiveEnemy);
+        }
+    }
+
+    // 몬스터 표시 오브젝트를 즉시 풀에 넣기 전에 상태와 Transform을 기본값으로 되돌립니다.
+    private void ReturnToPoolImmediately(ActiveEnemyView activeEnemy)
+    {
+        if (activeEnemy.Instance == null)
+            return;
+
+        activeEnemy.ChangeState(EnemyViewState.Pooled);
+        activeEnemy.Instance.SetActive(false);
+        activeEnemy.Instance.transform.SetParent(enemyLayer, false);
+        activeEnemy.Instance.transform.localPosition = Vector3.zero;
+        activeEnemy.Instance.transform.localRotation = Quaternion.identity;
+
+        Stack<PooledEnemyView> pool = GetOrCreatePool(activeEnemy.PrefabKey);
+        pool.Push(activeEnemy.PooledEnemy);
+    }
+
+    // 실제 Unity 프리팹 인스턴스를 만들고 풀 대기 상태로 초기화합니다.
+    private PooledEnemyView CreatePooledEnemy(string prefabKey, GameObject prefab)
+    {
+        GameObject instance = Instantiate(prefab, enemyLayer);
+        instance.name = $"{prefab.name}_Pooled";
+        instance.SetActive(false);
+        return new PooledEnemyView(prefabKey, instance, instance.GetComponentInChildren<Animator>(true));
+    }
+
+    // PrefabKey별 풀 Stack을 가져오거나 새로 만듭니다.
+    private Stack<PooledEnemyView> GetOrCreatePool(string prefabKey)
+    {
+        if (pooledEnemiesByKey.TryGetValue(prefabKey, out Stack<PooledEnemyView> pool))
+            return pool;
+
+        pool = new Stack<PooledEnemyView>();
+        pooledEnemiesByKey[prefabKey] = pool;
+        return pool;
     }
 
     [Serializable]
@@ -225,15 +362,100 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         public Vector3 GoalPosition => goalPosition;
     }
 
-    private readonly struct ActiveEnemyView
+    private sealed class PooledEnemyView
     {
-        public GameObject Instance { get; } // 생성된 몬스터 프리팹 인스턴스입니다.
-        public BattleLanePath LanePath { get; } // 이 몬스터가 따라가는 전투 라인입니다.
+        public string PrefabKey { get; } // 이 오브젝트가 어느 EnemyData.PrefabKey 풀에 속하는지 나타냅니다.
+        public GameObject Instance { get; } // 실제 Unity 프리팹 인스턴스입니다.
+        public Animator Animator { get; } // 프리팹 안에 연결된 애니메이터입니다.
 
-        public ActiveEnemyView(GameObject instance, BattleLanePath lanePath)
+        public PooledEnemyView(string prefabKey, GameObject instance, Animator animator)
         {
+            PrefabKey = prefabKey;
             Instance = instance;
+            Animator = animator;
+        }
+
+        // 풀에서 다시 꺼낼 때 이전 피격/사망 애니메이션 상태가 남지 않게 초기화합니다.
+        public void ResetForRent()
+        {
+            if (Animator == null)
+                return;
+
+            Animator.Rebind();
+            Animator.Update(0f);
+        }
+    }
+
+    private sealed class ActiveEnemyView
+    {
+        public string PrefabKey { get; } // 이 몬스터 표시 오브젝트가 속한 풀 키입니다.
+        public PooledEnemyView PooledEnemy { get; } // 풀에서 꺼낸 표시 오브젝트입니다.
+        public GameObject Instance => PooledEnemy.Instance; // 생성된 몬스터 프리팹 인스턴스입니다.
+        public BattleLanePath LanePath { get; } // 이 몬스터가 따라가는 전투 라인입니다.
+        public EnemyViewState State { get; private set; } // 현재 표시 상태입니다.
+
+        public ActiveEnemyView(string prefabKey, PooledEnemyView pooledEnemy, BattleLanePath lanePath)
+        {
+            PrefabKey = prefabKey;
+            PooledEnemy = pooledEnemy;
             LanePath = lanePath;
+            State = EnemyViewState.Pooled;
+        }
+
+        // 표시 상태를 바꾸고, 프리팹에 Animator가 있으면 공통 파라미터를 조심스럽게 전달합니다.
+        public void ChangeState(EnemyViewState nextState)
+        {
+            State = nextState;
+
+            if (PooledEnemy?.Animator == null)
+                return;
+
+            Animator animator = PooledEnemy.Animator;
+
+            if (HasAnimatorParameter(animator, "IsMoving"))
+                animator.SetBool("IsMoving", nextState == EnemyViewState.Moving);
+
+            if (nextState == EnemyViewState.Hit && HasAnimatorParameter(animator, "Hit"))
+                animator.SetTrigger("Hit");
+
+            if (nextState == EnemyViewState.Defeated && HasAnimatorParameter(animator, "Die"))
+                animator.SetTrigger("Die");
+        }
+
+        // 사용하는 프리팹마다 Animator 파라미터가 다를 수 있으므로 존재 여부를 확인한 뒤에만 값을 넣습니다.
+        private static bool HasAnimatorParameter(Animator animator, string parameterName)
+        {
+            AnimatorControllerParameter[] parameters = animator.parameters;
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].name == parameterName)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    private enum EnemyViewState
+    {
+        Pooled, // 풀에 들어가 비활성화된 상태
+        Spawned, // 전장에 막 생성된 상태
+        Moving, // 성채를 향해 이동 중인 상태
+        Hit, // 피해를 받은 상태
+        Defeated, // 체력이 0이 되어 처치된 상태
+        ReachedGoal // 성채에 도착해 피해를 준 상태
+    }
+
+    private sealed class PendingPoolReturn
+    {
+        public ActiveEnemyView ActiveEnemy { get; } // 제거 상태를 잠깐 보여준 뒤 풀로 돌아갈 몬스터입니다.
+        public float RemainingSeconds { get; set; } // 풀 반납까지 남은 시간입니다.
+
+        public PendingPoolReturn(ActiveEnemyView activeEnemy, float remainingSeconds)
+        {
+            ActiveEnemy = activeEnemy;
+            RemainingSeconds = remainingSeconds;
         }
     }
 }

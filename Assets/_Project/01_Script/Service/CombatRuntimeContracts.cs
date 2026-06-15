@@ -20,6 +20,15 @@ public enum CombatEnemyDespawnReason
     Reset // 전투 종료나 씬 정리로 제거됨
 }
 
+// 전투 런타임 안에서 적 하나가 어떤 단계에 있는지 나타냅니다.
+public enum CombatEnemyLifecycleState
+{
+    Spawned, // 전투 런타임에 막 등록됨
+    Moving, // 성채를 향해 이동 중
+    ReachedGoal, // 성채 피해 지점에 도달함
+    Defeated // 체력이 0이 되어 처치됨
+}
+
 // 전투 슬롯 하나가 런타임에서 공격자로 쓰기 위해 필요한 상태입니다.
 public sealed class CombatHeroSlotRuntimeState
 {
@@ -89,8 +98,9 @@ public sealed class CombatEnemyRuntimeState
     public int AttackPower { get; } // 성채에 도달했을 때 줄 피해량
     public float MoveSpeed { get; } // 이동 속도
     public float PathProgress { get; private set; } // 방어 목표 지점까지의 진행도
+    public CombatEnemyLifecycleState LifecycleState { get; private set; } // 현재 적 런타임 상태
     public bool IsAlive => CurrentHp > 0; // 적 생존 여부
-    public bool HasReachedGoal => IsAlive && PathProgress >= 1f; // 성채 피해 지점에 도달했는지 여부
+    public bool HasReachedGoal => LifecycleState == CombatEnemyLifecycleState.ReachedGoal; // 성채 피해 지점에 도달했는지 여부
 
     // 적 런타임 상태를 만듭니다.
     public CombatEnemyRuntimeState(int runtimeId, int enemyId, EnemyRank enemyRank, ElementType elementType, int laneId, int spawnOrder, int maxHp, int armor, int attackPower, float moveSpeed)
@@ -106,6 +116,7 @@ public sealed class CombatEnemyRuntimeState
         Armor = armor;
         AttackPower = attackPower;
         MoveSpeed = moveSpeed;
+        LifecycleState = CombatEnemyLifecycleState.Spawned;
     }
 
     // 적 이동 진행도를 올립니다.
@@ -115,9 +126,13 @@ public sealed class CombatEnemyRuntimeState
             return;
 
         PathProgress += MoveSpeed * progressPerSpeed * deltaSeconds;
+        LifecycleState = CombatEnemyLifecycleState.Moving;
 
         if (PathProgress > 1f)
             PathProgress = 1f;
+
+        if (PathProgress >= 1f)
+            LifecycleState = CombatEnemyLifecycleState.ReachedGoal;
     }
 
     // 피해를 적용하고 실제 감소한 체력을 반환합니다.
@@ -128,6 +143,10 @@ public sealed class CombatEnemyRuntimeState
 
         int applied = damage > CurrentHp ? CurrentHp : damage;
         CurrentHp -= applied;
+
+        if (CurrentHp <= 0)
+            LifecycleState = CombatEnemyLifecycleState.Defeated;
+
         return applied;
     }
 }

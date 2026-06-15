@@ -89,7 +89,7 @@ public readonly struct BattleRuntimeTickResult
 }
 
 // 순수 전투 런타임이 만든 결과를 Unity 표시 계층으로 전달하는 계약입니다.
-// 지금은 로그와 자리표시자만 붙일 수 있고, 이후 EnemyFactory와 ObjectPool이 이 뒤에 연결됩니다.
+// 표시 계층은 이 계약을 통해 프리팹 생성, 위치 갱신, 피해 연출, 풀 반납을 처리합니다.
 public interface IBattleCombatViewSink
 {
     // 새 전투 세션을 시작할 때 기존 표시물을 정리합니다.

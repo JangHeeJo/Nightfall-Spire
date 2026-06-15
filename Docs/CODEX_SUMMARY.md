@@ -35,6 +35,41 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 37: 전투 몬스터 풀링과 상태 관리 보강
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/BattleRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Assets/_Project/00_Scenes/BattleScene.unity`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `CombatEnemyRuntimeState`에 `CombatEnemyLifecycleState`를 추가했다.
+- 몬스터 런타임 상태가 `Spawned`, `Moving`, `ReachedGoal`, `Defeated`로 명확히 기록되도록 했다.
+- `UnityNightDefenseSpawnSink`가 더 이상 전투 중 `Instantiate/Destroy`를 반복하지 않고, `PrefabKey`별 몬스터 풀을 사용하도록 바꿨다.
+- 전투 씬에서 프리팹별 사전 생성 수량 `preloadCountPerPrefab`을 3으로 저장했다.
+- 몬스터가 피해를 받으면 `Hit`, 처치되면 `Defeated`, 성채에 도착하면 `ReachedGoal` 표시 상태로 바뀌도록 했다.
+- 처치/성채 도착 직후 바로 비활성화하지 않고 `despawnDelaySeconds` 동안 상태를 보여준 뒤 풀로 반납하게 했다.
+- 풀에서 다시 꺼낸 몬스터는 Animator를 초기화해 이전 피격/사망 상태가 남지 않게 했다.
+
+### 왜 이렇게 바꿨는지
+
+전투 몬스터는 웨이브마다 계속 생성되고 제거되므로 매번 생성/파괴하면 모바일 환경에서 비용과 튐 현상이 커진다.
+그래서 `UnityNightDefenseSpawnSink`가 몬스터 표시 오브젝트 풀을 소유하고, 전투 런타임은 순수 상태 계산만 맡는 구조로 정리했다.
+
+또한 몬스터가 성채로 걸어가는 흐름은 `PathProgress`만으로는 추적이 약하다.
+런타임 상태와 표시 상태를 분리해 두면 이후 이동 애니메이션, 피격 이펙트, 사망 연출, 성채 타격 연출을 같은 상태 흐름 위에 붙일 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 36: 전투 몬스터 프리팹 생성 연결
 
 커밋 예정: `codex/architecture-cleanup`

@@ -415,6 +415,8 @@ MonoBehaviour:
   - laneId: 2
     startPosition: {x: -5.2, y: -1.45, z: -0.5}
     goalPosition: {x: -0.75, y: -1.45, z: -0.5}
+  preloadCountPerPrefab: 3
+  despawnDelaySeconds: 0.25
   logRuntimeEvents: 1
 --- !u!225 &920100004
 CanvasGroup:
