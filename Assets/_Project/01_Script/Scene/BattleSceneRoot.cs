@@ -12,9 +12,17 @@ public sealed class BattleSceneRoot : MonoBehaviour
 
     private BattleSceneController controller; // BattleScene 흐름 Controller
 
+    // 인스펙터 연결이 빠졌더라도 현재 씬 안에서 필요한 전투 구성요소를 복구합니다.
+    private void Awake()
+    {
+        ResolveRuntimeReferences();
+    }
+
     // 씬 오브젝트가 준비되면 Controller를 만들고 전투 씬 초기화를 맡깁니다.
     private void Start()
     {
+        ResolveRuntimeReferences();
+
         controller = new BattleSceneController(
             staticUIRoot,
             dynamicUIRoot,
@@ -30,5 +38,41 @@ public sealed class BattleSceneRoot : MonoBehaviour
     {
         controller?.Dispose();
         controller = null;
+    }
+
+    // 씬 YAML이나 프리팹 수정 과정에서 참조가 비어도 전투 진입 자체가 막히지 않게 보강합니다.
+    private void ResolveRuntimeReferences()
+    {
+        staticUIRoot ??= FindSceneComponent<BattleStaticUIRoot>();
+        dynamicUIRoot ??= FindSceneComponent<BattleDynamicUIRoot>();
+        battleRuntime ??= FindSceneComponent<NightDefenseBattleRuntime>();
+        spawnSink ??= FindSceneComponent<UnityNightDefenseSpawnSink>();
+
+        if (battleRuntime == null)
+        {
+            battleRuntime = gameObject.AddComponent<NightDefenseBattleRuntime>();
+            Debug.LogWarning("[BattleSceneRoot] NightDefenseBattleRuntime 참조가 비어 있어 BattleSceneRoot에 런타임 컴포넌트를 자동 생성했습니다.");
+        }
+
+        if (spawnSink == null)
+        {
+            spawnSink = gameObject.AddComponent<UnityNightDefenseSpawnSink>();
+            Debug.LogWarning("[BattleSceneRoot] UnityNightDefenseSpawnSink 참조가 비어 있어 BattleSceneRoot에 스폰 수신자를 자동 생성했습니다.");
+        }
+    }
+
+    // DontDestroyOnLoad 쪽 오브젝트를 잘못 잡지 않도록 현재 BattleScene에 있는 컴포넌트만 찾습니다.
+    private T FindSceneComponent<T>() where T : Component
+    {
+        T[] components = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            T component = components[i];
+            if (component != null && component.gameObject.scene == gameObject.scene)
+                return component;
+        }
+
+        return null;
     }
 }

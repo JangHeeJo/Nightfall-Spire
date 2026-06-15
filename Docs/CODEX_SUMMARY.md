@@ -35,6 +35,30 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 35: BattleScene 런타임 참조 누락 복구
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `BattleSceneRoot`가 시작될 때 현재 BattleScene 안에서 `BattleStaticUIRoot`, `BattleDynamicUIRoot`, `NightDefenseBattleRuntime`, `UnityNightDefenseSpawnSink`를 자동으로 찾도록 했다.
+- 씬 인스펙터에서 `NightDefenseBattleRuntime`이나 `UnityNightDefenseSpawnSink` 참조가 비어 있으면 `BattleSceneRoot`에 런타임 컴포넌트를 자동 생성하게 했다.
+- `DontDestroyOnLoad` 쪽 오브젝트를 잘못 잡지 않도록 현재 씬에 있는 컴포넌트만 대상으로 찾는다.
+
+### 왜 이렇게 바꿨는지
+
+로비의 `Spire_Popup(Clone) > FightButton_Battle` 클릭 후 BattleScene은 정상 로드됐지만, `BattleSceneRoot`의 `battleRuntime`과 `spawnSink` 참조가 비어 있어 전투 런타임이 시작되지 않았다.
+전투 진입은 핵심 플로우라 씬 참조 하나가 빠졌다고 바로 막히면 안 된다.
+그래서 씬 세팅이 비어 있어도 코드에서 현재 씬 기준으로 복구하고, 표시 어댑터가 없으면 임시 런타임 어댑터를 자동 생성하도록 보강했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업: MVC에서 MVC 구조로 전환
 
 ### 변경 방향
