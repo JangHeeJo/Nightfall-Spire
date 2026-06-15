@@ -70,6 +70,39 @@
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 41: 밤 방어 웨이브 테이블을 2분 전투 타임라인 기준으로 정리
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/05_Data/Tables/WaveData.tsv`
+- `Assets/_Project/05_Data/Tables/WaveGroupData.tsv`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 기존처럼 `WaveIndex`를 짧은 개별 웨이브 여러 개로 나누던 값을 정리했다.
+- 각 `WaveGroupId`는 `WaveIndex 1` 하나만 사용하도록 맞췄다.
+- 하나의 `WaveIndex 1` 안에 2분 전투 타임라인을 넣었다.
+- 일반 몬스터 스폰 타이밍은 `0초`, `40초`, `80초` 세 구간으로 잡았다.
+- 보스 스폰 타이밍은 `110초`로 잡았다.
+- 보스 타이밍에는 보스 몬스터 1마리와 엘리트 몬스터 2마리가 고정으로 스폰되도록 Row를 분리했다.
+- `WaveGroupData.tsv`의 `MaxWaveIndex`와 `BossWaveIndex`를 모두 `1`로 맞춰, 테이블에 없는 다음 웨이브를 찾다 실패하지 않게 했다.
+
+### 왜 이렇게 바꿨는지
+
+이 게임의 한 밤 전투는 “짧은 웨이브를 여러 번 넘기는 구조”라기보다, 하나의 2분짜리 전투 구간 안에서 스폰 이벤트가 시간표처럼 찍히는 구조가 더 맞다.
+
+그래서 `WaveData`의 한 `WaveIndex` 안에 여러 스폰 Row를 배치했다.
+이렇게 하면 전투 HUD에서는 같은 데이터를 기준으로 흰 해골 마커와 빨간 해골 마커를 그릴 수 있고, 런타임은 별도 분기 없이 같은 웨이브 플랜을 따라 스폰만 처리하면 된다.
+
+카드 선택 시간은 기존 전투 런타임이 `WaitingForDraft` 상태에서 웨이브 Tick과 전투 Tick을 멈추도록 되어 있어, 순수 플레이타임 계산에서 제외되는 구조를 유지했다.
+
+### 검증
+
+- 데이터 테이블 구조를 현재 `NightDefenseSessionService`와 `NightDefenseWavePlanBuilder`가 읽을 수 있는 형태로 맞췄다.
+
 ## 완료된 작업 38: 성채 공격형 몬스터 흐름과 스폰 겹침 완화
 
 커밋 예정: `codex/architecture-cleanup`
