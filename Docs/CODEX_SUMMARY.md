@@ -1589,6 +1589,40 @@ Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 �
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 34: Spire_Popup 내부 FIGHT 버튼 전투 진입 연결
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/UI/SpirePopup.cs`
+- `Assets/_Project/01_Script/Controller/PopupControllerFactory.cs`
+- `Assets/_Project/01_Script/UI/PopupContracts.cs`
+- `Assets/_Project/01_Script/UI/PopupManager.cs`
+- `Assets/_Project/01_Script/Core/GameRoot.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `SpirePopup`이 자기 내부의 `FightButton_Battle` 버튼을 찾아 전투 시작 요청 이벤트를 올리도록 바꿨다.
+- `SpirePopupController`를 팝업 Controller 조립 지점에 연결했다.
+- `SpirePopupController`가 전투 시작 요청을 받으면 현재 로비 팝업을 정리한 뒤 `GameFlowController.LoadNightDefenseAsync()`를 호출한다.
+- `PopupControllerContext`에 `GameFlowController`를 추가해 팝업 내부에서도 씬 전환을 같은 게임 흐름 Controller로 처리하게 했다.
+- `GameRoot`가 `PopupManager`에 `GameFlowController`를 주입하도록 연결했다.
+
+### 왜 이렇게 바꿨는지
+
+`FightButton_Battle`은 `Canvas_StaticUI`가 아니라 `Canvas_DynamicUI > PopupLayer > Spire_Popup(Clone)` 내부에 생성되는 버튼이다.
+그래서 Static UI의 `LobbyScreen` 버튼 캐시와 `LobbyNavigationController` 기본 라우트만으로는 이 버튼을 처리할 수 없었다.
+
+팝업 내부 버튼은 해당 팝업 View와 Controller가 관리하는 편이 구조상 맞다.
+그래서 `SpirePopup`은 버튼 클릭 사실만 알리고, 실제 전투 전환과 팝업 정리는 `SpirePopupController`가 맡도록 분리했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 33: 중앙 FIGHT 버튼 전투 진입 명령 연결 보강
 
 커밋 예정: `codex/architecture-cleanup`

@@ -63,6 +63,7 @@ public sealed class GameRoot : MonoBehaviour
         Context = new GameContext(saveData, contentDataSource);
         GameFlowController = new GameFlowController(Context, SceneLoadManager);
         PopupManager.SetContext(Context);
+        PopupManager.SetGameFlowController(GameFlowController);
         PopupManager.SetControllerFactory(new PopupControllerFactory());
 
         // 현재 상태를 Boot로 설정합니다.

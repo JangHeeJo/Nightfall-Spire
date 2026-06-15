@@ -100,12 +100,14 @@ public readonly struct PopupControllerContext
 {
     public GameContext GameContext { get; } // 현재 게임 진행 데이터와 도메인 서비스 묶음
     public PopupManager PopupManager { get; } // 다른 팝업 열기나 닫기가 필요한 Controller용 관리자
+    public GameFlowController GameFlowController { get; } // 씬 전환과 낮/밤 흐름을 실행하는 Controller
 
     // 팝업 Controller가 필요한 전역 의존성을 명시적으로 묶습니다.
-    public PopupControllerContext(GameContext gameContext, PopupManager popupManager)
+    public PopupControllerContext(GameContext gameContext, PopupManager popupManager, GameFlowController gameFlowController)
     {
         GameContext = gameContext;
         PopupManager = popupManager;
+        GameFlowController = gameFlowController;
     }
 }
 

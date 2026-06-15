@@ -13,6 +13,7 @@ public sealed class PopupManager
     private UnityEngine.Object registeredOwner; // 레이어를 등록한 씬 Root
     private string registeredSceneName; // 디버깅용 씬 이름
     private GameContext context; // 팝업 상태를 기록할 현재 게임 Context
+    private GameFlowController gameFlowController; // 팝업 내부에서 씬 전환이 필요한 Controller용 흐름 제어자
     private IPopupControllerFactory controllerFactory; // 팝업별 Controller를 조립하는 Factory
     private int nextHandleId = 1; // 팝업 핸들 ID 발급값
 
@@ -41,6 +42,13 @@ public sealed class PopupManager
     public void SetContext(GameContext gameContext)
     {
         context = gameContext;
+    }
+
+    // GameRoot가 GameFlowController를 만든 뒤 호출합니다.
+    // 팝업 안 버튼이 씬 전환을 요청할 때도 같은 게임 흐름 Controller를 사용하게 합니다.
+    public void SetGameFlowController(GameFlowController controller)
+    {
+        gameFlowController = controller;
     }
 
     // GameRoot가 팝업 Controller 조립 정책을 주입합니다.
@@ -310,7 +318,7 @@ public sealed class PopupManager
         if (controllerFactory == null)
             return null;
 
-        PopupControllerContext popupControllerContext = new PopupControllerContext(context, this);
+        PopupControllerContext popupControllerContext = new PopupControllerContext(context, this, gameFlowController);
         return controllerFactory.CreateController(popup, popupControllerContext);
     }
 }
