@@ -7,11 +7,14 @@ using UnityEngine;
 // LobbyStaticUIRoot는 씬 오브젝트를 조립만 하고, 로비 명령 실행 정책은 이 클래스가 소유합니다.
 public sealed class LobbyNavigationController : IDisposable
 {
+    private const string BattleCommandKey = "BottomButton_Battle"; // 하단 Battle 버튼 기본 명령 키
+
     private readonly IReadOnlyList<ILobbyCommandRoute> commandRoutes; // 인스펙터에서 조립된 로비 버튼 라우트 목록
     private readonly BasePopup defaultSpirePopup; // 로비 Content 슬롯이 비었을 때 자동으로 열 기본 팝업
     private readonly PopupManager popupManager; // 로비 팝업 생성과 슬롯 관리를 담당하는 관리자
     private readonly GameFlowController gameFlowController; // 로비에서 전투 씬으로 넘어가는 게임 흐름 Controller
     private readonly Dictionary<string, ILobbyCommandRoute> routeByCommandKey = new(); // 버튼 이름별 라우트 빠른 조회 캐시
+    private readonly Dictionary<string, ILobbyCommandRoute> defaultRouteByCommandKey = new(); // 씬 라우트 누락을 보완하는 코드 기본 라우트 캐시
 
     private bool isDisposed; // 파괴 이후 비동기 흐름을 막습니다.
     private bool isEnsuringDefaultSpirePopup; // 기본 Spire 팝업 중복 생성을 막습니다.
@@ -33,6 +36,7 @@ public sealed class LobbyNavigationController : IDisposable
     public void Initialize()
     {
         BuildCommandRouteCache();
+        BuildDefaultRouteCache();
         EnsureDefaultSpirePopupWhenReadyAsync().Forget();
     }
 
@@ -112,13 +116,23 @@ public sealed class LobbyNavigationController : IDisposable
         }
     }
 
+    // 씬 라우트 배열이 비어 있어도 반드시 동작해야 하는 핵심 명령을 등록합니다.
+    private void BuildDefaultRouteCache()
+    {
+        defaultRouteByCommandKey.Clear();
+        defaultRouteByCommandKey.Add(BattleCommandKey, new DefaultLobbyCommandRoute(BattleCommandKey, LobbyCommandAction.LoadNightDefense));
+    }
+
     // 명령 키에 맞는 라우트를 찾습니다.
     private ILobbyCommandRoute FindCommandRoute(string commandKey)
     {
         if (string.IsNullOrWhiteSpace(commandKey))
             return null;
 
-        return routeByCommandKey.TryGetValue(commandKey, out ILobbyCommandRoute route) ? route : null;
+        if (routeByCommandKey.TryGetValue(commandKey, out ILobbyCommandRoute route))
+            return route;
+
+        return defaultRouteByCommandKey.TryGetValue(commandKey, out ILobbyCommandRoute defaultRoute) ? defaultRoute : null;
     }
 
     // 라우트에 지정된 액션 타입에 맞는 로비 동작을 실행합니다.
@@ -196,6 +210,23 @@ public sealed class LobbyNavigationController : IDisposable
     public void Dispose()
     {
         isDisposed = true;
+    }
+}
+
+// 인스펙터 라우트가 없어도 반드시 살아 있어야 하는 로비 기본 명령입니다.
+public sealed class DefaultLobbyCommandRoute : ILobbyCommandRoute
+{
+    public string CommandKey { get; } // 버튼 이름과 일치하는 명령 키
+    public LobbyCommandAction Action { get; } // 실행할 기본 액션
+    public BasePopup PopupPrefab => null; // 기본 명령은 팝업 프리팹을 사용하지 않음
+    public PopupLayerSlot PopupLayerSlot => PopupLayerSlot.Content; // 팝업 미사용 기본값
+    public bool UseDim => false; // 팝업 미사용 기본값
+
+    // 기본 명령 키와 액션을 보관합니다.
+    public DefaultLobbyCommandRoute(string commandKey, LobbyCommandAction action)
+    {
+        CommandKey = commandKey;
+        Action = action;
     }
 }
 

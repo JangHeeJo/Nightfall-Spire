@@ -1559,3 +1559,32 @@ Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 �
 
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 전투 구조 변경으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 32: BootScene 플레이 모드 자동 세팅 오류와 로비 Battle 버튼 라우팅 보강
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Editor/BootSceneSetupUtility.cs`
+- `Assets/_Project/01_Script/Controller/LobbyNavigationController.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `BootSceneSetupUtility`가 플레이 모드 중 `EditorSceneManager.MarkSceneDirty`와 `SaveScene`을 호출하지 않도록 차단했다.
+- 메뉴에서 Boot Loading UI 세팅을 직접 눌러도 플레이 모드 중에는 실행하지 않고 경고만 남기게 했다.
+- 로비 명령 라우트가 씬 인스펙터에서 누락되어도 `BottomButton_Battle`은 기본적으로 `LoadNightDefense`로 처리되게 보강했다.
+
+### 왜 이렇게 바꿨는지
+
+`BootSceneSetupUtility`는 에디터에서 씬 UI를 구성하는 도구인데, `[InitializeOnLoad]`와 `delayCall` 때문에 플레이 모드 진입 중에도 실행될 수 있었다.
+플레이 모드에서는 씬을 dirty 처리하거나 저장할 수 없기 때문에 `InvalidOperationException: This cannot be used during play mode.`가 발생했다.
+
+로비 전투 진입은 핵심 플로우라 인스펙터 라우트 배열 누락만으로 막히면 안 된다.
+그래서 `BottomButton_Battle`은 코드 기본 라우트로도 보장해, 씬 세팅이 비어 있어도 BattleScene 로딩으로 이어지게 했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.

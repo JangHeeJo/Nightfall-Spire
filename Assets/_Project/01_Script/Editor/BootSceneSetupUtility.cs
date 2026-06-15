@@ -25,6 +25,12 @@ public static class BootSceneSetupUtility
     [MenuItem("Nightfall Spire/Setup/Boot Loading UI")]
     public static void SetupBootLoadingUI()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            Debug.LogWarning("[BootSceneSetupUtility] 플레이 모드 중에는 BootScene 자동 세팅을 실행하지 않습니다.");
+            return;
+        }
+
         EditorSceneManager.OpenScene(BootScenePath);
         SetupCurrentBootScene();
     }
@@ -32,6 +38,9 @@ public static class BootSceneSetupUtility
     // 현재 열려 있는 씬이 BootScene이면 자동으로 고정 UI를 구성합니다.
     private static void TryAutoSetupOpenedBootScene()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || Application.isPlaying)
+            return;
+
         if (SessionState.GetBool(AutoSetupSessionKey, false))
             return;
 
@@ -45,6 +54,9 @@ public static class BootSceneSetupUtility
     // BootScene을 나중에 다시 열어도 고정 UI 누락 상태를 자동으로 보정합니다.
     private static void HandleSceneOpened(Scene scene, OpenSceneMode mode)
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || Application.isPlaying)
+            return;
+
         if (scene.path != BootScenePath)
             return;
 
@@ -54,6 +66,9 @@ public static class BootSceneSetupUtility
     // 열려 있는 BootScene 안에 고정 로딩 UI 오브젝트를 만들고 BootLoadingView에 참조를 연결합니다.
     private static void SetupCurrentBootScene()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || Application.isPlaying)
+            return;
+
         GameObject bootLoadingRoot = FindRequiredObject("BootLoadingRoot");
         BootLoadingView bootLoadingView = bootLoadingRoot.GetComponent<BootLoadingView>();
 
