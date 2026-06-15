@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
-// WaveDataRow 목록을 실제 스폰 시간표로 변환합니다.
+    // WaveDataRow 목록을 실제 스폰 시간표로 변환합니다.
+    // WaveDataRow.WaveIndex는 런타임이 따로 끊어 처리하는 웨이브 번호가 아니라, 한 전투 안에서의 스폰 이벤트 순서입니다.
 public sealed class NightDefenseWavePlanBuilder
 {
     private const float SameLaneMinimumSpawnIntervalSec = 0.35f; // 같은 라인에서 몬스터가 한 점에 겹쳐 나오지 않게 보장하는 최소 스폰 간격
@@ -25,7 +26,7 @@ public sealed class NightDefenseWavePlanBuilder
         {
             WaveDataRow row = waveRows[rowIndex];
 
-            if (!IsValidWaveRow(row, waveIndex))
+            if (!IsValidWaveRow(row))
                 return false;
 
             for (int countIndex = 0; countIndex < row.Count; countIndex++)
@@ -43,10 +44,10 @@ public sealed class NightDefenseWavePlanBuilder
     }
 
     // 스폰 계획을 만들 수 있는 유효한 웨이브 Row인지 확인합니다.
-    private static bool IsValidWaveRow(WaveDataRow row, int expectedWaveIndex)
+    private static bool IsValidWaveRow(WaveDataRow row)
     {
         return row != null &&
-               row.WaveIndex == expectedWaveIndex &&
+               row.WaveIndex > 0 &&
                row.WaveRowId > 0 &&
                row.EnemyId > 0 &&
                row.Count > 0 &&

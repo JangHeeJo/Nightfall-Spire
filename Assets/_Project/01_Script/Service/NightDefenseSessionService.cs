@@ -54,7 +54,7 @@ public sealed class NightDefenseSessionService
         return true;
     }
 
-    // 다음 웨이브로 진행하고 해당 웨이브의 스폰 Row를 반환합니다.
+    // 현재 방어 세션의 전투 타임라인을 하나의 스폰 계획으로 만들고 시작합니다.
     public NightDefenseWaveResult TryAdvanceNextWave()
     {
         if (!context.NightDefenseProgress.IsDefenseActive.Value)
@@ -70,16 +70,16 @@ public sealed class NightDefenseSessionService
 
         int nextWaveIndex = context.NightDefenseProgress.CurrentWaveIndex.Value + 1;
 
-        if (nextWaveIndex > waveGroupRow.MaxWaveIndex)
+        if (nextWaveIndex > 1)
             return NightDefenseWaveResult.Fail(NightDefenseFailureReason.WaveOutOfRange);
 
-        IReadOnlyList<WaveDataRow> waveRows = dataSource.GetWaveRows(sessionRow.WaveGroupId, nextWaveIndex);
+        IReadOnlyList<WaveDataRow> waveRows = GetBattleTimelineRows(sessionRow.WaveGroupId, waveGroupRow.MaxWaveIndex);
 
         if (waveRows.Count == 0)
             return NightDefenseWaveResult.Fail(NightDefenseFailureReason.WaveRowsNotFound);
 
-        bool isBossWave = waveGroupRow.BossWaveIndex > 0 && nextWaveIndex == waveGroupRow.BossWaveIndex;
-        bool isLastWave = nextWaveIndex >= waveGroupRow.MaxWaveIndex;
+        bool isBossWave = HasBossWaveRows(waveRows);
+        bool isLastWave = true;
 
         if (!wavePlanBuilder.TryBuild(nextWaveIndex, waveRows, isBossWave, isLastWave, out NightDefenseWavePlan wavePlan))
             return NightDefenseWaveResult.Fail(NightDefenseFailureReason.InvalidWaveData);
@@ -87,5 +87,35 @@ public sealed class NightDefenseSessionService
         context.NightDefenseProgress.AdvanceWave(isBossWave);
 
         return NightDefenseWaveResult.Success(nextWaveIndex, waveRows, wavePlan, isBossWave, isLastWave);
+    }
+
+    // WaveGroupData.MaxWaveIndex까지의 모든 WaveData Row를 모아 하나의 2분 전투 타임라인으로 사용합니다.
+    private IReadOnlyList<WaveDataRow> GetBattleTimelineRows(int waveGroupId, int maxWaveIndex)
+    {
+        List<WaveDataRow> rows = new List<WaveDataRow>();
+
+        for (int waveIndex = 1; waveIndex <= maxWaveIndex; waveIndex++)
+        {
+            IReadOnlyList<WaveDataRow> waveRows = dataSource.GetWaveRows(waveGroupId, waveIndex);
+
+            for (int rowIndex = 0; rowIndex < waveRows.Count; rowIndex++)
+            {
+                rows.Add(waveRows[rowIndex]);
+            }
+        }
+
+        return rows;
+    }
+
+    // 전투 타임라인 안에 보스 스폰 Row가 포함되어 있는지 확인합니다.
+    private static bool HasBossWaveRows(IReadOnlyList<WaveDataRow> waveRows)
+    {
+        for (int i = 0; i < waveRows.Count; i++)
+        {
+            if (waveRows[i].IsBossWave)
+                return true;
+        }
+
+        return false;
     }
 }

@@ -70,6 +70,41 @@
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 43: 웨이브 데이터를 스폰 이벤트 순서 기준으로 재정리
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/05_Data/Tables/EnemyData.tsv`
+- `Assets/_Project/05_Data/Tables/WaveData.tsv`
+- `Assets/_Project/05_Data/Tables/WaveGroupData.tsv`
+- `Assets/_Project/01_Script/Data/Rows/GameDataRows.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseWavePlanBuilder.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 새 몬스터 프리팹 기준으로 `EnemyData.tsv`의 `PrefabKey`를 정리했다.
+- `Monster_01`, `Monster_02`, `Monster_03`, `Monster_04`, `Monster_Elite_01`, `Monster_Boss_01`을 적 데이터로 등록했다.
+- `WaveData.tsv`의 `WaveIndex` 의미를 한 전투 안의 스폰 이벤트 순서로 정리했다.
+- `WaveGroupData.tsv`의 `MaxWaveIndex`는 스폰 이벤트 개수, `BossWaveIndex`는 보스 이벤트 위치로 쓰도록 맞췄다.
+- `NightDefenseSessionService`가 `WaveGroupData.MaxWaveIndex`까지의 `WaveData` Row를 모두 모아 하나의 2분 전투 타임라인으로 캐싱하게 했다.
+- `NightDefenseWavePlanBuilder`는 `WaveDataRow.WaveIndex`를 현재 런타임 웨이브 번호와 비교하지 않고, 스폰 이벤트 순서 값으로만 검증하게 했다.
+
+### 왜 이렇게 바꿨는지
+
+전투 안의 스폰 흐름은 고정된 “런타임 웨이브 클리어 후 다음 웨이브”가 아니라, 2분 전투 타임라인 안에서 1웨이브, 2웨이브, 보스웨이브, 3웨이브처럼 유동적으로 배치되는 구조다.
+
+그래서 `WaveData.WaveIndex`를 런타임 분할 단위가 아니라 스폰 이벤트 순서로 해석하게 정리했다.
+이제 보스 이벤트 위치는 `WaveGroupData.BossWaveIndex`와 `WaveData.IsBossWave`를 바꾸면 조정할 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 41: 밤 방어 웨이브 테이블을 2분 전투 타임라인 기준으로 정리
 
 커밋 예정: `codex/architecture-cleanup`

@@ -1,5 +1,5 @@
 WaveGroupId	NameKey	MaxWaveIndex	BattleDurationSec	BossWaveIndex	BaseSpawnBudget	ScalingGroupId
-8001	wave_group_early_01	1	120	1	100	0
-8002	wave_group_early_02	1	120	1	130	0
-8003	wave_group_boss_01	1	120	1	180	0
-8004	wave_group_swarm_01	1	120	1	220	0
+8001	wave_group_early_01	4	120	3	100	0
+8002	wave_group_early_02	4	120	4	130	0
+8003	wave_group_boss_01	4	120	3	180	0
+8004	wave_group_swarm_01	4	120	4	220	0

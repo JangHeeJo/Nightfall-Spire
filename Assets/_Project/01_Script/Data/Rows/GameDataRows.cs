@@ -198,15 +198,15 @@ public sealed class DefenseSessionDataRow : ITableRow
 }
 
 // 웨이브 그룹 테이블 한 줄입니다.
-// 한 방어 세션의 전투 시간, 웨이브 수, 보스 위치를 정의합니다.
+// 한 방어 세션의 전투 시간, 스폰 이벤트 개수, 보스 이벤트 위치를 정의합니다.
 public sealed class WaveGroupDataRow : ITableRow
 {
     public int Id => WaveGroupId; // DataTable 기본 키
     public int WaveGroupId { get; private set; } // 웨이브 그룹 ID
     public string NameKey { get; private set; } // 로컬라이징 이름 키
-    public int MaxWaveIndex { get; private set; } // 마지막 웨이브 번호
+    public int MaxWaveIndex { get; private set; } // 전투 안에서 사용할 마지막 스폰 이벤트 번호
     public float BattleDurationSec { get; private set; } // 카드 선택 시간을 제외한 순수 전투 시간
-    public int BossWaveIndex { get; private set; } // 보스 웨이브 번호
+    public int BossWaveIndex { get; private set; } // 보스가 등장하는 스폰 이벤트 번호
     public int BaseSpawnBudget { get; private set; } // 스폰 예산 기준값
     public int ScalingGroupId { get; private set; } // 난이도 스케일링 그룹 ID
 
@@ -224,13 +224,13 @@ public sealed class WaveGroupDataRow : ITableRow
 }
 
 // 웨이브 테이블 한 줄입니다.
-// 특정 웨이브에서 어떤 적을 언제 몇 마리 생성할지 정의합니다.
+// 한 전투 타임라인 안에서 몇 번째 스폰 이벤트에 어떤 적을 언제 몇 마리 생성할지 정의합니다.
 public sealed class WaveDataRow : ITableRow
 {
     public int Id => WaveRowId; // DataTable 기본 키
     public int WaveRowId { get; private set; } // 웨이브 Row ID
     public int WaveGroupId { get; private set; } // 웨이브 그룹 ID
-    public int WaveIndex { get; private set; } // 웨이브 번호
+    public int WaveIndex { get; private set; } // 한 전투 안에서의 스폰 이벤트 순서
     public int EnemyId { get; private set; } // 스폰할 적 ID
     public int Count { get; private set; } // 스폰 수
     public float SpawnStartSec { get; private set; } // 웨이브 시작 후 첫 스폰 시간

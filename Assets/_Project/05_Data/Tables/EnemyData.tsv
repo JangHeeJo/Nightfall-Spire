@@ -1,5 +1,7 @@
 EnemyId	NameKey	EnemyRank	ElementType	MaxHp	MoveSpeed	AttackPower	Armor	AbilityTagList	RewardScore	PrefabKey
-1101	enemy_crawler	Normal	None	30	0.10	3	0	Ground	1	enemy_crawler
-1102	enemy_wisp	Normal	Dark	22	0.10	2	0	Flying|Magic	1	enemy_wisp
-1201	enemy_brute	Elite	None	140	0.10	8	3	Ground|Armored	5	enemy_brute
-1301	enemy_night_titan	Boss	Dark	1200	0.10	20	8	Boss|Ground|Armored	50	enemy_night_titan
+1101	enemy_monster_01	Normal	None	30	0.10	3	0	Ground	1	Monster_01
+1102	enemy_monster_02	Normal	Dark	34	0.10	4	0	Ground	1	Monster_02
+1103	enemy_monster_03	Normal	None	42	0.10	5	1	Ground|Sturdy	2	Monster_03
+1104	enemy_monster_04	Normal	Dark	26	0.10	3	0	Ground|Fast	2	Monster_04
+1201	enemy_elite_01	Elite	Dark	180	0.10	10	4	Elite|Ground|Armored	8	Monster_Elite_01
+1301	enemy_boss_01	Boss	Dark	1200	0.10	24	8	Boss|Ground|Armored	50	Monster_Boss_01
