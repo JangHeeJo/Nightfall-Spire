@@ -35,6 +35,37 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 36: 전투 몬스터 프리팹 생성 연결
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Assets/_Project/00_Scenes/BattleScene.unity`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `UnityNightDefenseSpawnSink`가 `EnemyData.tsv`의 `PrefabKey`를 기준으로 실제 몬스터 프리팹을 생성하도록 연결했다.
+- 전투 씬에 `EnemyLayer`를 추가해 런타임 몬스터 인스턴스가 한 곳에 모이도록 했다.
+- `enemy_crawler`, `enemy_brute`는 `Monster_01` 프리팹으로, `enemy_wisp`, `enemy_night_titan`은 `Monster_02` 프리팹으로 연결했다.
+- 라인별 시작 위치와 성채 도착 위치를 `lanePaths`로 인스펙터 연결해 몬스터 위치가 전투 진행률에 따라 움직이도록 했다.
+- 생성된 몬스터는 `RuntimeId`로 추적하고, 전투 런타임의 갱신/제거 요청에 맞춰 위치 갱신과 삭제를 수행한다.
+- 코드 주석을 깨진 인코딩 없이 한글 설명으로 다시 정리했다.
+
+### 왜 이렇게 바꿨는지
+
+몬스터 생성은 테이블이 원본이어야 하고, Unity 프리팹 참조는 씬 인스펙터에서 명시적으로 보여야 한다.
+그래서 `EnemyData.PrefabKey`를 직접 프리팹 이름으로 강제하지 않고, `UnityNightDefenseSpawnSink`의 연결 목록을 통해 실제 프리팹을 생성하도록 만들었다.
+
+이 방식이면 나중에 `enemy_crawler`를 다른 프리팹으로 바꾸거나, 같은 프리팹을 여러 데이터가 공유해도 테이블 구조를 흔들지 않아도 된다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 35: BattleScene 런타임 참조 누락 복구
 
 ### 변경된 파일

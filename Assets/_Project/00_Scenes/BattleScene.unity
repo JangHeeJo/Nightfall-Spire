@@ -398,6 +398,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88e03dfc01dc4bcf9a952e139dfbfa77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemyLayer: {fileID: 930000008}
+  enemyPrefabs:
+  - prefabKey: enemy_crawler
+    prefab: {fileID: 7166461537056385888, guid: 1dd949de4be2f554988837af63a2265b, type: 3}
+  - prefabKey: enemy_wisp
+    prefab: {fileID: 1953035848667899799, guid: 89a07979c4cfa90459115c0f84f5d15c, type: 3}
+  - prefabKey: enemy_brute
+    prefab: {fileID: 7166461537056385888, guid: 1dd949de4be2f554988837af63a2265b, type: 3}
+  - prefabKey: enemy_night_titan
+    prefab: {fileID: 1953035848667899799, guid: 89a07979c4cfa90459115c0f84f5d15c, type: 3}
+  lanePaths:
+  - laneId: 1
+    startPosition: {x: 5.2, y: -1.8, z: -0.5}
+    goalPosition: {x: 0.75, y: -1.8, z: -0.5}
+  - laneId: 2
+    startPosition: {x: -5.2, y: -1.45, z: -0.5}
+    goalPosition: {x: -0.75, y: -1.45, z: -0.5}
   logRuntimeEvents: 1
 --- !u!225 &920100004
 CanvasGroup:
@@ -626,6 +643,37 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &930000007
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 930000008}
+  m_Layer: 0
+  m_Name: EnemyLayer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &930000008
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 930000007}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1887858836}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &940200000
 GameObject:
   m_ObjectHideFlags: 0
@@ -1113,6 +1161,7 @@ Transform:
   m_Children:
   - {fileID: 930000002}
   - {fileID: 930000005}
+  - {fileID: 930000008}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894928770
