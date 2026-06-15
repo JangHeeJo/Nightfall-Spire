@@ -6,9 +6,10 @@ using System.Collections.Generic;
 [Serializable]
 public sealed class SaveData
 {
-    private const int CurrentVersion = 5; // 현재 코드가 기대하는 저장 데이터 버전
+    private const int CurrentVersion = 6; // 현재 코드가 기대하는 저장 데이터 버전
     private const int FirstDefenseSessionId = 101; // DefenseSessionData.tsv의 첫 테스트 세션
     private const int StarterHeroId = 1001; // 첫 전투 슬롯에 기본 배치할 영웅
+    private const int StarterRangedHeroId = 1002; // 두 번째 전투 슬롯에 기본 배치할 원거리 영웅
 
     public int Version = CurrentVersion; // 저장 데이터 버전. 구조 변경이나 마이그레이션 판단에 사용합니다.
 
@@ -35,12 +36,19 @@ public sealed class SaveData
         saveData.DayCycle.MiningDepth = 0;
         saveData.DayCycle.MagicLibraryUnlocked = false;
 
-        // 기본 전투 슬롯 1개를 열어 첫 밤 방어전을 시작할 수 있게 합니다.
+        // 기본 전투 슬롯 2개를 열어 첫 밤 방어전에서 근접과 원거리 영웅이 함께 공격하게 합니다.
         saveData.CombatSlot.Slots.Add(new CombatSlotSaveData
         {
             SlotIndex = 0,
             Level = 1,
             EquippedHeroId = 1001,
+            IsUnlocked = true
+        });
+        saveData.CombatSlot.Slots.Add(new CombatSlotSaveData
+        {
+            SlotIndex = 1,
+            Level = 1,
+            EquippedHeroId = StarterRangedHeroId,
             IsUnlocked = true
         });
 
@@ -89,7 +97,8 @@ public sealed class SaveData
             repaired = true;
         }
 
-        repaired |= EnsureStarterCombatSlot();
+        repaired |= EnsureStarterCombatSlot(0, StarterHeroId);
+        repaired |= EnsureStarterCombatSlot(1, StarterRangedHeroId);
         repaired |= EnsureStarterHero(1001, true);
         repaired |= EnsureStarterHero(1002, true);
         repaired |= EnsureStarterHero(1003, false);
@@ -98,13 +107,13 @@ public sealed class SaveData
         return repaired;
     }
 
-    // 전투 런타임이 최소 1개의 공격 가능한 슬롯을 항상 만들 수 있게 보정합니다.
-    private bool EnsureStarterCombatSlot()
+    // 전투 런타임이 시작 슬롯을 항상 공격 가능한 상태로 만들 수 있게 보정합니다.
+    private bool EnsureStarterCombatSlot(int slotIndex, int heroId)
     {
         for (int i = 0; i < CombatSlot.Slots.Count; i++)
         {
             CombatSlotSaveData slot = CombatSlot.Slots[i];
-            if (slot.SlotIndex != 0)
+            if (slot.SlotIndex != slotIndex)
                 continue;
 
             bool repaired = false;
@@ -117,7 +126,7 @@ public sealed class SaveData
 
             if (slot.EquippedHeroId <= 0)
             {
-                slot.EquippedHeroId = StarterHeroId;
+                slot.EquippedHeroId = heroId;
                 repaired = true;
             }
 
@@ -132,9 +141,9 @@ public sealed class SaveData
 
         CombatSlot.Slots.Add(new CombatSlotSaveData
         {
-            SlotIndex = 0,
+            SlotIndex = slotIndex,
             Level = 1,
-            EquippedHeroId = StarterHeroId,
+            EquippedHeroId = heroId,
             IsUnlocked = true
         });
         return true;

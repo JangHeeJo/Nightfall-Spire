@@ -1,4 +1,4 @@
 SlotId	SlotIndex	SlotType	UnlockFloorId	AllowedHeroRoleList	UpgradeGroupId	DefaultHeroId	PositionKey	IsDefaultUnlocked
-2001	0	Front	1	Dealer|Tank	2101	1001	slot_front_01	TRUE
-2002	1	Back	2	Dealer|Support	2102	0	slot_back_01	FALSE
-2003	2	Tower	3	Dealer|Support	2103	0	slot_tower_01	FALSE
+2001	0	Front	1	Melee	2101	1001	slot_front_01	TRUE
+2002	1	Back	2	Ranged	2102	1002	slot_back_01	TRUE
+2003	2	Tower	3	Ranged	2103	0	slot_tower_01	FALSE

@@ -35,6 +35,40 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 39: 기본 전투 화력과 애니메이션 상태 매핑 보정
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Model/SaveData.cs`
+- `Assets/_Project/01_Script/Scene/CombatUnitAnimationPlayer.cs`
+- `Assets/_Project/05_Data/Tables/CombatSlotData.tsv`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 기본 전투 슬롯을 1개에서 2개로 늘렸다.
+- 두 번째 기본 슬롯에 `Player_Archer`를 배치해 첫 전투부터 근접 영웅과 원거리 영웅이 함께 공격하게 했다.
+- 저장 데이터 버전을 6으로 올려 기존 세이브도 두 번째 기본 슬롯을 자동 보정하게 했다.
+- 전투 슬롯 테이블의 역할 값을 현재 영웅 테이블 기준에 맞춰 `Melee`, `Ranged`로 정리했다.
+- Animator 상태 재생 시 실제 Controller에 존재하는 상태를 먼저 검사하도록 바꿨다.
+- 이동은 `Move`, `Run`, `Walk` 순서로 찾고, 피격은 `Hit`, `Stun`, 사망은 `Die`, `Dead1`, `Dead2`, `Dead3`, `Defeat` 순서로 찾는다.
+- 존재하지 않는 Animator 상태에는 `CrossFade`를 호출하지 않도록 막았다.
+
+### 왜 이렇게 바꿨는지
+
+전투 로그의 `Damage Count`와 `Enemy Despawn ... Reason:Defeated`는 공격과 처치가 실제로 발생하고 있다는 뜻이다.
+다만 일반 웨이브를 20~30마리로 늘린 상태에서 기본 영웅이 한 명뿐이면 화면상으로 몬스터가 거의 안 죽는 것처럼 보인다.
+
+또 외부 캐릭터 프리팹의 Animator 상태명이 설계상 공통 이름인 `Move`, `Hit`, `Die`와 완전히 같지 않았다.
+그래서 공통 애니메이션 재생기는 유지하되, 실제 프리팹에 있는 `Run`, `Walk`, `Stun`, `Dead1` 같은 상태로 안전하게 연결되도록 보정했다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 38: 전투 유닛 공통 애니메이션 재생 규격 추가
 
 커밋 예정: `codex/architecture-cleanup`
