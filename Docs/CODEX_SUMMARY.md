@@ -1631,6 +1631,35 @@ Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 �
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 36: BattleSceneRoot 런타임 참조를 인스펙터 연결 방식으로 정리
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+- `Assets/_Project/00_Scenes/BattleScene.unity`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `BattleSceneRoot`에서 `FindObjectsByType`로 씬 컴포넌트를 찾는 보강 코드를 제거했다.
+- `BattleSceneRoot`에서 `AddComponent`로 `NightDefenseBattleRuntime`, `UnityNightDefenseSpawnSink`를 자동 생성하던 코드를 제거했다.
+- `BattleScene.unity`의 `BattleSceneRoot` 오브젝트에 `NightDefenseBattleRuntime`, `UnityNightDefenseSpawnSink` 컴포넌트를 직접 붙이고, `BattleSceneRoot`의 직렬화 필드에 연결했다.
+
+### 왜 이렇게 바꿨는지
+
+전투씬의 루트 오브젝트는 씬 구성의 조립 지점이어야 한다.
+런타임에서 컴포넌트를 찾아오거나 없으면 생성하는 방식은 당장은 돌아가도, 씬 프리팹 구조가 커질수록 어떤 오브젝트가 실제 의존성인지 추적하기 어려워진다.
+
+그래서 `BattleSceneRoot`는 인스펙터에 명시적으로 연결된 참조만 사용하도록 정리했다.
+참조가 빠진 상태라면 조용히 임시 복구하지 않고, 씬 세팅 문제로 바로 드러나는 쪽이 라이브 구조에 맞다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 34: Spire_Popup 내부 FIGHT 버튼 전투 진입 연결
 
 커밋 예정: `codex/architecture-cleanup`
