@@ -22,7 +22,7 @@ public sealed class SaveData
         saveData.Currency.Gold = 0;
         saveData.Currency.Gem = 0;
 
-        saveData.Progress.CurrentDefenseSessionId = 1;
+        saveData.Progress.CurrentDefenseSessionId = 101;
         saveData.Progress.HighestClearedDefenseSessionId = 0;
         saveData.Progress.CompletedDayCount = 0;
 
@@ -61,7 +61,7 @@ public sealed class CurrencySaveData
 [Serializable]
 public sealed class PlayerProgressSaveData
 {
-    public int CurrentDefenseSessionId = 1; // 다음에 도전할 밤 방어 세션 ID
+    public int CurrentDefenseSessionId = 101; // 다음에 도전할 밤 방어 세션 ID
     public int HighestClearedDefenseSessionId = 0; // 가장 멀리 클리어한 밤 방어 세션 ID
     public int CompletedDayCount = 0; // 낮/밤 루프를 몇 번 완료했는지 추적합니다.
 }

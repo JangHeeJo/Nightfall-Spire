@@ -61,7 +61,7 @@ public sealed class BattleSceneController : IDisposable
         activeContext = context;
         hasStartedSession = true;
         InitializeSceneUi(context);
-        battleRuntime.Initialize(context, spawnSink);
+        battleRuntime.Initialize(context, gameFlowController, spawnSink);
     }
 
     // 전투 씬에 배치된 UI Root에 현재 Context를 전달합니다.
@@ -111,6 +111,9 @@ public sealed class BattleSceneController : IDisposable
             return;
 
         if (activeContext.NightDefenseProgress.IsDefenseActive.Value)
+        {
             activeContext.NightDefenseProgress.EndDefenseSession(DefenseOutcome.Abandoned);
+            activeContext.BattleProgress.EndBattle(DefenseOutcome.Abandoned);
+        }
     }
 }

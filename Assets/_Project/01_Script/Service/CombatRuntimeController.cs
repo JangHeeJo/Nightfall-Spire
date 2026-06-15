@@ -16,12 +16,14 @@ public sealed class CombatRuntimeController
     private readonly List<CombatHeroSlotRuntimeState> heroSlots = new(); // 공격 가능한 영웅 슬롯 목록
     private readonly List<CombatEnemyRuntimeState> enemies = new(); // 현재 살아 있거나 정리 대기 중인 적 목록
     private readonly List<CombatDamageResult> damageResults = new(); // 최근 Tick 피해 결과 목록
+    private readonly List<CombatEnemyDespawnResult> despawnResults = new(); // 최근 Tick 제거 결과 목록
 
     private int nextEnemyRuntimeId = 1; // 전투 내 적 인스턴스 ID 발급값
 
     public IReadOnlyList<CombatHeroSlotRuntimeState> HeroSlots => heroSlots; // 외부 조회용 영웅 슬롯 목록
     public IReadOnlyList<CombatEnemyRuntimeState> Enemies => enemies; // 외부 조회용 적 목록
     public IReadOnlyList<CombatDamageResult> LastDamageResults => damageResults; // 마지막 Tick 피해 결과
+    public IReadOnlyList<CombatEnemyDespawnResult> LastDespawnResults => despawnResults; // 마지막 Tick 제거 결과
 
     // 전투 계산에 필요한 데이터 조회 계약과 현재 슬롯 진행 상태를 받습니다.
     public CombatRuntimeController(
@@ -82,6 +84,7 @@ public sealed class CombatRuntimeController
             request.SpawnOrder,
             enemyRow.MaxHp,
             enemyRow.Armor,
+            enemyRow.AttackPower,
             enemyRow.MoveSpeed);
 
         nextEnemyRuntimeId += 1;
@@ -93,11 +96,13 @@ public sealed class CombatRuntimeController
     public CombatRuntimeTickResult Tick(float deltaSeconds)
     {
         damageResults.Clear();
+        despawnResults.Clear();
 
         if (deltaSeconds <= 0f)
-            return CreateTickResult(0, 0);
+            return CreateTickResult(0, 0, 0, 0);
 
         AdvanceEnemies(deltaSeconds);
+        RemoveEnemiesReachedGoal(out int reachedGoalCount, out int castleDamage);
 
         int attackCount = 0;
         int defeatedCount = 0;
@@ -132,7 +137,7 @@ public sealed class CombatRuntimeController
         }
 
         RemoveDefeatedEnemies();
-        return CreateTickResult(attackCount, defeatedCount);
+        return CreateTickResult(attackCount, defeatedCount, reachedGoalCount, castleDamage);
     }
 
     // 현재 전투 상태를 초기화합니다.
@@ -141,6 +146,7 @@ public sealed class CombatRuntimeController
         heroSlots.Clear();
         enemies.Clear();
         damageResults.Clear();
+        despawnResults.Clear();
         nextEnemyRuntimeId = 1;
     }
 
@@ -185,13 +191,36 @@ public sealed class CombatRuntimeController
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             if (!enemies[i].IsAlive)
+            {
+                despawnResults.Add(new CombatEnemyDespawnResult(enemies[i], CombatEnemyDespawnReason.Defeated));
                 enemies.RemoveAt(i);
+            }
+        }
+    }
+
+    // 성채까지 도달한 적을 제거하고 성채 피해량으로 변환합니다.
+    private void RemoveEnemiesReachedGoal(out int reachedGoalCount, out int castleDamage)
+    {
+        reachedGoalCount = 0;
+        castleDamage = 0;
+
+        for (int i = enemies.Count - 1; i >= 0; i--)
+        {
+            CombatEnemyRuntimeState enemy = enemies[i];
+
+            if (!enemy.HasReachedGoal)
+                continue;
+
+            reachedGoalCount += 1;
+            castleDamage += Math.Max(1, enemy.AttackPower);
+            despawnResults.Add(new CombatEnemyDespawnResult(enemy, CombatEnemyDespawnReason.ReachedGoal));
+            enemies.RemoveAt(i);
         }
     }
 
     // 현재 상태를 Tick 결과로 요약합니다.
-    private CombatRuntimeTickResult CreateTickResult(int attackCount, int defeatedCount)
+    private CombatRuntimeTickResult CreateTickResult(int attackCount, int defeatedCount, int reachedGoalCount, int castleDamage)
     {
-        return new CombatRuntimeTickResult(attackCount, defeatedCount, enemies.Count, heroSlots.Count);
+        return new CombatRuntimeTickResult(attackCount, defeatedCount, reachedGoalCount, castleDamage, enemies.Count, heroSlots.Count);
     }
 }

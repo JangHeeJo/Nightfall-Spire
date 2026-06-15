@@ -1508,3 +1508,54 @@ BootScene은 첫 인상을 주는 화면이므로, 실제 작업 시간이 짧�
 - `LobbyScene.unity`에서 `TopCurrencyHud`, `GoalPanel`, `FightPanel` 같은 이전 placeholder 오브젝트가 남아 있지 않은 것을 확인했다.
 - `LobbyScene.unity`에서 `Canvas_StaticUI > LobbyStaticUIRoot > Lobby_Default` 구조와 `LobbyStaticUIRoot.lobbyScreen` 참조를 확인했다.
 - Unity에서 `Nightfall Spire > Setup > Lobby Default Prefab UI` 메뉴 또는 LobbyScene 재오픈으로 실제 하이어라키 확인 필요.
+
+## 완료된 작업 31: BattleScene 전투 런타임 중심 구조 구성
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Controller/BattleSceneController.cs`
+- `Assets/_Project/01_Script/Core/GameContext.cs`
+- `Assets/_Project/01_Script/Model/BattleProgress.cs`
+- `Assets/_Project/01_Script/Model/SaveData.cs`
+- `Assets/_Project/01_Script/Scene/NightDefenseBattleRuntime.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Assets/_Project/01_Script/Service/BattleRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/BattleRuntimeContracts.cs.meta`
+- `Assets/_Project/01_Script/Service/BattleSessionRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/BattleSessionRuntimeController.cs.meta`
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/99_Test/EditMode/Core/GameFlowControllerTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/CombatRuntimeControllerTests.cs`
+
+### 주요 변경
+
+- `BattleSessionRuntimeController`를 추가해 밤 방어전의 중심 런타임을 만들었다.
+- 기존 `NightDefenseRuntimeController`는 웨이브 시간표와 스폰 타이밍만 담당하도록 두고, 새 전투 세션 런타임이 웨이브 스폰을 `CombatRuntimeController`로 연결한다.
+- `BattleProgress`를 호환용 bool 모델에서 성채 체력, 전투 상태, 승패 상태를 가진 런타임 모델로 승격했다.
+- `CombatRuntimeController`가 적 이동 후 성채에 도달한 적을 제거하고 성채 피해로 변환하도록 바꿨다.
+- 적 제거 사유를 `CombatEnemyDespawnResult`로 남기도록 해서 표시 계층이 처치와 성채 도달을 구분할 수 있게 했다.
+- `IBattleCombatViewSink`를 추가해 순수 전투 계산과 Unity 표시 계층을 분리했다.
+- `UnityNightDefenseSpawnSink`는 더 이상 웨이브 스폰 요청만 받지 않고, 적 생성/피해/제거/동기화 이벤트를 받는 전투 표시 Adapter가 되었다.
+- `NightDefenseBattleRuntime`은 직접 웨이브를 돌리지 않고 `BattleSessionRuntimeController`를 시작하고 Tick만 전달한다.
+- 기본 저장 데이터의 첫 방어 세션 ID를 실제 테이블 기준인 `101`로 수정했다.
+- 전투 런타임 테스트에 성채 도달 피해 케이스를 추가했다.
+
+### 왜 이렇게 바꿨는지
+
+이전 구조는 전투씬에서 웨이브 스폰 로그만 찍는 수준이었다.
+웨이브에서 적이 나오더라도 전투 계산 런타임으로 들어가지 않았고, 영웅 공격, 적 처치, 성채 피해, 승패 확정이 하나의 흐름으로 닫혀 있지 않았다.
+
+라이브 수준 전투 구조에서는 씬 MonoBehaviour가 규칙을 직접 판단하면 안 된다.
+씬은 Unity 생명주기와 표시 계층 연결만 맡고, 실제 규칙은 순수 C# 런타임이 맡아야 테스트와 유지보수가 가능하다.
+
+그래서 `BattleSessionRuntimeController`를 전투 세션의 중심으로 두었다.
+이 컨트롤러는 웨이브 시간표, 전투 계산, 드래프트 진입, 승리/패배 확정을 조율한다.
+Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 프리팹 풀링이나 HP바, 피격 이펙트를 붙여도 전투 계산 코드는 그대로 유지할 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 전투 구조 변경으로 인한 컴파일 오류는 없다.

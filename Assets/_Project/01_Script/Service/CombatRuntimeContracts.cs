@@ -11,6 +11,15 @@ public enum CombatRuntimeFailureReason
     NoActiveHeroSlots // 공격 가능한 해금 슬롯이 없음
 }
 
+// 전투 런타임에서 적이 제거된 이유입니다.
+public enum CombatEnemyDespawnReason
+{
+    None, // 제거 사유 없음
+    Defeated, // 영웅 공격으로 처치됨
+    ReachedGoal, // 성채에 도달해 피해를 주고 제거됨
+    Reset // 전투 종료나 씬 정리로 제거됨
+}
+
 // 전투 슬롯 하나가 런타임에서 공격자로 쓰기 위해 필요한 상태입니다.
 public sealed class CombatHeroSlotRuntimeState
 {
@@ -77,12 +86,14 @@ public sealed class CombatEnemyRuntimeState
     public int MaxHp { get; } // 최대 체력
     public int CurrentHp { get; private set; } // 현재 체력
     public int Armor { get; } // 방어력
+    public int AttackPower { get; } // 성채에 도달했을 때 줄 피해량
     public float MoveSpeed { get; } // 이동 속도
     public float PathProgress { get; private set; } // 방어 목표 지점까지의 진행도
     public bool IsAlive => CurrentHp > 0; // 적 생존 여부
+    public bool HasReachedGoal => IsAlive && PathProgress >= 1f; // 성채 피해 지점에 도달했는지 여부
 
     // 적 런타임 상태를 만듭니다.
-    public CombatEnemyRuntimeState(int runtimeId, int enemyId, EnemyRank enemyRank, ElementType elementType, int laneId, int spawnOrder, int maxHp, int armor, float moveSpeed)
+    public CombatEnemyRuntimeState(int runtimeId, int enemyId, EnemyRank enemyRank, ElementType elementType, int laneId, int spawnOrder, int maxHp, int armor, int attackPower, float moveSpeed)
     {
         RuntimeId = runtimeId;
         EnemyId = enemyId;
@@ -93,6 +104,7 @@ public sealed class CombatEnemyRuntimeState
         MaxHp = maxHp;
         CurrentHp = maxHp;
         Armor = armor;
+        AttackPower = attackPower;
         MoveSpeed = moveSpeed;
     }
 
@@ -140,19 +152,37 @@ public readonly struct CombatDamageResult
     }
 }
 
+// 적 제거 결과입니다.
+public readonly struct CombatEnemyDespawnResult
+{
+    public CombatEnemyRuntimeState Enemy { get; } // 제거된 적 런타임 상태
+    public CombatEnemyDespawnReason Reason { get; } // 제거 사유
+
+    // 제거된 적과 이유를 보관합니다.
+    public CombatEnemyDespawnResult(CombatEnemyRuntimeState enemy, CombatEnemyDespawnReason reason)
+    {
+        Enemy = enemy;
+        Reason = reason;
+    }
+}
+
 // 전투 런타임 한 Tick 결과입니다.
 public readonly struct CombatRuntimeTickResult
 {
     public int AttackCount { get; } // 이번 Tick에서 발생한 공격 횟수
     public int DefeatedEnemyCount { get; } // 이번 Tick에서 처치된 적 수
+    public int ReachedGoalEnemyCount { get; } // 이번 Tick에서 성채에 도달한 적 수
+    public int CastleDamage { get; } // 이번 Tick에서 성채가 받은 총 피해량
     public int AliveEnemyCount { get; } // Tick 종료 후 살아 있는 적 수
     public int ActiveHeroSlotCount { get; } // 공격 가능한 영웅 슬롯 수
 
     // Tick 결과 요약 값을 보관합니다.
-    public CombatRuntimeTickResult(int attackCount, int defeatedEnemyCount, int aliveEnemyCount, int activeHeroSlotCount)
+    public CombatRuntimeTickResult(int attackCount, int defeatedEnemyCount, int reachedGoalEnemyCount, int castleDamage, int aliveEnemyCount, int activeHeroSlotCount)
     {
         AttackCount = attackCount;
         DefeatedEnemyCount = defeatedEnemyCount;
+        ReachedGoalEnemyCount = reachedGoalEnemyCount;
+        CastleDamage = castleDamage;
         AliveEnemyCount = aliveEnemyCount;
         ActiveHeroSlotCount = activeHeroSlotCount;
     }

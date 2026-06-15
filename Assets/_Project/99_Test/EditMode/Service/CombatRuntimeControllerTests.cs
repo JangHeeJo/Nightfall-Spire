@@ -18,7 +18,7 @@ public sealed class CombatRuntimeControllerTests
         Assert.That(result, Is.EqualTo(CombatRuntimeFailureReason.None));
         Assert.That(controller.HeroSlots.Count, Is.EqualTo(1));
         Assert.That(controller.HeroSlots[0].SlotIndex, Is.EqualTo(0));
-        Assert.That(controller.HeroSlots[0].HeroId, Is.EqualTo(1));
+        Assert.That(controller.HeroSlots[0].HeroId, Is.EqualTo(1001));
         Assert.That(controller.HeroSlots[0].MaxHealth, Is.EqualTo(150));
         Assert.That(controller.HeroSlots[0].Defense, Is.EqualTo(10));
         Assert.That(controller.HeroSlots[0].AttackPower, Is.EqualTo(20));
@@ -57,6 +57,25 @@ public sealed class CombatRuntimeControllerTests
         Assert.That(result.DefeatedEnemyCount, Is.EqualTo(1));
         Assert.That(result.AliveEnemyCount, Is.EqualTo(0));
         Assert.That(controller.Enemies.Count, Is.EqualTo(0));
+        Assert.That(controller.LastDespawnResults.Count, Is.EqualTo(1));
+        Assert.That(controller.LastDespawnResults[0].Reason, Is.EqualTo(CombatEnemyDespawnReason.Defeated));
+    }
+
+    // 적이 성채 지점까지 도달하면 목록에서 제거되고 성채 피해로 변환되어야 합니다.
+    [Test]
+    public void Tick_ConvertsReachedEnemyToCastleDamage()
+    {
+        SaveData saveData = SaveData.CreateDefault();
+        CombatRuntimeController controller = CreateReadyController(saveData);
+
+        controller.SpawnEnemy(CreateSpawnRequest(1102), out _);
+        CombatRuntimeTickResult result = controller.Tick(1f);
+
+        Assert.That(result.ReachedGoalEnemyCount, Is.EqualTo(1));
+        Assert.That(result.CastleDamage, Is.EqualTo(10));
+        Assert.That(result.AliveEnemyCount, Is.EqualTo(0));
+        Assert.That(controller.LastDespawnResults.Count, Is.EqualTo(1));
+        Assert.That(controller.LastDespawnResults[0].Reason, Is.EqualTo(CombatEnemyDespawnReason.ReachedGoal));
     }
 
     // 슬롯 성장 보정이 있으면 공격력 계산에 반영되어야 합니다.
@@ -162,15 +181,16 @@ public sealed class CombatRuntimeControllerTests
 
         private const string HeroTsv =
             "HeroId\tCharacterName\tHeroRole\tElementType\tRarity\tHeroTagList\tBaseHealth\tBaseDefense\tBaseAttack\tBaseAttackSpeed\tBaseAttackRange\tAttackPatternId\tSkillId\tTargetingType\tUnlockConditionType\tUnlockValue\tIsDefaultUnlocked\tPrefabKey\tIconKey\tStartLevel\n" +
-            "1\tHero_Guardian\tMelee\tPhysical\tCommon\tStarter|Slot\t150\t10\t20\t1.0\t2.0\t1\t0\tNearest\tDefault\t0\ttrue\tHero_Guardian\tIcon_Hero_Guardian\t1\n";
+            "1001\tHero_Guardian\tMelee\tPhysical\tCommon\tStarter|Slot\t150\t10\t20\t1.0\t2.0\t1\t0\tNearest\tDefault\t0\ttrue\tHero_Guardian\tIcon_Hero_Guardian\t1\n";
 
         private const string EnemyTsv =
             "EnemyId\tNameKey\tEnemyRank\tElementType\tMaxHp\tMoveSpeed\tAttackPower\tArmor\tAbilityTagList\tRewardScore\tPrefabKey\n" +
-            "1101\tenemy_shadow\tNormal\tDark\t25\t1.0\t3\t5\tWalker\t10\tEnemy_Shadow\n";
+            "1101\tenemy_shadow\tNormal\tDark\t25\t1.0\t3\t5\tWalker\t10\tEnemy_Shadow\n" +
+            "1102\tenemy_runner\tNormal\tDark\t999\t100.0\t10\t0\tWalker\t10\tEnemy_Runner\n";
 
         private const string CombatSlotTsv =
             "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "1001\t0\tFront\t1\tMelee|Ranged\t2001\t1\tSlot_Front_01\tTRUE\n";
+            "1001\t0\tFront\t1\tMelee|Ranged\t2001\t1001\tSlot_Front_01\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

@@ -67,8 +67,8 @@ public sealed class GameFlowControllerTests
         Assert.That(controller.CompleteNightDefense(DefenseOutcome.Victory, 100, 1), Is.True);
         Assert.That(context.GameProgress.CurrentState.Value, Is.EqualTo(GameState.NightDefenseResult));
         Assert.That(context.NightDefenseProgress.IsDefenseActive.Value, Is.False);
-        Assert.That(context.GameProgress.HighestClearedDefenseSessionId.Value, Is.EqualTo(1));
-        Assert.That(context.GameProgress.CurrentDefenseSessionId.Value, Is.EqualTo(2));
+        Assert.That(context.GameProgress.HighestClearedDefenseSessionId.Value, Is.EqualTo(101));
+        Assert.That(context.GameProgress.CurrentDefenseSessionId.Value, Is.EqualTo(102));
         Assert.That(context.GameProgress.CompletedDayCount.Value, Is.EqualTo(1));
         Assert.That(context.RewardProgress.PendingGold, Is.EqualTo(100));
         Assert.That(context.RewardProgress.PendingGem, Is.EqualTo(1));
