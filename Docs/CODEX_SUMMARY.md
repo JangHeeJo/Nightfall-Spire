@@ -1893,6 +1893,35 @@ Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 �
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 35: 일반 몬스터 웨이브 물량 20~30마리 기준으로 조정
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/05_Data/Tables/WaveData.tsv`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `IsBossWave = FALSE`인 일반 몬스터 스폰 행의 `Count`를 20~30 범위로 올렸다.
+- 초반 웨이브는 20~24마리, 뒤쪽 웨이브 그룹은 26~30마리까지 증가하도록 배치했다.
+- 보스 웨이브의 보스 1마리 + 엘리트 2마리 구성은 그대로 유지했다.
+- 스폰 간격도 기존 소규모 테스트 값에서 대량 스폰에 맞게 조금 조정했다.
+
+### 왜 이렇게 바꿨는지
+
+현재 전투는 2분 안에 일반 스폰 이벤트와 보스 스폰 이벤트가 진행되는 구조다.
+기존 일반 몬스터 수량은 4~10마리라서 실제 모바일 디펜스 전투 밀도와 맞지 않았다.
+
+그래서 일반 웨이브 하나가 화면 압박을 만들 수 있도록 20~30마리 기준으로 올렸다.
+이후 몬스터 이동속도, 공격속도, 경험치 지급량, 카드 드래프트 타이밍과 함께 세부 밸런싱하면 된다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 36: BattleSceneRoot 런타임 참조를 인스펙터 연결 방식으로 정리
 
 커밋 예정: `codex/architecture-cleanup`
