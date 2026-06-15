@@ -5,7 +5,7 @@ using System.Collections.Generic;
 // Unity 프리팹 생성과 애니메이션은 이 클래스 밖에서 처리하고, 이 클래스는 전투 규칙 계산만 담당합니다.
 public sealed class CombatRuntimeController
 {
-    private const float EnemyProgressPerSpeed = 0.01f; // MoveSpeed를 PathProgress로 바꾸는 임시 기준값
+    private const float EnemyProgressPerSpeed = 0.025f; // MoveSpeed를 PathProgress로 바꾸는 기준값
     private const float EnemyCastleAttackIntervalSec = 1f; // 성채에 도착한 몬스터가 성채를 공격하는 기본 주기
     private const int MaxAttacksPerSlotPerTick = 8; // 큰 deltaSeconds가 들어와도 한 Tick에서 공격이 폭주하지 않게 막는 상한
     private const int MaxCastleAttacksPerEnemyPerTick = 4; // 큰 deltaSeconds가 들어와도 한 Tick에서 성채 공격이 폭주하지 않게 막는 상한

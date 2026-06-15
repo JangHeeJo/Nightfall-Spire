@@ -106,6 +106,31 @@
 - `dotnet build "Nightfall Spire.sln" /clp:Summary /v:minimal` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 39: 몬스터 이동 속도와 라인 겹침 표시 폭 조정
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 몬스터 이동 진행도 변환값을 `0.01`에서 `0.025`로 올렸다.
+- 같은 라인에 있는 몬스터들의 Y축 표시 간격을 `0.06`에서 `0.12`로 넓혔다.
+
+### 왜 이렇게 바꿨는지
+
+기존 이동 속도는 전투 화면에서 몬스터가 성채로 압박해 오는 느낌이 약했다.
+이동 변환값을 올려 웨이브가 더 빠르게 전진하게 만들고, Y축 표시 간격을 넓혀 같은 라인 몬스터가 뭉쳐 보이는 문제를 줄였다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln" /clp:Summary /v:minimal` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 36: 전투 몬스터 프리팹 생성 연결
 
 커밋 예정: `codex/architecture-cleanup`
