@@ -131,6 +131,31 @@
 - `dotnet build "Nightfall Spire.sln" /clp:Summary /v:minimal` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 40: 몬스터 이동속도 테이블 기준화
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/05_Data/Tables/EnemyData.tsv`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `EnemyData.tsv`의 모든 몬스터 `MoveSpeed` 기본값을 `0.10`으로 맞췄다.
+- 전투 런타임의 이동 변환값을 `1`로 바꿔서 테이블의 `MoveSpeed`가 초당 진행도로 바로 쓰이게 했다.
+
+### 왜 이렇게 바꿨는지
+
+몬스터 이동속도는 코드 상수로 계속 조정하면 몬스터별 밸런싱이 어려워진다.
+이제 기본 이동속도는 테이블에서 관리하고, 이후 일반 몬스터/비행 몬스터/엘리트/보스마다 `MoveSpeed`만 다르게 주면 된다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln" /clp:Summary /v:minimal` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 36: 전투 몬스터 프리팹 생성 연결
 
 커밋 예정: `codex/architecture-cleanup`
