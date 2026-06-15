@@ -169,6 +169,12 @@ public sealed class GameContentServiceTests
             return defenseSessions.TryGet(sessionId, out row);
         }
 
+        public bool TryGetFirstDefenseSession(out DefenseSessionDataRow row)
+        {
+            row = defenseSessions.Rows.Count > 0 ? defenseSessions.Rows[0] : null;
+            return row != null;
+        }
+
         public bool TryGetWaveGroup(int waveGroupId, out WaveGroupDataRow row)
         {
             return waveGroups.TryGet(waveGroupId, out row);

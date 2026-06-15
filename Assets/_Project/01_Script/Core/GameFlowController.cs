@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 // 낮 준비와 밤 방어전 사이의 큰 흐름을 제어하는 애플리케이션 계층 컨트롤러입니다.
 // 전투 계산이나 보상 계산은 하지 않고, 이미 결정된 결과를 기준으로 상태 전환 순서만 보장합니다.
@@ -55,12 +56,16 @@ public sealed class GameFlowController
         bool ready = context.GameProgress.ChangeState(GameState.NightDefenseReady);
 
         if (!ready)
-            return false;
-
-        bool sessionStarted = TryStartNightDefenseSession();
-
-        if (!sessionStarted)
         {
+            Debug.LogError($"[GameFlowController] 밤 방어 준비 상태 전환 실패. CurrentState:{context.GameProgress.CurrentState.Value}");
+            return false;
+        }
+
+        NightDefenseStartResult sessionStartResult = TryStartNightDefenseSession();
+
+        if (!sessionStartResult.IsSuccess)
+        {
+            Debug.LogError($"[GameFlowController] 밤 방어 세션 시작 실패. Reason:{sessionStartResult.FailureReason}, SessionId:{context.GameProgress.CurrentDefenseSessionId.Value}, Floor:{context.DayProgress.CitadelFloorCount.Value}");
             context.GameProgress.ChangeState(GameState.DayPreparationLoading);
             return false;
         }
@@ -70,6 +75,7 @@ public sealed class GameFlowController
         if (playing)
             return true;
 
+        Debug.LogError($"[GameFlowController] 밤 방어 플레이 상태 전환 실패. CurrentState:{context.GameProgress.CurrentState.Value}, SessionId:{context.NightDefenseProgress.CurrentDefenseSessionId.Value}");
         context.NightDefenseProgress.EndDefenseSession(DefenseOutcome.Abandoned);
         context.DraftProgress.ResetForNewDefenseSession();
         context.CombatRuntimeModifierSet.Clear();
@@ -182,19 +188,19 @@ public sealed class GameFlowController
     }
 
     // 테이블 서비스가 있으면 세션 입장 조건을 검증하고, 없으면 테스트와 초기 부트스트랩용 최소 시작만 수행합니다.
-    private bool TryStartNightDefenseSession()
+    private NightDefenseStartResult TryStartNightDefenseSession()
     {
         if (context.NightDefenseSessionService != null)
-        {
-            NightDefenseStartResult startResult = context.NightDefenseSessionService.TryStartCurrentSession();
-            return startResult.IsSuccess;
-        }
+            return context.NightDefenseSessionService.TryStartCurrentSession();
 
         int defenseSessionId = context.GameProgress.CurrentDefenseSessionId.Value;
 
         context.DraftProgress.ResetForNewDefenseSession();
         context.CombatRuntimeModifierSet.Clear();
         context.NightDefenseProgress.BeginDefenseSession(defenseSessionId);
-        return context.NightDefenseProgress.IsDefenseActive.Value;
+
+        return context.NightDefenseProgress.IsDefenseActive.Value
+            ? NightDefenseStartResult.Success(null, null)
+            : NightDefenseStartResult.Fail(NightDefenseFailureReason.SessionNotActive);
     }
 }

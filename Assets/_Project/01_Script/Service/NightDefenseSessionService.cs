@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 // 밤 방어 세션 시작과 웨이브 진행 규칙을 담당합니다.
 public sealed class NightDefenseSessionService
@@ -22,7 +23,10 @@ public sealed class NightDefenseSessionService
         int sessionId = context.GameProgress.CurrentDefenseSessionId.Value;
 
         if (!dataSource.TryGetDefenseSession(sessionId, out DefenseSessionDataRow sessionRow))
-            return NightDefenseStartResult.Fail(NightDefenseFailureReason.SessionNotFound);
+        {
+            if (!TryRepairMissingCurrentSession(sessionId, out sessionRow))
+                return NightDefenseStartResult.Fail(NightDefenseFailureReason.SessionNotFound);
+        }
 
         if (context.DayProgress.CitadelFloorCount.Value < sessionRow.RequiredFloorId)
             return NightDefenseStartResult.Fail(NightDefenseFailureReason.RequiredFloorLocked);
@@ -34,6 +38,20 @@ public sealed class NightDefenseSessionService
         context.NightDefenseProgress.BeginDefenseSession(sessionRow.SessionId);
 
         return NightDefenseStartResult.Success(sessionRow, waveGroupRow);
+    }
+
+    // 예전 저장 데이터가 현재 테이블에 없는 세션 ID를 들고 있으면 첫 세션으로 되돌립니다.
+    private bool TryRepairMissingCurrentSession(int missingSessionId, out DefenseSessionDataRow sessionRow)
+    {
+        sessionRow = null;
+
+        if (!dataSource.TryGetFirstDefenseSession(out DefenseSessionDataRow firstSessionRow) || firstSessionRow == null)
+            return false;
+
+        context.GameProgress.SetCurrentDefenseSession(firstSessionRow.SessionId);
+        sessionRow = firstSessionRow;
+        Debug.LogWarning($"[NightDefenseSessionService] 저장된 방어 세션 {missingSessionId}를 테이블에서 찾지 못해 첫 세션 {firstSessionRow.SessionId}로 보정했습니다.");
+        return true;
     }
 
     // 다음 웨이브로 진행하고 해당 웨이브의 스폰 Row를 반환합니다.

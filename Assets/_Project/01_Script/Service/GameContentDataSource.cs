@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public interface INightDefenseDataSource
 {
     bool TryGetDefenseSession(int sessionId, out DefenseSessionDataRow row);
+    bool TryGetFirstDefenseSession(out DefenseSessionDataRow row);
     bool TryGetWaveGroup(int waveGroupId, out WaveGroupDataRow row);
     IReadOnlyList<WaveDataRow> GetWaveRows(int waveGroupId, int waveIndex);
 }
@@ -76,6 +77,21 @@ public sealed class GameContentDataSource : INightDefenseDataSource, IDraftDataS
     {
         row = null;
         return dataTableManager?.DefenseSessionData?.TryGet(sessionId, out row) == true;
+    }
+
+    // 저장 데이터의 세션 ID가 오래되어 깨졌을 때 복구 기준으로 쓸 첫 방어 세션 Row를 조회합니다.
+    public bool TryGetFirstDefenseSession(out DefenseSessionDataRow row)
+    {
+        row = null;
+
+        if (dataTableManager?.DefenseSessionData?.Rows == null ||
+            dataTableManager.DefenseSessionData.Rows.Count == 0)
+        {
+            return false;
+        }
+
+        row = dataTableManager.DefenseSessionData.Rows[0];
+        return row != null;
     }
 
     // 웨이브 그룹 Row를 조회합니다.

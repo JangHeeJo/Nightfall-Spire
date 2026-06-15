@@ -40,6 +40,11 @@
 ### 변경된 파일
 
 - `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
+- `Assets/_Project/01_Script/Core/GameFlowController.cs`
+- `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
+- `Assets/_Project/99_Test/EditMode/Service/NightDefenseRuntimeControllerTests.cs`
+- `Assets/_Project/99_Test/EditMode/Service/GameContentServiceTests.cs`
 - `Docs/CODEX_SUMMARY.md`
 
 ### 주요 변경
@@ -47,12 +52,18 @@
 - `BattleSceneRoot`가 시작될 때 현재 BattleScene 안에서 `BattleStaticUIRoot`, `BattleDynamicUIRoot`, `NightDefenseBattleRuntime`, `UnityNightDefenseSpawnSink`를 자동으로 찾도록 했다.
 - 씬 인스펙터에서 `NightDefenseBattleRuntime`이나 `UnityNightDefenseSpawnSink` 참조가 비어 있으면 `BattleSceneRoot`에 런타임 컴포넌트를 자동 생성하게 했다.
 - `DontDestroyOnLoad` 쪽 오브젝트를 잘못 잡지 않도록 현재 씬에 있는 컴포넌트만 대상으로 찾는다.
+- 기존 저장 데이터의 현재 방어 세션 ID가 현재 테이블에 없으면 첫 방어 세션으로 보정하게 했다.
+- `GameFlowController`가 밤 방어 시작 실패 시 상태 전환 실패인지, 세션 데이터 실패인지, 플레이 상태 전환 실패인지 콘솔에 구체적으로 남기게 했다.
+- `INightDefenseDataSource` 확장에 맞춰 EditMode 테스트의 가짜 데이터 소스도 같은 계약을 구현하게 했다.
 
 ### 왜 이렇게 바꿨는지
 
 로비의 `Spire_Popup(Clone) > FightButton_Battle` 클릭 후 BattleScene은 정상 로드됐지만, `BattleSceneRoot`의 `battleRuntime`과 `spawnSink` 참조가 비어 있어 전투 런타임이 시작되지 않았다.
 전투 진입은 핵심 플로우라 씬 참조 하나가 빠졌다고 바로 막히면 안 된다.
 그래서 씬 세팅이 비어 있어도 코드에서 현재 씬 기준으로 복구하고, 표시 어댑터가 없으면 임시 런타임 어댑터를 자동 생성하도록 보강했다.
+
+그 다음 단계에서 `밤 방어 세션 시작 실패`가 발생할 수 있었는데, 이 경우는 저장 데이터가 오래되어 `CurrentDefenseSessionId`가 현재 `DefenseSessionData.tsv`에 없는 값을 들고 있을 때 발생한다.
+현재 테이블은 101번 세션부터 시작하므로, 오래된 저장값이 들어와도 첫 세션으로 복구해 테스트 전투가 막히지 않게 했다.
 
 ### 검증
 
