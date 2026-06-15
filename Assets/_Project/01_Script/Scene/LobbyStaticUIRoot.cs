@@ -13,6 +13,7 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
     private const string HeroCommandKey = "BottomButton_Hero"; // 영웅 목록 하단 탭
     private const string SpireCommandKey = "BottomButton_Spire"; // 성채/스파이어 하단 탭
     private const string BattleCommandKey = "BottomButton_Battle"; // 전투 시작 하단 탭
+    private const string FightCommandKey = "FightButton_Battle"; // 중앙 FIGHT 버튼
     private const string ShopCommandKey = "BottomButton_Shop"; // 상점 하단 탭
 
     [FormerlySerializedAs("currencyHud")]
@@ -162,7 +163,9 @@ public sealed class LobbyStaticUIRoot : MonoBehaviour
         lobbyScreen.SetCommandUnlocked(MagicCommandKey, IsFeatureUnlocked(unlockService, MagicCommandKey));
         lobbyScreen.SetCommandUnlocked(HeroCommandKey, IsFeatureUnlocked(unlockService, HeroCommandKey));
         lobbyScreen.SetCommandUnlocked(SpireCommandKey, IsFeatureUnlocked(unlockService, SpireCommandKey));
-        lobbyScreen.SetCommandUnlocked(BattleCommandKey, IsFeatureUnlocked(unlockService, BattleCommandKey));
+        bool isBattleUnlocked = IsFeatureUnlocked(unlockService, BattleCommandKey);
+        lobbyScreen.SetCommandUnlocked(BattleCommandKey, isBattleUnlocked);
+        lobbyScreen.SetCommandUnlocked(FightCommandKey, isBattleUnlocked);
         lobbyScreen.SetCommandUnlocked(ShopCommandKey, IsFeatureUnlocked(unlockService, ShopCommandKey));
     }
 

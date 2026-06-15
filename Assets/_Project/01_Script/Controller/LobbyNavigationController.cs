@@ -8,6 +8,7 @@ using UnityEngine;
 public sealed class LobbyNavigationController : IDisposable
 {
     private const string BattleCommandKey = "BottomButton_Battle"; // 하단 Battle 버튼 기본 명령 키
+    private const string FightCommandKey = "FightButton_Battle"; // 중앙 FIGHT 버튼 기본 명령 키
 
     private readonly IReadOnlyList<ILobbyCommandRoute> commandRoutes; // 인스펙터에서 조립된 로비 버튼 라우트 목록
     private readonly BasePopup defaultSpirePopup; // 로비 Content 슬롯이 비었을 때 자동으로 열 기본 팝업
@@ -121,6 +122,7 @@ public sealed class LobbyNavigationController : IDisposable
     {
         defaultRouteByCommandKey.Clear();
         defaultRouteByCommandKey.Add(BattleCommandKey, new DefaultLobbyCommandRoute(BattleCommandKey, LobbyCommandAction.LoadNightDefense));
+        defaultRouteByCommandKey.Add(FightCommandKey, new DefaultLobbyCommandRoute(FightCommandKey, LobbyCommandAction.LoadNightDefense));
     }
 
     // 명령 키에 맞는 라우트를 찾습니다.

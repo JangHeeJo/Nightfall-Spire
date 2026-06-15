@@ -1588,3 +1588,32 @@ Unity 쪽은 `IBattleCombatViewSink` 뒤에 붙기 때문에, 이후 몬스터 �
 
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
+## 완료된 작업 33: 중앙 FIGHT 버튼 전투 진입 명령 연결 보강
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Controller/LobbyNavigationController.cs`
+- `Assets/_Project/01_Script/Scene/LobbyStaticUIRoot.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- `FightButton_Battle`도 전투 진입 기본 명령으로 등록했다.
+- 씬 라우트 배열이 누락되거나 깨져도 `FightButton_Battle`은 `LoadNightDefense`로 처리된다.
+- 전투 해금 상태를 하단 `BottomButton_Battle`과 중앙 `FightButton_Battle`에 같이 적용하도록 바꿨다.
+
+### 왜 이렇게 바꿨는지
+
+현재 `LobbyScene.unity`의 명령 라우트에는 중앙 FIGHT 버튼이 `FightButton_Battle`로 저장되어 있다.
+하지만 코드 기본 라우트와 해금 상태 보강은 `BottomButton_Battle`만 기준으로 잡고 있었다.
+
+전투 시작은 하단 Battle 탭과 중앙 FIGHT 버튼이 같은 게임 플로우를 타야 한다.
+그래서 두 버튼 이름을 같은 전투 진입 명령으로 취급하도록 맞췄다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
