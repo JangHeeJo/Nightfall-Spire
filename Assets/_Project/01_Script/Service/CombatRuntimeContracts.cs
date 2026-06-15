@@ -16,7 +16,7 @@ public enum CombatEnemyDespawnReason
 {
     None, // 제거 사유 없음
     Defeated, // 영웅 공격으로 처치됨
-    ReachedGoal, // 성채에 도달해 피해를 주고 제거됨
+    ReachedGoal, // 성채에 도달한 뒤 전투 표시 정리가 필요할 때 사용함
     Reset // 전투 종료나 씬 정리로 제거됨
 }
 
@@ -25,7 +25,7 @@ public enum CombatEnemyLifecycleState
 {
     Spawned, // 전투 런타임에 막 등록됨
     Moving, // 성채를 향해 이동 중
-    ReachedGoal, // 성채 피해 지점에 도달함
+    AttackingCastle, // 성채 앞에 도착해 공격 중
     Defeated // 체력이 0이 되어 처치됨
 }
 
@@ -95,12 +95,13 @@ public sealed class CombatEnemyRuntimeState
     public int MaxHp { get; } // 최대 체력
     public int CurrentHp { get; private set; } // 현재 체력
     public int Armor { get; } // 방어력
-    public int AttackPower { get; } // 성채에 도달했을 때 줄 피해량
+    public int AttackPower { get; } // 성채 공격 1회당 피해량
     public float MoveSpeed { get; } // 이동 속도
     public float PathProgress { get; private set; } // 방어 목표 지점까지의 진행도
+    public float CastleAttackTimer { get; private set; } // 성채 공격 주기 누적 시간
     public CombatEnemyLifecycleState LifecycleState { get; private set; } // 현재 적 런타임 상태
     public bool IsAlive => CurrentHp > 0; // 적 생존 여부
-    public bool HasReachedGoal => LifecycleState == CombatEnemyLifecycleState.ReachedGoal; // 성채 피해 지점에 도달했는지 여부
+    public bool IsAttackingCastle => LifecycleState == CombatEnemyLifecycleState.AttackingCastle; // 성채를 공격 중인지 여부
 
     // 적 런타임 상태를 만듭니다.
     public CombatEnemyRuntimeState(int runtimeId, int enemyId, EnemyRank enemyRank, ElementType elementType, int laneId, int spawnOrder, int maxHp, int armor, int attackPower, float moveSpeed)
@@ -120,10 +121,13 @@ public sealed class CombatEnemyRuntimeState
     }
 
     // 적 이동 진행도를 올립니다.
-    public void Advance(float deltaSeconds, float progressPerSpeed)
+    public bool Advance(float deltaSeconds, float progressPerSpeed)
     {
         if (deltaSeconds <= 0f || progressPerSpeed <= 0f || !IsAlive)
-            return;
+            return false;
+
+        if (LifecycleState == CombatEnemyLifecycleState.AttackingCastle)
+            return false;
 
         PathProgress += MoveSpeed * progressPerSpeed * deltaSeconds;
         LifecycleState = CombatEnemyLifecycleState.Moving;
@@ -132,7 +136,34 @@ public sealed class CombatEnemyRuntimeState
             PathProgress = 1f;
 
         if (PathProgress >= 1f)
-            LifecycleState = CombatEnemyLifecycleState.ReachedGoal;
+        {
+            LifecycleState = CombatEnemyLifecycleState.AttackingCastle;
+            CastleAttackTimer = 0f;
+            return true;
+        }
+
+        return false;
+    }
+
+    // 성채 앞에 붙은 적의 공격 타이머를 누적합니다.
+    public void AddCastleAttackTime(float deltaSeconds)
+    {
+        if (deltaSeconds <= 0f || !IsAlive || !IsAttackingCastle)
+            return;
+
+        CastleAttackTimer += deltaSeconds;
+    }
+
+    // 성채 공격 1회가 실행된 뒤 공격 주기만큼 타이머를 소모합니다.
+    public void ConsumeCastleAttackTime(float attackIntervalSec)
+    {
+        if (attackIntervalSec <= 0f)
+            return;
+
+        CastleAttackTimer -= attackIntervalSec;
+
+        if (CastleAttackTimer < 0f)
+            CastleAttackTimer = 0f;
     }
 
     // 피해를 적용하고 실제 감소한 체력을 반환합니다.
@@ -190,8 +221,8 @@ public readonly struct CombatRuntimeTickResult
 {
     public int AttackCount { get; } // 이번 Tick에서 발생한 공격 횟수
     public int DefeatedEnemyCount { get; } // 이번 Tick에서 처치된 적 수
-    public int ReachedGoalEnemyCount { get; } // 이번 Tick에서 성채에 도달한 적 수
-    public int CastleDamage { get; } // 이번 Tick에서 성채가 받은 총 피해량
+    public int ReachedGoalEnemyCount { get; } // 이번 Tick에서 새로 성채 앞에 도착한 적 수
+    public int CastleDamage { get; } // 이번 Tick에서 성채 공격으로 받은 총 피해량
     public int AliveEnemyCount { get; } // Tick 종료 후 살아 있는 적 수
     public int ActiveHeroSlotCount { get; } // 공격 가능한 영웅 슬롯 수
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 // WaveDataRow 목록을 실제 스폰 시간표로 변환합니다.
 public sealed class NightDefenseWavePlanBuilder
 {
+    private const float SameLaneMinimumSpawnIntervalSec = 0.35f; // 같은 라인에서 몬스터가 한 점에 겹쳐 나오지 않게 보장하는 최소 스폰 간격
+
     // 웨이브 Row 목록을 검증하고 시간순 스폰 계획을 만듭니다.
     public bool TryBuild(
         int waveIndex,
@@ -36,6 +38,7 @@ public sealed class NightDefenseWavePlanBuilder
         }
 
         spawnEvents.Sort(CompareSpawnEvent);
+        ApplySameLaneSpawnSpacing(spawnEvents);
         plan = new NightDefenseWavePlan(waveIndex, isBossWave, draftAfterWave, isLastWave, spawnEvents);
         return plan.TotalSpawnCount > 0;
     }
@@ -62,5 +65,41 @@ public sealed class NightDefenseWavePlanBuilder
             return timeCompare;
 
         return left.SpawnOrder.CompareTo(right.SpawnOrder);
+    }
+
+    // 테이블에서 같은 라인과 같은 시간에 여러 적이 잡혀도 실제 스폰 계획에서는 최소 간격을 벌립니다.
+    private static void ApplySameLaneSpawnSpacing(List<NightDefenseSpawnEvent> spawnEvents)
+    {
+        Dictionary<int, float> lastSpawnTimeByLane = new Dictionary<int, float>();
+
+        for (int i = 0; i < spawnEvents.Count; i++)
+        {
+            NightDefenseSpawnEvent spawnEvent = spawnEvents[i];
+
+            if (!lastSpawnTimeByLane.TryGetValue(spawnEvent.LaneId, out float lastSpawnTime))
+            {
+                lastSpawnTimeByLane[spawnEvent.LaneId] = spawnEvent.SpawnTimeSec;
+                continue;
+            }
+
+            float minAllowedTime = lastSpawnTime + SameLaneMinimumSpawnIntervalSec;
+
+            if (spawnEvent.SpawnTimeSec >= minAllowedTime)
+            {
+                lastSpawnTimeByLane[spawnEvent.LaneId] = spawnEvent.SpawnTimeSec;
+                continue;
+            }
+
+            spawnEvents[i] = new NightDefenseSpawnEvent(
+                spawnEvent.WaveRowId,
+                spawnEvent.EnemyId,
+                spawnEvent.LaneId,
+                spawnEvent.SpawnOrder,
+                minAllowedTime);
+
+            lastSpawnTimeByLane[spawnEvent.LaneId] = minAllowedTime;
+        }
+
+        spawnEvents.Sort(CompareSpawnEvent);
     }
 }

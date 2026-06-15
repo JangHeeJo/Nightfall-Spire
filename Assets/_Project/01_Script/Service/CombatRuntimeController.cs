@@ -6,7 +6,9 @@ using System.Collections.Generic;
 public sealed class CombatRuntimeController
 {
     private const float EnemyProgressPerSpeed = 0.01f; // MoveSpeed를 PathProgress로 바꾸는 임시 기준값
+    private const float EnemyCastleAttackIntervalSec = 1f; // 성채에 도착한 몬스터가 성채를 공격하는 기본 주기
     private const int MaxAttacksPerSlotPerTick = 8; // 큰 deltaSeconds가 들어와도 한 Tick에서 공격이 폭주하지 않게 막는 상한
+    private const int MaxCastleAttacksPerEnemyPerTick = 4; // 큰 deltaSeconds가 들어와도 한 Tick에서 성채 공격이 폭주하지 않게 막는 상한
 
     private readonly ICombatDataSource dataSource; // 영웅, 적, 슬롯 테이블 조회 계약
     private readonly CombatSlotProgress combatSlotProgress; // 현재 해금/배치된 전투 슬롯 상태
@@ -101,8 +103,8 @@ public sealed class CombatRuntimeController
         if (deltaSeconds <= 0f)
             return CreateTickResult(0, 0, 0, 0);
 
-        AdvanceEnemies(deltaSeconds);
-        RemoveEnemiesReachedGoal(out int reachedGoalCount, out int castleDamage);
+        int reachedGoalCount = AdvanceEnemies(deltaSeconds);
+        int castleDamage = ResolveCastleAttacks(deltaSeconds);
 
         int attackCount = 0;
         int defeatedCount = 0;
@@ -178,11 +180,18 @@ public sealed class CombatRuntimeController
             attackSpeed);
     }
 
-    // 살아 있는 적의 이동 진행도를 갱신합니다.
-    private void AdvanceEnemies(float deltaSeconds)
+    // 살아 있는 적의 이동 진행도를 갱신하고, 이번 Tick에 성채 앞에 도착한 적 수를 반환합니다.
+    private int AdvanceEnemies(float deltaSeconds)
     {
+        int reachedGoalCount = 0;
+
         for (int i = 0; i < enemies.Count; i++)
-            enemies[i].Advance(deltaSeconds, EnemyProgressPerSpeed);
+        {
+            if (enemies[i].Advance(deltaSeconds, EnemyProgressPerSpeed))
+                reachedGoalCount += 1;
+        }
+
+        return reachedGoalCount;
     }
 
     // 처치된 적을 런타임 목록에서 제거합니다.
@@ -198,24 +207,30 @@ public sealed class CombatRuntimeController
         }
     }
 
-    // 성채까지 도달한 적을 제거하고 성채 피해량으로 변환합니다.
-    private void RemoveEnemiesReachedGoal(out int reachedGoalCount, out int castleDamage)
+    // 성채 앞에 도착한 적들이 공격 주기마다 성채 피해를 발생시킵니다.
+    private int ResolveCastleAttacks(float deltaSeconds)
     {
-        reachedGoalCount = 0;
-        castleDamage = 0;
+        int castleDamage = 0;
 
-        for (int i = enemies.Count - 1; i >= 0; i--)
+        for (int i = 0; i < enemies.Count; i++)
         {
             CombatEnemyRuntimeState enemy = enemies[i];
 
-            if (!enemy.HasReachedGoal)
+            if (!enemy.IsAttackingCastle)
                 continue;
 
-            reachedGoalCount += 1;
-            castleDamage += Math.Max(1, enemy.AttackPower);
-            despawnResults.Add(new CombatEnemyDespawnResult(enemy, CombatEnemyDespawnReason.ReachedGoal));
-            enemies.RemoveAt(i);
+            enemy.AddCastleAttackTime(deltaSeconds);
+            int attackCount = 0;
+
+            while (enemy.CastleAttackTimer >= EnemyCastleAttackIntervalSec && attackCount < MaxCastleAttacksPerEnemyPerTick)
+            {
+                castleDamage += Math.Max(1, enemy.AttackPower);
+                enemy.ConsumeCastleAttackTime(EnemyCastleAttackIntervalSec);
+                attackCount += 1;
+            }
         }
+
+        return castleDamage;
     }
 
     // 현재 상태를 Tick 결과로 요약합니다.

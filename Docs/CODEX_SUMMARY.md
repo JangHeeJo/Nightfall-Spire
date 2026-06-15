@@ -70,6 +70,42 @@
 - `dotnet build "Nightfall Spire.sln"` 통과.
 - 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
 
+## 완료된 작업 38: 성채 공격형 몬스터 흐름과 스폰 겹침 완화
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/BattleRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/NightDefenseWavePlanBuilder.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 몬스터가 성채에 도착하자마자 제거되지 않도록 전투 규칙을 바꿨다.
+- 몬스터 상태를 `AttackingCastle`로 전환하고, 성채 앞에서 공격 타이머를 돌리게 했다.
+- 성채에 붙은 몬스터는 살아 있는 적으로 남기 때문에 영웅 타겟팅 대상에 계속 포함된다.
+- 성채 피해는 도착 순간 1회 피해가 아니라, `EnemyCastleAttackIntervalSec` 주기마다 반복 피해로 계산된다.
+- 같은 라인에서 같은 시간에 스폰되는 몬스터는 `NightDefenseWavePlanBuilder`가 최소 스폰 간격을 보정한다.
+- 표시 계층에서는 같은 라인의 몬스터가 완전히 겹쳐 보이지 않도록 진행도와 Y 위치를 살짝 벌린다.
+
+### 왜 이렇게 바꿨는지
+
+이 게임의 전투 목표는 몬스터가 성채를 부수고, 영웅이 그 웨이브를 막는 구조다.
+따라서 `성채 도착 = 제거`로 처리하면 몬스터가 실제로 성채를 공격하는 전투가 성립하지 않는다.
+도착 몬스터를 전장에 남기고 반복 공격 상태로 유지해야, 성채 HP와 영웅 방어가 게임의 핵심 압박으로 작동한다.
+
+스폰도 같은 라인 같은 위치에 여러 마리가 동시에 찍히면 전투 판독성이 떨어진다.
+테이블 단계에서 최소 간격을 보장하고, 표시 단계에서 약간의 위치 보정을 넣어 웨이브가 한 덩어리처럼 뭉쳐 보이는 문제를 줄였다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln" /clp:Summary /v:minimal` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 36: 전투 몬스터 프리팹 생성 연결
 
 커밋 예정: `codex/architecture-cleanup`

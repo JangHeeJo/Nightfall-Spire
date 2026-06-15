@@ -73,7 +73,7 @@ public readonly struct BattleRuntimeTickResult
     public int SpawnedEnemyCount { get; } // 이번 Tick에서 스폰된 적 수
     public int AttackCount { get; } // 이번 Tick에서 발생한 공격 횟수
     public int DefeatedEnemyCount { get; } // 이번 Tick에서 처치된 적 수
-    public int CastleDamage { get; } // 이번 Tick에서 성채가 받은 피해량
+    public int CastleDamage { get; } // 이번 Tick에서 성채 공격으로 받은 피해량
     public int AliveEnemyCount { get; } // Tick 이후 남은 적 수
 
     // Tick 요약 값을 보관합니다.

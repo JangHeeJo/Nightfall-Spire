@@ -11,6 +11,8 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     [SerializeField] private BattleLanePath[] lanePaths = Array.Empty<BattleLanePath>(); // LaneId별 몬스터 시작 위치와 성채 도착 위치입니다.
     [SerializeField] private int preloadCountPerPrefab = 3; // 프리팹별로 미리 만들어둘 풀 오브젝트 수입니다.
     [SerializeField] private float despawnDelaySeconds = 0.25f; // 처치나 성채 도착 상태를 짧게 보여준 뒤 풀로 반납하기까지의 시간입니다.
+    [SerializeField] private float sameLaneVisualSpacing = 0.04f; // 같은 라인 몬스터가 완전히 겹치지 않도록 진행도에서 뒤로 밀어낼 간격입니다.
+    [SerializeField] private float sameLaneVisualYOffset = 0.06f; // 같은 라인 몬스터가 겹쳐 보이지 않도록 위아래로 살짝 벌릴 간격입니다.
     [SerializeField] private bool logRuntimeEvents = true; // 전투 표시 흐름을 확인하기 위한 로그 출력 여부입니다.
 
     private readonly Dictionary<string, GameObject> prefabByKey = new(); // PrefabKey로 실제 프리팹을 빠르게 찾기 위한 캐시입니다.
@@ -83,8 +85,10 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
             SyncEnemyTransform(activeEnemy, enemy);
 
-            if (activeEnemy.State != EnemyViewState.Moving)
-                activeEnemy.ChangeState(EnemyViewState.Moving);
+            EnemyViewState nextState = enemy.IsAttackingCastle ? EnemyViewState.ReachedGoal : EnemyViewState.Moving;
+
+            if (activeEnemy.State != nextState)
+                activeEnemy.ChangeState(nextState);
         }
     }
 
@@ -116,9 +120,6 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
         if (!activeEnemiesByRuntimeId.TryGetValue(enemy.RuntimeId, out ActiveEnemyView activeEnemy))
             return;
-
-        if (reason == CombatEnemyDespawnReason.ReachedGoal)
-            SyncEnemyTransform(activeEnemy, enemy);
 
         activeEnemiesByRuntimeId.Remove(enemy.RuntimeId);
         ScheduleReturnToPool(activeEnemy, reason);
@@ -181,12 +182,21 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     }
 
     // 전투 진행률 0~1을 라인의 시작 위치와 도착 위치 사이의 실제 위치로 변환합니다.
-    private static void SyncEnemyTransform(ActiveEnemyView activeEnemy, CombatEnemyRuntimeState enemy)
+    private void SyncEnemyTransform(ActiveEnemyView activeEnemy, CombatEnemyRuntimeState enemy)
     {
         if (activeEnemy.Instance == null)
             return;
 
-        Vector3 position = Vector3.Lerp(activeEnemy.LanePath.StartPosition, activeEnemy.LanePath.GoalPosition, enemy.PathProgress);
+        float visualProgress = enemy.PathProgress;
+
+        if (!enemy.IsAttackingCastle && sameLaneVisualSpacing > 0f)
+            visualProgress = Mathf.Max(0f, visualProgress - enemy.SpawnOrder % 4 * sameLaneVisualSpacing);
+
+        Vector3 position = Vector3.Lerp(activeEnemy.LanePath.StartPosition, activeEnemy.LanePath.GoalPosition, visualProgress);
+
+        if (!enemy.IsAttackingCastle && sameLaneVisualYOffset > 0f)
+            position.y += (enemy.SpawnOrder % 3 - 1) * sameLaneVisualYOffset;
+
         activeEnemy.Instance.transform.position = position;
 
         Vector3 scale = activeEnemy.Instance.transform.localScale;
