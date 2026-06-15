@@ -11,6 +11,7 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     [SerializeField] private BattleLanePath[] lanePaths = Array.Empty<BattleLanePath>(); // LaneId별 몬스터 시작 위치와 성채 도착 위치입니다.
     [SerializeField] private int preloadCountPerPrefab = 3; // 프리팹별로 미리 만들어둘 풀 오브젝트 수입니다.
     [SerializeField] private float despawnDelaySeconds = 0.25f; // 처치나 성채 도착 상태를 짧게 보여준 뒤 풀로 반납하기까지의 시간입니다.
+    [SerializeField] private float animationCrossFadeSeconds = 0.06f; // 공통 Idle/Move/Attack/Hit/Die 상태 전환에 사용할 블렌딩 시간입니다.
     [SerializeField] private float sameLaneVisualSpacing = 0.04f; // 같은 라인 몬스터가 완전히 겹치지 않도록 진행도에서 뒤로 밀어낼 간격입니다.
     [SerializeField] private float sameLaneVisualYOffset = 0.12f; // 같은 라인 몬스터가 겹쳐 보이지 않도록 위아래로 벌릴 간격입니다.
     [SerializeField] private bool logRuntimeEvents = true; // 전투 표시 흐름을 확인하기 위한 로그 출력 여부입니다.
@@ -61,10 +62,10 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         if (!TryCreateEnemyView(enemy, request, out ActiveEnemyView activeEnemy))
             return;
 
-        activeEnemy.ChangeState(EnemyViewState.Spawned);
+        activeEnemy.ChangeState(EnemyViewState.Spawned, enemy.MoveSpeed);
         activeEnemiesByRuntimeId[enemy.RuntimeId] = activeEnemy;
         SyncEnemyTransform(activeEnemy, enemy);
-        activeEnemy.ChangeState(EnemyViewState.Moving);
+        activeEnemy.ChangeState(EnemyViewState.Moving, enemy.MoveSpeed);
 
         if (logRuntimeEvents)
             Debug.Log($"[BattleViewSink] Enemy Spawn Runtime:{enemy.RuntimeId} Enemy:{enemy.EnemyId} Wave:{request.WaveIndex} Lane:{request.LaneId}");
@@ -88,7 +89,7 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
             EnemyViewState nextState = enemy.IsAttackingCastle ? EnemyViewState.ReachedGoal : EnemyViewState.Moving;
 
             if (activeEnemy.State != nextState)
-                activeEnemy.ChangeState(nextState);
+                activeEnemy.ChangeState(nextState, enemy.MoveSpeed);
         }
     }
 
@@ -336,7 +337,9 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         GameObject instance = Instantiate(prefab, enemyLayer);
         instance.name = $"{prefab.name}_Pooled";
         instance.SetActive(false);
-        return new PooledEnemyView(prefabKey, instance, instance.GetComponentInChildren<Animator>(true));
+        Animator animator = instance.GetComponentInChildren<Animator>(true);
+        CombatUnitAnimationPlayer animationPlayer = new CombatUnitAnimationPlayer(animator, animationCrossFadeSeconds);
+        return new PooledEnemyView(prefabKey, instance, animationPlayer);
     }
 
     // PrefabKey별 풀 Stack을 가져오거나 새로 만듭니다.
@@ -376,23 +379,19 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     {
         public string PrefabKey { get; } // 이 오브젝트가 어느 EnemyData.PrefabKey 풀에 속하는지 나타냅니다.
         public GameObject Instance { get; } // 실제 Unity 프리팹 인스턴스입니다.
-        public Animator Animator { get; } // 프리팹 안에 연결된 애니메이터입니다.
+        public CombatUnitAnimationPlayer AnimationPlayer { get; } // 공통 전투 애니메이션 재생기입니다.
 
-        public PooledEnemyView(string prefabKey, GameObject instance, Animator animator)
+        public PooledEnemyView(string prefabKey, GameObject instance, CombatUnitAnimationPlayer animationPlayer)
         {
             PrefabKey = prefabKey;
             Instance = instance;
-            Animator = animator;
+            AnimationPlayer = animationPlayer;
         }
 
         // 풀에서 다시 꺼낼 때 이전 피격/사망 애니메이션 상태가 남지 않게 초기화합니다.
         public void ResetForRent()
         {
-            if (Animator == null)
-                return;
-
-            Animator.Rebind();
-            Animator.Update(0f);
+            AnimationPlayer?.ResetPlayback();
         }
     }
 
@@ -413,37 +412,29 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         }
 
         // 표시 상태를 바꾸고, 프리팹에 Animator가 있으면 공통 파라미터를 조심스럽게 전달합니다.
-        public void ChangeState(EnemyViewState nextState)
+        public void ChangeState(EnemyViewState nextState, float moveSpeed = 1f)
         {
             State = nextState;
 
-            if (PooledEnemy?.Animator == null)
-                return;
-
-            Animator animator = PooledEnemy.Animator;
-
-            if (HasAnimatorParameter(animator, "IsMoving"))
-                animator.SetBool("IsMoving", nextState == EnemyViewState.Moving);
-
-            if (nextState == EnemyViewState.Hit && HasAnimatorParameter(animator, "Hit"))
-                animator.SetTrigger("Hit");
-
-            if (nextState == EnemyViewState.Defeated && HasAnimatorParameter(animator, "Die"))
-                animator.SetTrigger("Die");
-        }
-
-        // 사용하는 프리팹마다 Animator 파라미터가 다를 수 있으므로 존재 여부를 확인한 뒤에만 값을 넣습니다.
-        private static bool HasAnimatorParameter(Animator animator, string parameterName)
-        {
-            AnimatorControllerParameter[] parameters = animator.parameters;
-
-            for (int i = 0; i < parameters.Length; i++)
+            switch (nextState)
             {
-                if (parameters[i].name == parameterName)
-                    return true;
+                case EnemyViewState.Pooled:
+                case EnemyViewState.Spawned:
+                    PooledEnemy?.AnimationPlayer?.PlayIdle();
+                    break;
+                case EnemyViewState.Moving:
+                    PooledEnemy?.AnimationPlayer?.PlayMove(moveSpeed);
+                    break;
+                case EnemyViewState.Hit:
+                    PooledEnemy?.AnimationPlayer?.PlayHit();
+                    break;
+                case EnemyViewState.Defeated:
+                    PooledEnemy?.AnimationPlayer?.PlayDie();
+                    break;
+                case EnemyViewState.ReachedGoal:
+                    PooledEnemy?.AnimationPlayer?.PlayAttack();
+                    break;
             }
-
-            return false;
         }
     }
 

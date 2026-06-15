@@ -35,6 +35,39 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 38: 전투 유닛 공통 애니메이션 재생 규격 추가
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Scene/CombatUnitAnimationState.cs`
+- `Assets/_Project/01_Script/Scene/CombatUnitAnimationPlayer.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Assembly-CSharp.csproj`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 히어로와 몬스터가 공유할 공통 애니메이션 상태 enum을 추가했다.
+- 공통 애니메이션 이름을 `Idle`, `Move`, `Attack`, `Hit`, `Die`로 고정했다.
+- `CombatUnitAnimationPlayer`를 추가해 Animator 상태 재생, CrossFade, MoveSpeed/AttackSpeed 파라미터 반영을 한곳에서 처리하게 했다.
+- `UnityNightDefenseSpawnSink`가 Animator 파라미터를 직접 검사하고 조작하던 코드를 제거했다.
+- 몬스터 표시 상태가 바뀌면 `CombatUnitAnimationPlayer`를 통해 공통 애니메이션 상태만 요청하도록 정리했다.
+
+### 왜 이렇게 바꿨는지
+
+몬스터와 히어로의 애니메이션 이름이 같다면 캐릭터별로 애니메이션 제어 코드를 나누면 안 된다.
+전투 계산 상태와 Animator 재생 규칙을 분리해야 캐릭터가 늘어나도 구조가 무너지지 않는다.
+
+그래서 프리팹에는 기존 Animator를 유지하고, 전투 View 계층에서 한 번 캐시한 Animator를 공통 재생기로 감싸는 방식으로 정리했다.
+새 캐릭터가 추가되어도 `Idle`, `Move`, `Attack`, `Hit`, `Die` 이름만 맞추면 같은 전투 표시 흐름에 붙일 수 있다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 37: 전투 몬스터 풀링과 상태 관리 보강
 
 커밋 예정: `codex/architecture-cleanup`
