@@ -6,7 +6,11 @@ using System.Collections.Generic;
 [Serializable]
 public sealed class SaveData
 {
-    public int Version = 4; // 저장 데이터 버전. 구조 변경이나 마이그레이션 판단에 사용합니다.
+    private const int CurrentVersion = 5; // 현재 코드가 기대하는 저장 데이터 버전
+    private const int FirstDefenseSessionId = 101; // DefenseSessionData.tsv의 첫 테스트 세션
+    private const int StarterHeroId = 1001; // 첫 전투 슬롯에 기본 배치할 영웅
+
+    public int Version = CurrentVersion; // 저장 데이터 버전. 구조 변경이나 마이그레이션 판단에 사용합니다.
 
     public CurrencySaveData Currency = new(); // 골드, 젬 같은 공통 재화 저장 데이터
     public PlayerProgressSaveData Progress = new(); // 현재 방어 세션과 낮/밤 진행 저장 데이터
@@ -46,6 +50,129 @@ public sealed class SaveData
         saveData.HeroCollection.Heroes.Add(new HeroSaveData { HeroId = 1004, Level = 1, IsUnlocked = false });
 
         return saveData;
+    }
+
+    // 오래된 저장 파일을 현재 전투/영웅 구조가 기대하는 최소 상태로 보정합니다.
+    public bool RepairForCurrentVersion()
+    {
+        bool repaired = false;
+
+        if (Version < CurrentVersion)
+        {
+            Version = CurrentVersion;
+            repaired = true;
+        }
+
+        Currency ??= new CurrencySaveData();
+        Progress ??= new PlayerProgressSaveData();
+        DayCycle ??= new DayCycleSaveData();
+        CombatSlot ??= new CombatSlotSaveDataContainer();
+        HeroCollection ??= new HeroCollectionSaveData();
+        CombatSlot.Slots ??= new List<CombatSlotSaveData>();
+        HeroCollection.Heroes ??= new List<HeroSaveData>();
+
+        if (Progress.CurrentDefenseSessionId <= 0)
+        {
+            Progress.CurrentDefenseSessionId = FirstDefenseSessionId;
+            repaired = true;
+        }
+
+        if (DayCycle.SpireLevel <= 0)
+        {
+            DayCycle.SpireLevel = 1;
+            repaired = true;
+        }
+
+        if (DayCycle.CitadelFloorCount <= 0)
+        {
+            DayCycle.CitadelFloorCount = 1;
+            repaired = true;
+        }
+
+        repaired |= EnsureStarterCombatSlot();
+        repaired |= EnsureStarterHero(1001, true);
+        repaired |= EnsureStarterHero(1002, true);
+        repaired |= EnsureStarterHero(1003, false);
+        repaired |= EnsureStarterHero(1004, false);
+
+        return repaired;
+    }
+
+    // 전투 런타임이 최소 1개의 공격 가능한 슬롯을 항상 만들 수 있게 보정합니다.
+    private bool EnsureStarterCombatSlot()
+    {
+        for (int i = 0; i < CombatSlot.Slots.Count; i++)
+        {
+            CombatSlotSaveData slot = CombatSlot.Slots[i];
+            if (slot.SlotIndex != 0)
+                continue;
+
+            bool repaired = false;
+
+            if (slot.Level <= 0)
+            {
+                slot.Level = 1;
+                repaired = true;
+            }
+
+            if (slot.EquippedHeroId <= 0)
+            {
+                slot.EquippedHeroId = StarterHeroId;
+                repaired = true;
+            }
+
+            if (!slot.IsUnlocked)
+            {
+                slot.IsUnlocked = true;
+                repaired = true;
+            }
+
+            return repaired;
+        }
+
+        CombatSlot.Slots.Add(new CombatSlotSaveData
+        {
+            SlotIndex = 0,
+            Level = 1,
+            EquippedHeroId = StarterHeroId,
+            IsUnlocked = true
+        });
+        return true;
+    }
+
+    // 시작 영웅들이 저장 파일에 없으면 현재 테이블 기준 최소 상태를 추가합니다.
+    private bool EnsureStarterHero(int heroId, bool isUnlocked)
+    {
+        for (int i = 0; i < HeroCollection.Heroes.Count; i++)
+        {
+            HeroSaveData hero = HeroCollection.Heroes[i];
+            if (hero.HeroId != heroId)
+                continue;
+
+            bool repaired = false;
+
+            if (hero.Level <= 0)
+            {
+                hero.Level = 1;
+                repaired = true;
+            }
+
+            if (isUnlocked && !hero.IsUnlocked)
+            {
+                hero.IsUnlocked = true;
+                repaired = true;
+            }
+
+            return repaired;
+        }
+
+        HeroCollection.Heroes.Add(new HeroSaveData
+        {
+            HeroId = heroId,
+            Level = 1,
+            IsUnlocked = isUnlocked
+        });
+        return true;
     }
 }
 

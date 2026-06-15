@@ -45,6 +45,12 @@ public sealed class SaveManager
             Debug.LogWarning("[SaveManager] 저장 데이터 복구에 실패해 기본 저장 데이터를 생성했습니다.");
         }
 
+        if (CurrentSaveData.RepairForCurrentVersion())
+        {
+            await SaveAsync(CurrentSaveData);
+            Debug.LogWarning("[SaveManager] 오래된 저장 데이터를 현재 버전에 맞게 보정했습니다.");
+        }
+
         Debug.Log("[SaveManager] 저장 데이터를 불러왔습니다.");
 
         return CurrentSaveData;

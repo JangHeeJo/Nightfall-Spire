@@ -41,6 +41,8 @@
 
 - `Assets/_Project/01_Script/Scene/BattleSceneRoot.cs`
 - `Assets/_Project/01_Script/Core/GameFlowController.cs`
+- `Assets/_Project/01_Script/Core/SaveManager.cs`
+- `Assets/_Project/01_Script/Model/SaveData.cs`
 - `Assets/_Project/01_Script/Service/GameContentDataSource.cs`
 - `Assets/_Project/01_Script/Service/NightDefenseSessionService.cs`
 - `Assets/_Project/99_Test/EditMode/Service/NightDefenseRuntimeControllerTests.cs`
@@ -53,6 +55,7 @@
 - 씬 인스펙터에서 `NightDefenseBattleRuntime`이나 `UnityNightDefenseSpawnSink` 참조가 비어 있으면 `BattleSceneRoot`에 런타임 컴포넌트를 자동 생성하게 했다.
 - `DontDestroyOnLoad` 쪽 오브젝트를 잘못 잡지 않도록 현재 씬에 있는 컴포넌트만 대상으로 찾는다.
 - 기존 저장 데이터의 현재 방어 세션 ID가 현재 테이블에 없으면 첫 방어 세션으로 보정하게 했다.
+- 오래된 저장 데이터에 전투 슬롯이나 시작 영웅 정보가 없으면 현재 버전 기준 기본 슬롯과 기본 영웅을 복구하게 했다.
 - `GameFlowController`가 밤 방어 시작 실패 시 상태 전환 실패인지, 세션 데이터 실패인지, 플레이 상태 전환 실패인지 콘솔에 구체적으로 남기게 했다.
 - `INightDefenseDataSource` 확장에 맞춰 EditMode 테스트의 가짜 데이터 소스도 같은 계약을 구현하게 했다.
 
@@ -64,6 +67,10 @@
 
 그 다음 단계에서 `밤 방어 세션 시작 실패`가 발생할 수 있었는데, 이 경우는 저장 데이터가 오래되어 `CurrentDefenseSessionId`가 현재 `DefenseSessionData.tsv`에 없는 값을 들고 있을 때 발생한다.
 현재 테이블은 101번 세션부터 시작하므로, 오래된 저장값이 들어와도 첫 세션으로 복구해 테스트 전투가 막히지 않게 했다.
+
+추가로 전투 런타임이 `Combat:NoActiveHeroSlots`로 실패하는 경우도 확인했다.
+이 원인은 오래된 저장 파일에 해금된 슬롯이나 배치된 기본 영웅이 없어서 발생한다.
+저장 데이터 로드 직후 현재 버전 기준으로 슬롯 0번을 해금하고 `Player_Sword`를 배치하며, 시작 영웅 4개의 기본 저장 상태를 보정하도록 만들었다.
 
 ### 검증
 
