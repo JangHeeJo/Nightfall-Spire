@@ -35,6 +35,49 @@
 - 하단 탭으로 전환되는 화면은 `PopupLayerSlot.Content` 슬롯에 하나만 유지한다.
 - 상세 정보나 확인창은 `PopupLayerSlot.Overlay` 슬롯에 쌓는다.
 
+## 완료된 작업 40: 성채 층 슬롯 기반 전투 타겟 구조 적용
+
+커밋 예정: `codex/architecture-cleanup`
+
+### 변경된 파일
+
+- `Assets/_Project/01_Script/Data/Rows/GameDataRows.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/CombatRuntimeController.cs`
+- `Assets/_Project/01_Script/Service/CombatTargetingService.cs`
+- `Assets/_Project/01_Script/Service/BattleRuntimeContracts.cs`
+- `Assets/_Project/01_Script/Service/BattleSessionRuntimeController.cs`
+- `Assets/_Project/01_Script/Scene/UnityNightDefenseSpawnSink.cs`
+- `Assets/_Project/05_Data/Tables/CombatSlotData.tsv`
+- `Assets/_Project/99_Test/EditMode/Service/CombatRuntimeControllerTests.cs`
+- `Docs/CODEX_SUMMARY.md`
+
+### 주요 변경
+
+- 전투 슬롯 데이터를 성채 층 기준으로 확장했다.
+- `CombatSlotData.tsv`에 `FloorId`, `FloorSlotIndex`, `LocalPositionX`, `LocalPositionY`, `MinTargetProgress`, `MaxTargetProgress`를 추가했다.
+- 1층은 기본적으로 근접 슬롯 1개와 원거리 슬롯 1개가 열리도록 구성했다.
+- 2층 이후도 층별 근접/원거리 슬롯으로 확장 가능한 형태로 잡았다.
+- 영웅 슬롯 런타임 상태가 성채 층, 층 내부 슬롯 번호, 성채 기준 위치, 공격 가능 진행도 구간을 들고 있게 했다.
+- 타겟 선택은 더 이상 모든 몬스터를 대상으로 하지 않고, 해당 영웅 슬롯의 공격 가능 구간 안에 들어온 몬스터만 대상으로 고른다.
+- 전투 표시 계층에 현재 배치된 영웅 슬롯 목록을 전달하는 계약을 추가했다.
+- 아직 영웅 프리팹 자동 배치는 하지 않고, 인스펙터 기반 슬롯 Transform 연결을 붙일 수 있는 진입점만 열어뒀다.
+- 전투 런타임 테스트를 현재 구조에 맞게 갱신하고, 슬롯 공격 구간 테스트를 추가했다.
+
+### 왜 이렇게 바꿨는지
+
+이 게임의 전투는 일반적인 필드 유닛 전투가 아니라, 성채 층마다 배치된 영웅이 몰려오는 몬스터를 막는 구조다.
+따라서 영웅을 몬스터처럼 필드에 풀어놓고 가장 가까운 적을 무조건 공격하게 만들면 영상 기준 전투 흐름과 맞지 않는다.
+
+이번 변경으로 전투 계산은 성채 층 슬롯을 기준으로 돌아간다.
+근접 슬롯은 성채 가까이 접근한 몬스터를 담당하고, 원거리 슬롯은 더 넓은 접근 구간을 담당한다.
+나중에 실제 Unity 씬에서는 `PositionKey`나 슬롯 Transform을 이용해 각 층에 영웅 프리팹을 배치하면 된다.
+
+### 검증
+
+- `dotnet build "Nightfall Spire.sln"` 통과.
+- 기존 `System.Threading.Tasks.Extensions` 버전 충돌 경고는 남아 있으나, 이번 수정으로 인한 컴파일 오류는 없다.
+
 ## 완료된 작업 39: 기본 전투 화력과 애니메이션 상태 매핑 보정
 
 커밋 예정: `codex/architecture-cleanup`

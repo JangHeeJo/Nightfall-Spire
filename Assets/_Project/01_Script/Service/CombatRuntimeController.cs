@@ -122,7 +122,7 @@ public sealed class CombatRuntimeController
 
             while (slot.AttackTimer >= attackInterval && slotAttackCount < MaxAttacksPerSlotPerTick)
             {
-                CombatEnemyRuntimeState target = targetingService.SelectTarget(slot.TargetingType, enemies);
+                CombatEnemyRuntimeState target = targetingService.SelectTarget(slot, enemies);
 
                 if (target == null)
                     break;
@@ -157,6 +157,7 @@ public sealed class CombatRuntimeController
     {
         float attackBonus = upgradeRow == null ? 0f : upgradeRow.AttackBonusPct;
         float attackSpeedBonus = upgradeRow == null ? 0f : upgradeRow.AttackSpeedBonusPct;
+        float rangeBonus = upgradeRow == null ? 0f : upgradeRow.RangeBonusPct;
         CombatRuntimeStatModifier runtimeModifier = modifierSet.GetModifier(slotRow.SlotType, heroRow.HeroRole, heroRow.HeroTagList);
 
         attackBonus += runtimeModifier.AttackPercent;
@@ -164,6 +165,7 @@ public sealed class CombatRuntimeController
 
         int attackPower = Math.Max(1, (int)Math.Ceiling(heroRow.BaseAttack * (1f + attackBonus / 100f)));
         float attackSpeed = Math.Max(0.01f, heroRow.BaseAttackSpeed * (1f + attackSpeedBonus / 100f));
+        float attackRange = Math.Max(0.01f, heroRow.BaseAttackRange * (1f + rangeBonus / 100f));
         int maxHealth = Math.Max(1, heroRow.BaseHealth);
         int defense = Math.Max(0, heroRow.BaseDefense);
 
@@ -171,13 +173,32 @@ public sealed class CombatRuntimeController
             slot.SlotIndex,
             heroRow.HeroId,
             slotRow.SlotType,
+            slotRow.FloorId,
+            slotRow.FloorSlotIndex,
             heroRow.HeroRole,
             heroRow.ElementType,
             heroRow.TargetingType,
             maxHealth,
             defense,
             attackPower,
-            attackSpeed);
+            attackSpeed,
+            attackRange,
+            slotRow.LocalPositionX,
+            slotRow.LocalPositionY,
+            ClampProgress(slotRow.MinTargetProgress),
+            ClampProgress(slotRow.MaxTargetProgress));
+    }
+
+    // 테이블에서 잘못된 진행도 값이 들어와도 타겟 판정 범위를 0~1 안으로 고정합니다.
+    private static float ClampProgress(float value)
+    {
+        if (value < 0f)
+            return 0f;
+
+        if (value > 1f)
+            return 1f;
+
+        return value;
     }
 
     // 살아 있는 적의 이동 진행도를 갱신하고, 이번 Tick에 성채 앞에 도착한 적 수를 반환합니다.

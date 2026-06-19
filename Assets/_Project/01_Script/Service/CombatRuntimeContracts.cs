@@ -35,6 +35,8 @@ public sealed class CombatHeroSlotRuntimeState
     public int SlotIndex { get; } // 전투 슬롯 번호
     public int HeroId { get; } // 슬롯에 배치된 영웅 ID
     public CombatSlotType SlotType { get; } // 전투 슬롯 타입
+    public int FloorId { get; } // 영웅이 배치된 성채 층 ID
+    public int FloorSlotIndex { get; } // 같은 층 안에서의 슬롯 순서
     public HeroRole HeroRole { get; } // 영웅 역할
     public ElementType ElementType { get; } // 공격 속성
     public TargetingType TargetingType { get; } // 타겟 선택 규칙
@@ -42,16 +44,23 @@ public sealed class CombatHeroSlotRuntimeState
     public int Defense { get; } // 영웅 기본 방어력
     public int AttackPower { get; } // 슬롯 성장 보정이 반영된 공격력
     public float AttackSpeed { get; } // 슬롯 성장 보정이 반영된 초당 공격 횟수
+    public float AttackRange { get; } // 영웅 기본 사거리에 슬롯 보정이 반영된 값
+    public float LocalPositionX { get; } // 성채 루트 기준 슬롯 X 좌표
+    public float LocalPositionY { get; } // 성채 루트 기준 슬롯 Y 좌표
+    public float MinTargetProgress { get; } // 이 슬롯이 공격할 수 있는 몬스터 최소 접근 진행도
+    public float MaxTargetProgress { get; } // 이 슬롯이 공격할 수 있는 몬스터 최대 접근 진행도
     public float AttackTimer { get; private set; } // 다음 공격까지 누적된 시간
 
     public bool CanAttack => AttackPower > 0 && AttackSpeed > 0f; // 공격 가능한 슬롯인지 여부
 
     // 영웅 슬롯의 전투 계산용 값을 보관합니다.
-    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, CombatSlotType slotType, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int maxHealth, int defense, int attackPower, float attackSpeed)
+    public CombatHeroSlotRuntimeState(int slotIndex, int heroId, CombatSlotType slotType, int floorId, int floorSlotIndex, HeroRole heroRole, ElementType elementType, TargetingType targetingType, int maxHealth, int defense, int attackPower, float attackSpeed, float attackRange, float localPositionX, float localPositionY, float minTargetProgress, float maxTargetProgress)
     {
         SlotIndex = slotIndex;
         HeroId = heroId;
         SlotType = slotType;
+        FloorId = floorId;
+        FloorSlotIndex = floorSlotIndex;
         HeroRole = heroRole;
         ElementType = elementType;
         TargetingType = targetingType;
@@ -59,6 +68,20 @@ public sealed class CombatHeroSlotRuntimeState
         Defense = defense;
         AttackPower = attackPower;
         AttackSpeed = attackSpeed;
+        AttackRange = attackRange;
+        LocalPositionX = localPositionX;
+        LocalPositionY = localPositionY;
+        MinTargetProgress = minTargetProgress;
+        MaxTargetProgress = maxTargetProgress;
+    }
+
+    // 슬롯이 맡은 성채 방어 구간 안에 들어온 몬스터인지 판단합니다.
+    public bool CanTarget(CombatEnemyRuntimeState enemy)
+    {
+        if (enemy == null || !enemy.IsAlive)
+            return false;
+
+        return enemy.PathProgress >= MinTargetProgress && enemy.PathProgress <= MaxTargetProgress;
     }
 
     // Tick마다 흐른 시간을 공격 타이머에 더합니다.

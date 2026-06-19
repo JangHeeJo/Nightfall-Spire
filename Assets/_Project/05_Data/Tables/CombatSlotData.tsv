@@ -1,4 +1,6 @@
-SlotId	SlotIndex	SlotType	UnlockFloorId	AllowedHeroRoleList	UpgradeGroupId	DefaultHeroId	PositionKey	IsDefaultUnlocked
-2001	0	Front	1	Melee	2101	1001	slot_front_01	TRUE
-2002	1	Back	2	Ranged	2102	1002	slot_back_01	TRUE
-2003	2	Tower	3	Ranged	2103	0	slot_tower_01	FALSE
+SlotId	SlotIndex	SlotType	FloorId	FloorSlotIndex	UnlockFloorId	AllowedHeroRoleList	UpgradeGroupId	DefaultHeroId	PositionKey	LocalPositionX	LocalPositionY	MinTargetProgress	MaxTargetProgress	IsDefaultUnlocked
+2001	0	Front	1	0	1	Melee	2101	1001	floor_01_melee_00	-0.65	-1.55	0.72	1.00	TRUE
+2002	1	Back	1	1	1	Ranged	2102	1002	floor_01_ranged_01	0.45	-1.20	0.25	1.00	TRUE
+2003	2	Front	2	0	2	Melee	2103	0	floor_02_melee_00	-0.55	-0.45	0.66	1.00	FALSE
+2004	3	Back	2	1	2	Ranged	2104	0	floor_02_ranged_01	0.45	-0.15	0.20	1.00	FALSE
+2005	4	Tower	3	0	3	Ranged	2105	0	floor_03_tower_00	0.00	0.85	0.05	1.00	FALSE

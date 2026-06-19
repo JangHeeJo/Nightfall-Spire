@@ -95,6 +95,9 @@ public interface IBattleCombatViewSink
     // 새 전투 세션을 시작할 때 기존 표시물을 정리합니다.
     void ClearBattleViews();
 
+    // 성채 층 슬롯에 배치된 영웅 목록을 표시 계층에 전달합니다.
+    void ShowHeroSlots(IReadOnlyList<CombatHeroSlotRuntimeState> heroSlots);
+
     // 스폰된 적 런타임 상태에 대응하는 Unity 표시물을 만듭니다.
     void SpawnEnemyView(CombatEnemyRuntimeState enemy, NightDefenseSpawnRequest request);
 

@@ -8,7 +8,7 @@ public sealed class CombatRuntimeControllerTests
     [Test]
     public void RebuildHeroSlots_CreatesUnlockedHeroSlots()
     {
-        SaveData saveData = SaveData.CreateDefault();
+        SaveData saveData = CreateSingleSlotSaveData();
         CombatRuntimeController controller = new CombatRuntimeController(
             FakeCombatDataSource.CreateDefault(),
             new CombatSlotProgress(saveData));
@@ -28,7 +28,7 @@ public sealed class CombatRuntimeControllerTests
     [Test]
     public void Tick_AppliesSlotAttackDamage()
     {
-        SaveData saveData = SaveData.CreateDefault();
+        SaveData saveData = CreateSingleSlotSaveData();
         CombatRuntimeController controller = CreateReadyController(saveData);
 
         controller.SpawnEnemy(CreateSpawnRequest(1101), out CombatEnemyRuntimeState enemy);
@@ -46,7 +46,7 @@ public sealed class CombatRuntimeControllerTests
     [Test]
     public void Tick_RemovesDefeatedEnemy()
     {
-        SaveData saveData = SaveData.CreateDefault();
+        SaveData saveData = CreateSingleSlotSaveData();
         CombatRuntimeController controller = CreateReadyController(saveData);
 
         controller.SpawnEnemy(CreateSpawnRequest(1101), out _);
@@ -61,11 +61,11 @@ public sealed class CombatRuntimeControllerTests
         Assert.That(controller.LastDespawnResults[0].Reason, Is.EqualTo(CombatEnemyDespawnReason.Defeated));
     }
 
-    // 적이 성채 지점까지 도달하면 목록에서 제거되고 성채 피해로 변환되어야 합니다.
+    // 적이 성채 지점까지 도달하면 성채 공격 상태가 되고 주기마다 성채 피해를 줘야 합니다.
     [Test]
-    public void Tick_ConvertsReachedEnemyToCastleDamage()
+    public void Tick_ReachedEnemyAttacksCastle()
     {
-        SaveData saveData = SaveData.CreateDefault();
+        SaveData saveData = CreateSingleSlotSaveData();
         CombatRuntimeController controller = CreateReadyController(saveData);
 
         controller.SpawnEnemy(CreateSpawnRequest(1102), out _);
@@ -73,16 +73,15 @@ public sealed class CombatRuntimeControllerTests
 
         Assert.That(result.ReachedGoalEnemyCount, Is.EqualTo(1));
         Assert.That(result.CastleDamage, Is.EqualTo(10));
-        Assert.That(result.AliveEnemyCount, Is.EqualTo(0));
-        Assert.That(controller.LastDespawnResults.Count, Is.EqualTo(1));
-        Assert.That(controller.LastDespawnResults[0].Reason, Is.EqualTo(CombatEnemyDespawnReason.ReachedGoal));
+        Assert.That(result.AliveEnemyCount, Is.EqualTo(1));
+        Assert.That(controller.LastDespawnResults.Count, Is.EqualTo(0));
     }
 
     // 슬롯 성장 보정이 있으면 공격력 계산에 반영되어야 합니다.
     [Test]
     public void RebuildHeroSlots_AppliesSlotUpgradeBonus()
     {
-        SaveData saveData = SaveData.CreateDefault();
+        SaveData saveData = CreateSingleSlotSaveData();
         saveData.CombatSlot.Slots[0].Level = 2;
         CombatRuntimeController controller = new CombatRuntimeController(
             FakeCombatDataSource.CreateDefault(),
@@ -92,6 +91,56 @@ public sealed class CombatRuntimeControllerTests
 
         Assert.That(result, Is.EqualTo(CombatRuntimeFailureReason.None));
         Assert.That(controller.HeroSlots[0].AttackPower, Is.EqualTo(30));
+    }
+
+    // 슬롯별 공격 구간 밖에 있는 몬스터는 공격 대상으로 잡지 않아야 합니다.
+    [Test]
+    public void Targeting_UsesCastleSlotTargetProgress()
+    {
+        CombatTargetingService targetingService = new CombatTargetingService();
+        CombatHeroSlotRuntimeState meleeSlot = CreateTargetingSlot(0.72f, 1.00f);
+        CombatEnemyRuntimeState enemy = new CombatEnemyRuntimeState(1, 1101, EnemyRank.Normal, ElementType.Dark, 1, 1, 100, 0, 1, 0.10f);
+        enemy.Advance(1f, 5f);
+
+        CombatEnemyRuntimeState targetBeforeCastleLine = targetingService.SelectTarget(meleeSlot, new[] { enemy });
+
+        Assert.That(targetBeforeCastleLine, Is.Null);
+
+        enemy.Advance(1f, 5f);
+        CombatEnemyRuntimeState targetNearCastle = targetingService.SelectTarget(meleeSlot, new[] { enemy });
+
+        Assert.That(targetNearCastle, Is.SameAs(enemy));
+    }
+
+    // 기본 세이브가 여러 슬롯을 열어도 테스트별로 필요한 슬롯만 검증할 수 있게 단일 슬롯 저장 데이터를 만듭니다.
+    private static SaveData CreateSingleSlotSaveData()
+    {
+        SaveData saveData = SaveData.CreateDefault();
+        saveData.CombatSlot.Slots.RemoveAll(slot => slot.SlotIndex != 0);
+        return saveData;
+    }
+
+    // 타겟팅 서비스 단위 테스트용 공격 슬롯을 만듭니다.
+    private static CombatHeroSlotRuntimeState CreateTargetingSlot(float minTargetProgress, float maxTargetProgress)
+    {
+        return new CombatHeroSlotRuntimeState(
+            0,
+            1001,
+            CombatSlotType.Front,
+            1,
+            0,
+            HeroRole.Melee,
+            ElementType.Physical,
+            TargetingType.Nearest,
+            100,
+            0,
+            10,
+            1f,
+            2f,
+            -0.5f,
+            -1.5f,
+            minTargetProgress,
+            maxTargetProgress);
     }
 
     // 테스트에 필요한 슬롯 구성을 끝낸 컨트롤러를 만듭니다.
@@ -189,8 +238,8 @@ public sealed class CombatRuntimeControllerTests
             "1102\tenemy_runner\tNormal\tDark\t999\t100.0\t10\t0\tWalker\t10\tEnemy_Runner\n";
 
         private const string CombatSlotTsv =
-            "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "1001\t0\tFront\t1\tMelee|Ranged\t2001\t1001\tSlot_Front_01\tTRUE\n";
+            "SlotId\tSlotIndex\tSlotType\tFloorId\tFloorSlotIndex\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tLocalPositionX\tLocalPositionY\tMinTargetProgress\tMaxTargetProgress\tIsDefaultUnlocked\n" +
+            "1001\t0\tFront\t1\t0\t1\tMelee|Ranged\t2001\t1001\tSlot_Front_01\t-0.5\t-1.5\t0.00\t1.00\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

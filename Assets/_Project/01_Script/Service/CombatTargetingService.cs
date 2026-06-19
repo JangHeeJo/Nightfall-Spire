@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 
-// 영웅의 TargetingType에 맞춰 공격 대상을 고릅니다.
-// 실제 위치 기반 판정이 붙기 전까지는 PathProgress, HP, 스폰 순서를 기준으로 결정합니다.
+// 영웅의 TargetingType과 성채 슬롯 공격 구간에 맞춰 공격 대상을 고릅니다.
+// 영웅은 자기 층 슬롯이 맡은 진행도 구간 안의 몬스터만 공격합니다.
 public sealed class CombatTargetingService
 {
     // 살아 있는 적 목록에서 공격 대상 하나를 고릅니다.
-    public CombatEnemyRuntimeState SelectTarget(TargetingType targetingType, IReadOnlyList<CombatEnemyRuntimeState> enemies)
+    public CombatEnemyRuntimeState SelectTarget(CombatHeroSlotRuntimeState attacker, IReadOnlyList<CombatEnemyRuntimeState> enemies)
     {
+        if (attacker == null)
+            throw new ArgumentNullException(nameof(attacker));
+
         if (enemies == null)
             throw new ArgumentNullException(nameof(enemies));
 
@@ -20,7 +23,10 @@ public sealed class CombatTargetingService
             if (enemy == null || !enemy.IsAlive)
                 continue;
 
-            if (selected == null || IsBetterTarget(targetingType, enemy, selected))
+            if (!attacker.CanTarget(enemy))
+                continue;
+
+            if (selected == null || IsBetterTarget(attacker.TargetingType, enemy, selected))
                 selected = enemy;
         }
 

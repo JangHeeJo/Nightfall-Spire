@@ -53,6 +53,20 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
             Debug.Log("[BattleViewSink] 전투 표시 오브젝트를 초기화했습니다.");
     }
 
+    // 현재 전투에 배치된 영웅 슬롯 목록을 확인합니다.
+    // 실제 영웅 프리팹 배치는 성채 슬롯 Transform 연결이 끝나면 이 지점에 붙입니다.
+    public void ShowHeroSlots(IReadOnlyList<CombatHeroSlotRuntimeState> heroSlots)
+    {
+        if (!logRuntimeEvents || heroSlots == null)
+            return;
+
+        for (int i = 0; i < heroSlots.Count; i++)
+        {
+            CombatHeroSlotRuntimeState slot = heroSlots[i];
+            Debug.Log($"[BattleViewSink] Hero Slot:{slot.SlotIndex} Hero:{slot.HeroId} Floor:{slot.FloorId} FloorSlot:{slot.FloorSlotIndex} Pos:({slot.LocalPositionX:0.00},{slot.LocalPositionY:0.00}) Target:{slot.MinTargetProgress:0.00}-{slot.MaxTargetProgress:0.00}");
+        }
+    }
+
     // 전투 런타임에서 몬스터 생성이 확정되면 대응되는 Unity 프리팹을 생성합니다.
     public void SpawnEnemyView(CombatEnemyRuntimeState enemy, NightDefenseSpawnRequest request)
     {

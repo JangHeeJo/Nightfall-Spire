@@ -100,18 +100,24 @@ public sealed class FeatureUnlockDataRow : ITableRow
 }
 
 // 전투 슬롯 테이블 한 줄입니다.
-// 슬롯 위치, 허용 영웅 역할, 성장 그룹을 담습니다.
+// 성채 층별 영웅 슬롯 위치, 허용 역할, 공격 가능 구간, 성장 그룹을 담습니다.
 public sealed class CombatSlotDataRow : ITableRow
 {
     public int Id => SlotId; // DataTable 기본 키
     public int SlotId { get; private set; } // 슬롯 ID
     public int SlotIndex { get; private set; } // 화면/전투 배치 순서
     public CombatSlotType SlotType { get; private set; } // 슬롯 타입
+    public int FloorId { get; private set; } // 이 슬롯이 붙는 성채 층 ID
+    public int FloorSlotIndex { get; private set; } // 같은 층 안에서의 슬롯 순서
     public int UnlockFloorId { get; private set; } // 해금에 필요한 층 ID
     public List<HeroRole> AllowedHeroRoleList { get; private set; } = new(); // 배치 가능한 영웅 역할
     public int UpgradeGroupId { get; private set; } // 슬롯 성장 그룹 ID
     public int DefaultHeroId { get; private set; } // 기본 배치 영웅 ID
     public string PositionKey { get; private set; } // 배치 위치 리소스 키
+    public float LocalPositionX { get; private set; } // 성채 루트 기준 슬롯 X 좌표
+    public float LocalPositionY { get; private set; } // 성채 루트 기준 슬롯 Y 좌표
+    public float MinTargetProgress { get; private set; } // 이 슬롯이 공격할 수 있는 몬스터 최소 접근 진행도
+    public float MaxTargetProgress { get; private set; } // 이 슬롯이 공격할 수 있는 몬스터 최대 접근 진행도
     public bool IsDefaultUnlocked { get; private set; } // 기본 해금 여부
 
     // TSV 한 줄에서 전투 슬롯 규칙을 읽어옵니다.
@@ -120,11 +126,17 @@ public sealed class CombatSlotDataRow : ITableRow
         SlotId = row.GetInt("SlotId");
         SlotIndex = row.GetInt("SlotIndex");
         SlotType = row.GetEnum<CombatSlotType>("SlotType");
+        FloorId = row.GetInt("FloorId");
+        FloorSlotIndex = row.GetInt("FloorSlotIndex");
         UnlockFloorId = row.GetInt("UnlockFloorId");
         AllowedHeroRoleList = row.GetEnumList<HeroRole>("AllowedHeroRoleList");
         UpgradeGroupId = row.GetInt("UpgradeGroupId");
         DefaultHeroId = row.GetInt("DefaultHeroId");
         PositionKey = row.GetString("PositionKey");
+        LocalPositionX = row.GetFloat("LocalPositionX");
+        LocalPositionY = row.GetFloat("LocalPositionY");
+        MinTargetProgress = row.GetFloat("MinTargetProgress");
+        MaxTargetProgress = row.GetFloat("MaxTargetProgress");
         IsDefaultUnlocked = row.GetBool("IsDefaultUnlocked");
     }
 }

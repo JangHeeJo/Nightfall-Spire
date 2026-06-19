@@ -57,6 +57,7 @@ public sealed class BattleSessionRuntimeController
             spawnRouter);
 
         viewSink?.ClearBattleViews();
+        viewSink?.ShowHeroSlots(combatRuntime.HeroSlots);
         context.BattleProgress.BeginBattle();
 
         NightDefenseRuntimeStartResult waveStartResult = waveRuntime.StartNextWave();
