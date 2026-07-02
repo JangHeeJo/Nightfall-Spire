@@ -2,7 +2,27 @@
 
 작성일: 2026-07-02
 
-이 파일은 맥북 Codex에서 내 Unity 프로젝트 2개를 바로 이어받기 위한 최소 인수인계 문서다.
+이 파일은 맥북 Codex에서 내 Unity 프로젝트 2개를 GitHub 기준으로 바로 확인하고 이어받기 위한 최소 인수인계 문서다.
+
+## GitHub 다운로드 준비 상태
+
+### Nightfall Spire
+
+- 다운로드 가능: 예
+- GitHub 주소: `https://github.com/JangHeeJo/Nightfall-Spire.git`
+- 받을 브랜치: `codex/architecture-cleanup`
+- 맥북에서 할 일:
+  - GitHub Desktop 또는 `git clone`으로 저장소를 받는다.
+  - `codex/architecture-cleanup` 브랜치로 전환한다.
+  - Unity Hub에서 받은 폴더를 연다.
+
+### PrisonLife
+
+- 다운로드 가능: 아직 아님
+- 이유: 현재 로컬 저장소에는 GitHub remote가 없다.
+- 현재 로컬 프로젝트 경로: `D:\Project\M_1\PrisonLife`
+- 준비된 상태: 업로드용 커밋은 로컬 복사본에 만들어둠.
+- 남은 일: GitHub에 빈 저장소 `JangHeeJo/PrisonLife`를 만든 뒤 remote로 연결해 push하면 맥북에서 받을 수 있다.
 
 ## 공통 작업 규칙
 
@@ -84,7 +104,7 @@
 
 1. Nightfall Spire는 GitHub에서 clone: `https://github.com/JangHeeJo/Nightfall-Spire.git`
 2. 브랜치 checkout: `codex/architecture-cleanup`
-3. PrisonLife는 현재 Git remote가 없으므로 Windows에서 remote 연결 후 push하거나 프로젝트 폴더를 맥북으로 복사한다.
+3. PrisonLife는 GitHub에 빈 저장소 `JangHeeJo/PrisonLife`를 만든 뒤 Windows 로컬 저장소를 push해야 clone 가능하다.
 4. 각 프로젝트 루트의 `AGENTS.md` 또는 이 파일의 공통 작업 규칙을 먼저 읽는다.
 5. Unity 프로젝트는 `Library`, `Temp`, `obj`, `.vs`, `Logs` 같은 생성 폴더를 신뢰하지 말고 Unity가 다시 만들게 둔다.
 6. 작업 시작 전 항상 `git status`로 사용자 변경사항을 확인한다.
