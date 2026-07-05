@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7d638d35b49a6f84b875f33ca3d55e88
+guid: 1c45121b4c4465b49893f6b4b0a1c625
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6020912312844270961
-    second: castle_1f_transparent_0
+      213: 127552177437117744
+    second: "ChatGPT Image 2026\uB144 6\uC6D4 13\uC77C \uC624\uC804 05_18_47_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: castle_1f_transparent_0
+      name: "ChatGPT Image 2026\uB144 6\uC6D4 13\uC77C \uC624\uC804 05_18_47_0"
       rect:
         serializedVersion: 2
-        x: 144
-        y: 120
-        width: 1157
-        height: 859
+        x: 0
+        y: 0
+        width: 1254
+        height: 1254
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f824421d62c617ca0800000000000000
-      internalID: -6020912312844270961
+      spriteID: 03d8772970825c100800000000000000
+      internalID: 127552177437117744
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      castle_1f_transparent_0: -6020912312844270961
+      "ChatGPT Image 2026\uB144 6\uC6D4 13\uC77C \uC624\uC804 05_18_47_0": 127552177437117744
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

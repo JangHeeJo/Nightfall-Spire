@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 6e5e1f46eddc02c4490fa4269053b598
+guid: 94677f74bbd73a541a143ca66921bd75
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8685865894085439667
-    second: castle_4f_transparent_0
+      213: -3277925072028312521
+    second: Character_20260611_005404_Thumbnail_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: castle_4f_transparent_0
+      name: Character_20260611_005404_Thumbnail_0
       rect:
         serializedVersion: 2
-        x: 122
-        y: 30
-        width: 791
-        height: 1456
+        x: 179
+        y: 147
+        width: 158
+        height: 212
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3b0b4afc2056a8870800000000000000
-      internalID: 8685865894085439667
+      spriteID: 73cd761a3887282d0800000000000000
+      internalID: -3277925072028312521
       vertices: []
       indices: 
       edges: []
@@ -151,7 +151,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      castle_4f_transparent_0: 8685865894085439667
+      Character_20260611_005404_Thumbnail_0: -3277925072028312521
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

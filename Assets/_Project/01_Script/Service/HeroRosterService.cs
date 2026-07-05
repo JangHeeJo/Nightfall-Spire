@@ -6,12 +6,14 @@ public sealed class HeroRosterService
 {
     private readonly IHeroCatalogDataSource heroCatalogDataSource; // 영웅 테이블 조회 계약
     private readonly GameContext context; // 현재 진행 상태와 영웅 보유 모델
+    private readonly UnlockService unlockService; // 영웅 해금 조건 판정 서비스
 
     // 영웅 목록 생성에 필요한 테이블 조회와 현재 게임 상태를 받습니다.
-    public HeroRosterService(IHeroCatalogDataSource heroCatalogDataSource, GameContext context)
+    public HeroRosterService(IHeroCatalogDataSource heroCatalogDataSource, GameContext context, UnlockService unlockService = null)
     {
         this.heroCatalogDataSource = heroCatalogDataSource;
         this.context = context;
+        this.unlockService = unlockService;
     }
 
     // 현재 저장 데이터 기준으로 해금/미해금이 반영된 영웅 목록을 만듭니다.
@@ -33,14 +35,16 @@ public sealed class HeroRosterService
         return entries;
     }
 
-    // 수동 해금 또는 성채 층 조건으로 영웅 사용 가능 여부를 판단합니다.
+    // 수동 해금 또는 해금 서비스 조건으로 영웅 사용 가능 여부를 판단합니다.
     private bool IsUnlocked(HeroDataRow hero, HeroRuntimeState heroState)
     {
         if (heroState?.IsUnlocked.Value == true)
             return true;
 
-        int floorCount = context.DayProgress.CitadelFloorCount.Value;
-        return hero.UnlockFloorId <= floorCount;
+        if (unlockService != null)
+            return unlockService.IsHeroUnlocked(hero);
+
+        return hero.IsDefaultUnlocked;
     }
 
     // 테이블 시작 레벨이 잘못 들어와도 최소 1레벨로 보정합니다.

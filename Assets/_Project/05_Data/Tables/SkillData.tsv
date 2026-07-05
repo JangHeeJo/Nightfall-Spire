@@ -2,3 +2,4 @@ SkillId	NameKey	SkillType	ElementType	CooldownSec	CastTriggerType	TargetingType	
 4001	skill_fire_bolt	Active	Fire	6.0	OnCooldown	Nearest	3001	3101	2.0	icon_skill_fire
 4002	skill_chain_spark	Active	Lightning	8.0	OnCooldown	LowestHp	3002	3102	1.6	icon_skill_chain
 4003	skill_frost_mark	Passive	Ice	0.0	OnHit	Farthest	3003	3103	1.0	icon_skill_frost
+4004	skill_guardian_cleave	Active	Physical	7.5	OnCooldown	HighestHp	3004	3101	2.4	icon_skill_cleave

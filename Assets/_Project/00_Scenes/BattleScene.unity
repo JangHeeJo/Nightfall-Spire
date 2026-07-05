@@ -374,6 +374,18 @@ MonoBehaviour:
   screenFadeView: {fileID: 940200003}
   floatingTextLayer: {fileID: 0}
   unitHpBarLayer: {fileID: 0}
+--- !u!225 &920100004
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1996788406}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!114 &920100005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -400,14 +412,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyLayer: {fileID: 930000008}
   enemyPrefabs:
-  - prefabKey: enemy_crawler
+  - prefabKey: Monster_01
     prefab: {fileID: 7166461537056385888, guid: 1dd949de4be2f554988837af63a2265b, type: 3}
-  - prefabKey: enemy_wisp
+  - prefabKey: Monster_02
     prefab: {fileID: 1953035848667899799, guid: 89a07979c4cfa90459115c0f84f5d15c, type: 3}
-  - prefabKey: enemy_brute
-    prefab: {fileID: 7166461537056385888, guid: 1dd949de4be2f554988837af63a2265b, type: 3}
-  - prefabKey: enemy_night_titan
-    prefab: {fileID: 1953035848667899799, guid: 89a07979c4cfa90459115c0f84f5d15c, type: 3}
+  - prefabKey: Monster_03
+    prefab: {fileID: 6696964411006083703, guid: 1b7e14069e90bca4b8e5dd176bf2fa65, type: 3}
+  - prefabKey: Monster_04
+    prefab: {fileID: 2354852988715829064, guid: f0846677fe66a814da6d5e752ce5611c, type: 3}
+  - prefabKey: Monster_Elite_01
+    prefab: {fileID: 5388203961081425937, guid: d07c635d1f26e6a409481095342723b7, type: 3}
+  - prefabKey: Monster_Boss_01
+    prefab: {fileID: 5296377833881976505, guid: d0430a69ea337ba4baf7667ff9566eba, type: 3}
   lanePaths:
   - laneId: 1
     startPosition: {x: 5.2, y: -1.8, z: -0.5}
@@ -417,19 +433,9 @@ MonoBehaviour:
     goalPosition: {x: -0.75, y: -1.45, z: -0.5}
   preloadCountPerPrefab: 3
   despawnDelaySeconds: 0.25
+  sameLaneVisualSpacing: 0.04
+  sameLaneVisualYOffset: 0.12
   logRuntimeEvents: 1
---- !u!225 &920100004
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1996788406}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &926533333
 GameObject:
   m_ObjectHideFlags: 0
