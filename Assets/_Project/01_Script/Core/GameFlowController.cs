@@ -89,7 +89,9 @@ public sealed class GameFlowController
         if (!context.NightDefenseProgress.IsDefenseActive.Value)
             return false;
 
-        context.DraftProgress.OpenDraft(offeredCardIds);
+        // DraftService가 이미 덱 타입까지 지정해 열어둔 경우가 있으므로 여기서 덮어쓰지 않습니다.
+        if (!context.DraftProgress.IsDraftOpen.Value)
+            context.DraftProgress.OpenDraft(offeredCardIds);
 
         if (context.DraftProgress.IsDraftOpen.Value)
             return context.GameProgress.ChangeState(GameState.DraftSelection);
@@ -104,7 +106,10 @@ public sealed class GameFlowController
         if (!context.DraftProgress.CanSelectCard(cardId))
             return false;
 
-        if (context.DraftEffectResolver != null)
+        // 영웅 모집 카드는 전투 효과 Row가 없고, DraftProgress 상태만 갱신합니다.
+        bool shouldApplyCardEffects = context.DraftService == null || context.DraftService.ShouldApplyCardEffects(cardId);
+
+        if (shouldApplyCardEffects && context.DraftEffectResolver != null)
         {
             DraftEffectApplyResult effectResult = context.DraftEffectResolver.ApplyCardEffects(cardId);
 
@@ -112,7 +117,8 @@ public sealed class GameFlowController
                 return false;
         }
 
-        bool selected = context.DraftProgress.SelectCard(cardId);
+        // DraftService가 있으면 카드 타입별 선택 결과까지 함께 반영합니다.
+        bool selected = context.DraftService?.TrySelectOfferedCard(cardId) ?? context.DraftProgress.SelectCard(cardId);
 
         if (!selected)
             return false;

@@ -6,25 +6,37 @@ using UnityEngine;
 // 전투 런타임은 데이터와 계산만 담당하고, 이 클래스는 몬스터 프리팹 생성과 위치 갱신만 담당합니다.
 public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatViewSink
 {
+    private static readonly string[] DefeatedAnimationNames = { "Dead1" }; // 사망 연출로 인정할 클립 이름입니다.
+    private static readonly string[] ReachedGoalAnimationNames = { "Attack" }; // 성채 도착 정리 때 보여줄 클립 이름입니다.
+    private const float AnimationReturnBufferSeconds = 0.05f; // 클립 마지막 프레임이 보이도록 풀 반납 전에 더하는 짧은 여유 시간입니다.
+
+    [SerializeField] private Transform heroLayer; // 전투 중 생성되는 영웅 오브젝트를 모아둘 부모입니다.
+    [SerializeField] private HeroPrefabBinding[] heroPrefabs = Array.Empty<HeroPrefabBinding>(); // HeroData.PrefabKey와 실제 영웅 프리팹의 연결 목록입니다.
     [SerializeField] private Transform enemyLayer; // 전투 중 생성되는 몬스터 오브젝트를 모아둘 부모입니다.
     [SerializeField] private EnemyPrefabBinding[] enemyPrefabs = Array.Empty<EnemyPrefabBinding>(); // EnemyData.PrefabKey와 실제 몬스터 프리팹의 연결 목록입니다.
     [SerializeField] private BattleLanePath[] lanePaths = Array.Empty<BattleLanePath>(); // LaneId별 몬스터 시작 위치와 성채 도착 위치입니다.
     [SerializeField] private int preloadCountPerPrefab = 3; // 프리팹별로 미리 만들어둘 풀 오브젝트 수입니다.
-    [SerializeField] private float despawnDelaySeconds = 0.25f; // 처치나 성채 도착 상태를 짧게 보여준 뒤 풀로 반납하기까지의 시간입니다.
-    [SerializeField] private float animationCrossFadeSeconds = 0.06f; // 공통 Idle/Move/Attack/Hit/Die 상태 전환에 사용할 블렌딩 시간입니다.
+    [SerializeField] private float despawnDelaySeconds = 0.55f; // 제거 클립 길이를 찾지 못했을 때 사용할 기본 풀 반납 대기 시간입니다.
+    [SerializeField] private float animationCrossFadeSeconds = 0.06f; // 공통 Idle/Walk/Attack/Dead1 상태 전환에 사용할 블렌딩 시간입니다.
     [SerializeField] private float sameLaneVisualSpacing = 0.04f; // 같은 라인 몬스터가 완전히 겹치지 않도록 진행도에서 뒤로 밀어낼 간격입니다.
     [SerializeField] private float sameLaneVisualYOffset = 0.12f; // 같은 라인 몬스터가 겹쳐 보이지 않도록 위아래로 벌릴 간격입니다.
     [SerializeField] private bool logRuntimeEvents = true; // 전투 표시 흐름을 확인하기 위한 로그 출력 여부입니다.
 
+    private readonly Dictionary<string, GameObject> heroPrefabByKey = new(); // PrefabKey로 영웅 프리팹을 빠르게 찾기 위한 캐시입니다.
     private readonly Dictionary<string, GameObject> prefabByKey = new(); // PrefabKey로 실제 프리팹을 빠르게 찾기 위한 캐시입니다.
     private readonly Dictionary<int, BattleLanePath> laneById = new(); // LaneId로 이동 경로를 빠르게 찾기 위한 캐시입니다.
+    private readonly Dictionary<int, ActiveHeroView> activeHeroesBySlotIndex = new(); // SlotIndex별 현재 배치된 영웅 표시 오브젝트입니다.
     private readonly Dictionary<string, Stack<PooledEnemyView>> pooledEnemiesByKey = new(); // PrefabKey별 재사용 대기 중인 몬스터 표시 오브젝트입니다.
     private readonly Dictionary<int, ActiveEnemyView> activeEnemiesByRuntimeId = new(); // RuntimeId별 현재 전장에 배치된 몬스터 표시 오브젝트입니다.
     private readonly List<PendingPoolReturn> pendingPoolReturns = new(); // 제거 연출 후 풀로 반납할 몬스터 표시 오브젝트입니다.
+    private bool isBattleViewPaused; // 드래프트 중 표시 계층 애니메이션과 지연 반납 타이머를 멈췄는지 여부입니다.
+
+    public bool HasPendingEnemyRemoval => pendingPoolReturns.Count > 0; // 죽는 연출이 끝나지 않은 몬스터가 있는지 여부입니다.
 
     // 인스펙터에 연결된 프리팹과 라인 정보를 전투 중 조회하기 쉬운 형태로 준비합니다.
     private void Awake()
     {
+        BuildHeroPrefabCache();
         BuildPrefabCache();
         BuildLaneCache();
         PreloadEnemyPools();
@@ -33,12 +45,18 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
     // 제거 상태를 잠깐 보여준 몬스터를 시간이 지난 뒤 풀로 반납합니다.
     private void Update()
     {
+        if (isBattleViewPaused)
+            return;
+
         ProcessPendingPoolReturns(Time.deltaTime);
     }
 
     // 새 전투가 시작될 때 기존 전투 표시 오브젝트를 풀로 되돌립니다.
     public void ClearBattleViews()
     {
+        SetBattleViewPaused(false);
+        ClearHeroViews();
+
         for (int i = pendingPoolReturns.Count - 1; i >= 0; i--)
             ReturnToPoolImmediately(pendingPoolReturns[i].ActiveEnemy);
 
@@ -53,17 +71,25 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
             Debug.Log("[BattleViewSink] 전투 표시 오브젝트를 초기화했습니다.");
     }
 
-    // 현재 전투에 배치된 영웅 슬롯 목록을 확인합니다.
-    // 실제 영웅 프리팹 배치는 성채 슬롯 Transform 연결이 끝나면 이 지점에 붙입니다.
+    // 현재 전투에 배치된 영웅 슬롯 목록을 실제 씬 프리팹으로 생성합니다.
     public void ShowHeroSlots(IReadOnlyList<CombatHeroSlotRuntimeState> heroSlots)
     {
-        if (!logRuntimeEvents || heroSlots == null)
+        ClearHeroViews();
+
+        if (heroSlots == null)
             return;
 
         for (int i = 0; i < heroSlots.Count; i++)
         {
             CombatHeroSlotRuntimeState slot = heroSlots[i];
-            Debug.Log($"[BattleViewSink] Hero Slot:{slot.SlotIndex} Hero:{slot.HeroId} Floor:{slot.FloorId} FloorSlot:{slot.FloorSlotIndex} Pos:({slot.LocalPositionX:0.00},{slot.LocalPositionY:0.00}) Target:{slot.MinTargetProgress:0.00}-{slot.MaxTargetProgress:0.00}");
+
+            if (!TryCreateHeroView(slot, out ActiveHeroView activeHero))
+                continue;
+
+            activeHeroesBySlotIndex[slot.SlotIndex] = activeHero;
+
+            if (logRuntimeEvents)
+                Debug.Log($"[BattleViewSink] Hero Slot:{slot.SlotIndex} Hero:{slot.HeroId} Floor:{slot.FloorId} FloorSlot:{slot.FloorSlotIndex} Pos:({slot.LocalPositionX:0.00},{slot.LocalPositionY:0.00}) Target:{slot.MinTargetProgress:0.00}-{slot.MaxTargetProgress:0.00}");
         }
     }
 
@@ -117,6 +143,9 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         {
             CombatDamageResult damageResult = damageResults[i];
 
+            if (activeHeroesBySlotIndex.TryGetValue(damageResult.AttackerSlotIndex, out ActiveHeroView activeHero))
+                activeHero.ChangeState(HeroViewState.Attacking);
+
             if (!activeEnemiesByRuntimeId.TryGetValue(damageResult.TargetRuntimeId, out ActiveEnemyView activeEnemy))
                 continue;
 
@@ -141,6 +170,25 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
         if (logRuntimeEvents)
             Debug.Log($"[BattleViewSink] Enemy Despawn Runtime:{enemy.RuntimeId} Reason:{reason}");
+    }
+
+    // 카드 드래프트 중에는 전투 표시 애니메이션도 멈추고, 선택 후 다시 재생합니다.
+    public void SetBattleViewPaused(bool isPaused)
+    {
+        if (isBattleViewPaused == isPaused)
+            return;
+
+        isBattleViewPaused = isPaused;
+        float animatorSpeed = isPaused ? 0f : 1f;
+
+        foreach (ActiveHeroView activeHero in activeHeroesBySlotIndex.Values)
+            SetAllAnimatorSpeeds(activeHero.Instance, animatorSpeed);
+
+        foreach (ActiveEnemyView activeEnemy in activeEnemiesByRuntimeId.Values)
+            SetAllAnimatorSpeeds(activeEnemy.Instance, animatorSpeed);
+
+        for (int i = 0; i < pendingPoolReturns.Count; i++)
+            SetAllAnimatorSpeeds(pendingPoolReturns[i].ActiveEnemy?.Instance, animatorSpeed);
     }
 
     // EnemyData의 PrefabKey를 인스펙터에 연결한 Unity 프리팹으로 변환해 전투 필드에 생성합니다.
@@ -170,8 +218,70 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         pooledEnemy.ResetForRent();
         instance.SetActive(true);
         SetSortingOrder(instance, 100 + request.LaneId * 10 + request.SpawnOrder);
-        activeEnemy = new ActiveEnemyView(prefabKey, pooledEnemy, lanePath);
+        activeEnemy = new ActiveEnemyView(prefabKey, pooledEnemy, lanePath, enemy.EnemyRank == EnemyRank.Boss);
+
+        if (isBattleViewPaused)
+            SetAllAnimatorSpeeds(instance, 0f);
+
         return true;
+    }
+
+    // HeroData의 PrefabKey를 인스펙터에 연결한 Unity 프리팹으로 변환해 슬롯 위치에 생성합니다.
+    private bool TryCreateHeroView(CombatHeroSlotRuntimeState slot, out ActiveHeroView activeHero)
+    {
+        activeHero = default;
+
+        if (slot == null)
+            return false;
+
+        if (!TryGetHeroPrefabKey(slot.HeroId, out string prefabKey))
+            return false;
+
+        if (!heroPrefabByKey.TryGetValue(prefabKey, out GameObject prefab) || prefab == null)
+        {
+            Debug.LogError($"[BattleViewSink] PrefabKey '{prefabKey}'에 연결된 영웅 프리팹이 없습니다. UnityNightDefenseSpawnSink 인스펙터의 heroPrefabs를 확인해야 합니다.");
+            return false;
+        }
+
+        Transform parent = heroLayer != null ? heroLayer : enemyLayer;
+        GameObject instance = Instantiate(prefab, parent);
+        instance.name = $"{prefab.name}_Slot_{slot.SlotIndex}";
+        instance.SetActive(true);
+        instance.transform.localPosition = new Vector3(slot.LocalPositionX, slot.LocalPositionY, -0.35f);
+        instance.transform.localRotation = Quaternion.identity;
+        SetSortingOrder(instance, 200 + slot.FloorId * 10 + slot.FloorSlotIndex);
+
+        Animator[] animators = instance.GetComponentsInChildren<Animator>(true);
+        CombatUnitAnimationPlayer animationPlayer = new CombatUnitAnimationPlayer(animators, animationCrossFadeSeconds);
+        activeHero = new ActiveHeroView(prefabKey, instance, animationPlayer, slot.AttackSpeed);
+        activeHero.ChangeState(HeroViewState.Idle);
+
+        if (isBattleViewPaused)
+            SetAllAnimatorSpeeds(instance, 0f);
+
+        return true;
+    }
+
+    // GameContext의 콘텐츠 테이블에서 HeroId에 해당하는 프리팹 키를 가져옵니다.
+    private bool TryGetHeroPrefabKey(int heroId, out string prefabKey)
+    {
+        prefabKey = string.Empty;
+        GameContext context = GameRoot.Instance != null ? GameRoot.Instance.Context : null;
+
+        if (context?.ContentDataSource == null)
+        {
+            Debug.LogError("[BattleViewSink] GameContext 또는 ContentDataSource가 없어 HeroData를 조회할 수 없습니다.");
+            return false;
+        }
+
+        if (!context.ContentDataSource.TryGetHero(heroId, out HeroDataRow heroRow) || heroRow == null)
+        {
+            Debug.LogError($"[BattleViewSink] HeroId {heroId}에 해당하는 HeroData를 찾지 못했습니다.");
+            return false;
+        }
+
+        prefabKey = heroRow.PrefabKey;
+        return !string.IsNullOrWhiteSpace(prefabKey);
     }
 
     // GameContext의 콘텐츠 테이블에서 EnemyId에 해당하는 프리팹 키를 가져옵니다.
@@ -230,6 +340,19 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
             renderers[i].sortingOrder = baseOrder + i;
     }
 
+    // 프리팹 안에 Animator가 여러 개 있어도 드래프트 일시정지가 전부 적용되게 합니다.
+    private static void SetAllAnimatorSpeeds(GameObject instance, float speed)
+    {
+        if (instance == null)
+            return;
+
+        float normalizedSpeed = Mathf.Max(0f, speed);
+        Animator[] animators = instance.GetComponentsInChildren<Animator>(true);
+
+        for (int i = 0; i < animators.Length; i++)
+            animators[i].speed = normalizedSpeed;
+    }
+
     // EnemyData.PrefabKey와 실제 Unity 프리팹 연결 목록을 캐시합니다.
     private void BuildPrefabCache()
     {
@@ -244,6 +367,34 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
 
             prefabByKey[binding.PrefabKey] = binding.Prefab;
         }
+    }
+
+    // HeroData.PrefabKey와 실제 Unity 프리팹 연결 목록을 캐시합니다.
+    private void BuildHeroPrefabCache()
+    {
+        heroPrefabByKey.Clear();
+
+        for (int i = 0; i < heroPrefabs.Length; i++)
+        {
+            HeroPrefabBinding binding = heroPrefabs[i];
+
+            if (string.IsNullOrWhiteSpace(binding.PrefabKey) || binding.Prefab == null)
+                continue;
+
+            heroPrefabByKey[binding.PrefabKey] = binding.Prefab;
+        }
+    }
+
+    // 슬롯 구성 변경이나 전투 초기화 때 현재 생성된 영웅 표시 오브젝트를 제거합니다.
+    private void ClearHeroViews()
+    {
+        foreach (ActiveHeroView activeHero in activeHeroesBySlotIndex.Values)
+        {
+            if (activeHero.Instance != null)
+                Destroy(activeHero.Instance);
+        }
+
+        activeHeroesBySlotIndex.Clear();
     }
 
     // 전투 중 Instantiate가 몰리지 않도록 프리팹별 몬스터 표시 오브젝트를 미리 만들어 둡니다.
@@ -307,7 +458,78 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         };
 
         activeEnemy.ChangeState(state);
-        pendingPoolReturns.Add(new PendingPoolReturn(activeEnemy, Mathf.Max(0f, despawnDelaySeconds)));
+        pendingPoolReturns.Add(new PendingPoolReturn(activeEnemy, GetPoolReturnDelaySeconds(activeEnemy, reason)));
+    }
+
+    // 제거 사유에 맞는 애니메이션 클립 길이를 찾아서, 연출이 끝난 뒤 풀로 반납되게 합니다.
+    private float GetPoolReturnDelaySeconds(ActiveEnemyView activeEnemy, CombatEnemyDespawnReason reason)
+    {
+        float fallbackDelaySeconds = Mathf.Max(0f, despawnDelaySeconds);
+
+        if (activeEnemy?.Instance == null)
+            return fallbackDelaySeconds;
+
+        string[] clipNames = reason switch
+        {
+            CombatEnemyDespawnReason.Defeated => DefeatedAnimationNames,
+            CombatEnemyDespawnReason.ReachedGoal => ReachedGoalAnimationNames,
+            _ => null
+        };
+
+        float clipLengthSeconds = GetLongestAnimationClipSeconds(activeEnemy.Instance, clipNames);
+
+        if (clipLengthSeconds <= 0f)
+            return fallbackDelaySeconds;
+
+        return clipLengthSeconds + AnimationReturnBufferSeconds;
+    }
+
+    // 프리팹 내부 모든 Animator에서 요청한 이름의 클립 중 가장 긴 길이를 반환합니다.
+    private static float GetLongestAnimationClipSeconds(GameObject instance, IReadOnlyList<string> clipNames)
+    {
+        if (instance == null || clipNames == null || clipNames.Count == 0)
+            return 0f;
+
+        float longestSeconds = 0f;
+        Animator[] animators = instance.GetComponentsInChildren<Animator>(true);
+
+        for (int i = 0; i < animators.Length; i++)
+        {
+            RuntimeAnimatorController controller = animators[i].runtimeAnimatorController;
+
+            if (controller == null || controller.animationClips == null)
+                continue;
+
+            AnimationClip[] clips = controller.animationClips;
+
+            for (int j = 0; j < clips.Length; j++)
+            {
+                AnimationClip clip = clips[j];
+
+                if (clip == null || !IsNamedClip(clip.name, clipNames))
+                    continue;
+
+                if (clip.length > longestSeconds)
+                    longestSeconds = clip.length;
+            }
+        }
+
+        return longestSeconds;
+    }
+
+    // Animator Controller마다 클립명이 다를 수 있으니 허용 이름 목록으로 비교합니다.
+    private static bool IsNamedClip(string clipName, IReadOnlyList<string> clipNames)
+    {
+        if (string.IsNullOrWhiteSpace(clipName))
+            return false;
+
+        for (int i = 0; i < clipNames.Count; i++)
+        {
+            if (string.Equals(clipName, clipNames[i], StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     // 풀 반납 대기열을 갱신합니다.
@@ -351,8 +573,8 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         GameObject instance = Instantiate(prefab, enemyLayer);
         instance.name = $"{prefab.name}_Pooled";
         instance.SetActive(false);
-        Animator animator = instance.GetComponentInChildren<Animator>(true);
-        CombatUnitAnimationPlayer animationPlayer = new CombatUnitAnimationPlayer(animator, animationCrossFadeSeconds);
+        Animator[] animators = instance.GetComponentsInChildren<Animator>(true);
+        CombatUnitAnimationPlayer animationPlayer = new CombatUnitAnimationPlayer(animators, animationCrossFadeSeconds);
         return new PooledEnemyView(prefabKey, instance, animationPlayer);
     }
 
@@ -365,6 +587,16 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         pool = new Stack<PooledEnemyView>();
         pooledEnemiesByKey[prefabKey] = pool;
         return pool;
+    }
+
+    [Serializable]
+    private sealed class HeroPrefabBinding
+    {
+        [SerializeField] private string prefabKey; // HeroData.tsv의 PrefabKey입니다.
+        [SerializeField] private GameObject prefab; // 실제 생성할 영웅 프리팹입니다.
+
+        public string PrefabKey => prefabKey;
+        public GameObject Prefab => prefab;
     }
 
     [Serializable]
@@ -415,13 +647,15 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
         public PooledEnemyView PooledEnemy { get; } // 풀에서 꺼낸 표시 오브젝트입니다.
         public GameObject Instance => PooledEnemy.Instance; // 생성된 몬스터 프리팹 인스턴스입니다.
         public BattleLanePath LanePath { get; } // 이 몬스터가 따라가는 전투 라인입니다.
+        public bool CanUseSkill { get; } // 보스 몬스터만 Skill 애니메이션을 사용할 수 있습니다.
         public EnemyViewState State { get; private set; } // 현재 표시 상태입니다.
 
-        public ActiveEnemyView(string prefabKey, PooledEnemyView pooledEnemy, BattleLanePath lanePath)
+        public ActiveEnemyView(string prefabKey, PooledEnemyView pooledEnemy, BattleLanePath lanePath, bool canUseSkill)
         {
             PrefabKey = prefabKey;
             PooledEnemy = pooledEnemy;
             LanePath = lanePath;
+            CanUseSkill = canUseSkill;
             State = EnemyViewState.Pooled;
         }
 
@@ -437,19 +671,73 @@ public sealed class UnityNightDefenseSpawnSink : MonoBehaviour, IBattleCombatVie
                     PooledEnemy?.AnimationPlayer?.PlayIdle();
                     break;
                 case EnemyViewState.Moving:
-                    PooledEnemy?.AnimationPlayer?.PlayMove(moveSpeed);
+                    PooledEnemy?.AnimationPlayer?.PlayWalk(moveSpeed);
                     break;
                 case EnemyViewState.Hit:
-                    PooledEnemy?.AnimationPlayer?.PlayHit();
                     break;
                 case EnemyViewState.Defeated:
-                    PooledEnemy?.AnimationPlayer?.PlayDie();
+                    PooledEnemy?.AnimationPlayer?.PlayDead1();
                     break;
                 case EnemyViewState.ReachedGoal:
                     PooledEnemy?.AnimationPlayer?.PlayAttack();
                     break;
             }
         }
+
+        // 보스 스킬 시스템이 붙을 때만 Skill 애니메이션을 재생합니다.
+        public void PlaySkill(float skillSpeed = 1f)
+        {
+            if (!CanUseSkill)
+                return;
+
+            PooledEnemy?.AnimationPlayer?.PlaySkill(skillSpeed);
+        }
+    }
+
+    private sealed class ActiveHeroView
+    {
+        public string PrefabKey { get; } // 이 영웅 표시 오브젝트가 어떤 HeroData.PrefabKey에서 생성됐는지 나타냅니다.
+        public GameObject Instance { get; } // 실제 Unity 프리팹 인스턴스입니다.
+        public CombatUnitAnimationPlayer AnimationPlayer { get; } // 공통 전투 애니메이션 재생기입니다.
+        public float AttackSpeed { get; } // 공격 연출 배속에 사용할 슬롯 공격 속도입니다.
+        public HeroViewState State { get; private set; } // 현재 표시 상태입니다.
+
+        public ActiveHeroView(string prefabKey, GameObject instance, CombatUnitAnimationPlayer animationPlayer, float attackSpeed)
+        {
+            PrefabKey = prefabKey;
+            Instance = instance;
+            AnimationPlayer = animationPlayer;
+            AttackSpeed = attackSpeed;
+            State = HeroViewState.Idle;
+        }
+
+        // 표시 상태를 바꾸고, 프리팹에 Animator가 있으면 공통 파라미터를 조심스럽게 전달합니다.
+        public void ChangeState(HeroViewState nextState)
+        {
+            State = nextState;
+
+            switch (nextState)
+            {
+                case HeroViewState.Idle:
+                    AnimationPlayer?.PlayIdle();
+                    break;
+                case HeroViewState.Attacking:
+                    AnimationPlayer?.PlayAttack(AttackSpeed);
+                    break;
+            }
+        }
+
+        // 영웅 스킬 시스템이 붙을 때 사용할 Skill 애니메이션 진입점입니다.
+        public void PlaySkill(float skillSpeed = 1f)
+        {
+            AnimationPlayer?.PlaySkill(skillSpeed);
+        }
+    }
+
+    private enum HeroViewState
+    {
+        Idle, // 전투 슬롯에 배치되어 대기 중인 상태
+        Attacking // 공격 판정이 발생해 공격 애니메이션을 재생하는 상태
     }
 
     private enum EnemyViewState

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 // 히어로와 몬스터가 공유하는 전투 애니메이션 재생기입니다.
@@ -6,15 +7,13 @@ public sealed class CombatUnitAnimationPlayer
 {
     private static readonly int MoveSpeedHash = Animator.StringToHash("MoveSpeed"); // 이동 애니메이션 배속 파라미터입니다.
     private static readonly int AttackSpeedHash = Animator.StringToHash("AttackSpeed"); // 공격 애니메이션 배속 파라미터입니다.
+    private const string IdleStateName = "Idle"; // 공통 대기 상태 이름입니다.
+    private const string WalkStateName = "Walk"; // 공통 이동 상태 이름입니다.
+    private const string AttackStateName = "Attack"; // 공통 공격 상태 이름입니다.
+    private const string Dead1StateName = "Dead1"; // 공통 사망 상태 이름입니다.
+    private const string SkillStateName = "Skill"; // 영웅과 보스 전용 스킬 상태 이름입니다.
 
-    private readonly Animator animator; // 실제 Unity Animator입니다.
-    private readonly int idleStateHash; // 실제 Animator Controller에 존재하는 대기 상태 해시입니다.
-    private readonly int moveStateHash; // 실제 Animator Controller에 존재하는 이동 상태 해시입니다.
-    private readonly int attackStateHash; // 실제 Animator Controller에 존재하는 공격 상태 해시입니다.
-    private readonly int hitStateHash; // 실제 Animator Controller에 존재하는 피격 상태 해시입니다.
-    private readonly int dieStateHash; // 실제 Animator Controller에 존재하는 사망 상태 해시입니다.
-    private readonly bool hasMoveSpeedParameter; // MoveSpeed 파라미터 지원 여부입니다.
-    private readonly bool hasAttackSpeedParameter; // AttackSpeed 파라미터 지원 여부입니다.
+    private readonly Animator[] animators; // 프리팹 안의 모든 Unity Animator입니다.
     private readonly float defaultCrossFadeSeconds; // 반복 상태 전환에 사용할 기본 블렌딩 시간입니다.
 
     private CombatUnitAnimationState currentState = CombatUnitAnimationState.Idle; // 마지막으로 요청된 애니메이션 상태입니다.
@@ -23,122 +22,153 @@ public sealed class CombatUnitAnimationPlayer
 
     // Animator와 공통 전환 시간을 받아 재생기를 구성합니다.
     public CombatUnitAnimationPlayer(Animator animator, float defaultCrossFadeSeconds = 0.06f)
+        : this(animator == null ? Array.Empty<Animator>() : new[] { animator }, defaultCrossFadeSeconds)
     {
-        this.animator = animator;
+    }
+
+    // 프리팹에 Animator가 여러 개 있는 경우 모든 Animator에 같은 상태 전환을 요청합니다.
+    public CombatUnitAnimationPlayer(Animator[] animators, float defaultCrossFadeSeconds = 0.06f)
+    {
+        this.animators = animators ?? Array.Empty<Animator>();
         this.defaultCrossFadeSeconds = defaultCrossFadeSeconds;
-        idleStateHash = ResolveStateHash("Idle");
-        moveStateHash = ResolveStateHash("Move", "Run", "Walk");
-        attackStateHash = ResolveStateHash("Attack", "Double Attack", "Jump Attack");
-        hitStateHash = ResolveStateHash("Hit", "Stun");
-        dieStateHash = ResolveStateHash("Die", "Dead1", "Dead2", "Dead3", "Defeat");
-        hasMoveSpeedParameter = HasAnimatorParameter(MoveSpeedHash);
-        hasAttackSpeedParameter = HasAnimatorParameter(AttackSpeedHash);
     }
 
     // 풀에서 다시 꺼낼 때 이전 트리거와 재생 시간을 초기화합니다.
     public void ResetPlayback()
     {
-        if (animator == null)
-            return;
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
 
-        animator.Rebind();
-        animator.Update(0f);
+            if (animator == null)
+                continue;
+
+            animator.Rebind();
+            animator.Update(0f);
+            animator.speed = 1f;
+        }
+
         currentState = CombatUnitAnimationState.Idle;
         PlayIdle(true);
+    }
+
+    // 드래프트 중 전투 표시 애니메이션을 멈추거나 다시 재생합니다.
+    public void SetPlaybackSpeed(float speed)
+    {
+        float normalizedSpeed = Mathf.Max(0f, speed);
+
+        for (int i = 0; i < animators.Length; i++)
+        {
+            if (animators[i] != null)
+                animators[i].speed = normalizedSpeed;
+        }
     }
 
     // 대기 애니메이션을 재생합니다.
     public void PlayIdle(bool force = false)
     {
-        PlayLoopState(CombatUnitAnimationState.Idle, idleStateHash, force);
+        PlayLoopState(CombatUnitAnimationState.Idle, IdleStateName, force);
     }
 
     // 이동 애니메이션을 재생하고 이동 속도 배속을 반영합니다.
-    public void PlayMove(float moveSpeed, bool force = false)
+    public void PlayWalk(float moveSpeed, bool force = false)
     {
-        if (animator != null && hasMoveSpeedParameter)
-            animator.SetFloat(MoveSpeedHash, Mathf.Max(0f, moveSpeed));
+        SetFloatParameter(MoveSpeedHash, Mathf.Max(0f, moveSpeed));
 
-        PlayLoopState(CombatUnitAnimationState.Move, moveStateHash, force);
+        PlayLoopState(CombatUnitAnimationState.Walk, WalkStateName, force);
     }
 
     // 공격 애니메이션을 재생합니다.
     public void PlayAttack(float attackSpeed = 1f)
     {
-        if (animator != null && hasAttackSpeedParameter)
-            animator.SetFloat(AttackSpeedHash, Mathf.Max(0.01f, attackSpeed));
+        SetFloatParameter(AttackSpeedHash, Mathf.Max(0.01f, attackSpeed));
 
-        PlayOneShotState(CombatUnitAnimationState.Attack, attackStateHash);
-    }
-
-    // 피격 애니메이션을 재생합니다.
-    public void PlayHit()
-    {
-        PlayOneShotState(CombatUnitAnimationState.Hit, hitStateHash);
+        PlayOneShotState(CombatUnitAnimationState.Attack, AttackStateName);
     }
 
     // 사망 애니메이션을 재생합니다.
-    public void PlayDie()
+    public void PlayDead1()
     {
-        PlayOneShotState(CombatUnitAnimationState.Die, dieStateHash);
+        PlayOneShotState(CombatUnitAnimationState.Dead1, Dead1StateName);
+    }
+
+    // 영웅과 보스 스킬 구현 시 사용할 Skill 애니메이션을 재생합니다.
+    public void PlaySkill(float skillSpeed = 1f)
+    {
+        SetFloatParameter(AttackSpeedHash, Mathf.Max(0.01f, skillSpeed));
+
+        PlayOneShotState(CombatUnitAnimationState.Skill, SkillStateName);
     }
 
     // 반복 상태는 같은 상태가 계속 요청될 때 매 프레임 재시작하지 않습니다.
-    private void PlayLoopState(CombatUnitAnimationState nextState, int stateHash, bool force)
+    private void PlayLoopState(CombatUnitAnimationState nextState, string stateName, bool force)
     {
-        if (animator == null)
-            return;
-
-        if (stateHash == 0)
-            return;
-
         if (!force && currentState == nextState)
             return;
 
-        currentState = nextState;
-        animator.CrossFade(stateHash, Mathf.Max(0f, defaultCrossFadeSeconds), 0);
+        if (CrossFadeAll(stateName, 0f))
+            currentState = nextState;
     }
 
     // 순간 상태는 같은 상태라도 요청이 들어오면 다시 재생합니다.
-    private void PlayOneShotState(CombatUnitAnimationState nextState, int stateHash)
+    private void PlayOneShotState(CombatUnitAnimationState nextState, string stateName)
     {
-        if (animator == null)
-            return;
-
-        if (stateHash == 0)
-            return;
-
-        currentState = nextState;
-        animator.CrossFade(stateHash, Mathf.Max(0f, defaultCrossFadeSeconds), 0, 0f);
+        if (CrossFadeAll(stateName, 0f))
+            currentState = nextState;
     }
 
-    // 공통 애니메이션 요청 이름을 실제 Animator Controller에 존재하는 상태 이름으로 변환합니다.
-    private int ResolveStateHash(params string[] stateNames)
+    // 모든 Animator에 같은 상태 이름을 직접 재생 요청합니다.
+    private bool CrossFadeAll(string stateName, float normalizedTime)
     {
-        if (animator == null || stateNames == null)
-            return 0;
+        if (string.IsNullOrWhiteSpace(stateName))
+            return false;
 
-        for (int i = 0; i < stateNames.Length; i++)
+        bool playedAny = false;
+        float crossFadeSeconds = Mathf.Max(0f, defaultCrossFadeSeconds);
+        string fullPathStateName = $"Base Layer.{stateName}";
+
+        for (int i = 0; i < animators.Length; i++)
         {
-            string stateName = stateNames[i];
+            Animator animator = animators[i];
 
-            if (string.IsNullOrWhiteSpace(stateName))
+            if (animator == null || !HasState(animator, stateName))
                 continue;
 
-            int shortHash = Animator.StringToHash(stateName);
-            if (animator.HasState(0, shortHash))
-                return shortHash;
-
-            int fullPathHash = Animator.StringToHash($"Base Layer.{stateName}");
-            if (animator.HasState(0, fullPathHash))
-                return fullPathHash;
+            animator.CrossFade(fullPathStateName, crossFadeSeconds, 0, normalizedTime);
+            playedAny = true;
         }
 
-        return 0;
+        return playedAny;
     }
 
-    // Animator Controller마다 파라미터가 없을 수 있으므로 지원 여부를 생성 시 한 번만 검사합니다.
-    private bool HasAnimatorParameter(int parameterHash)
+    // Animator Controller에 상태가 있는지 확인합니다.
+    private static bool HasState(Animator animator, string stateName)
+    {
+        if (animator == null || string.IsNullOrWhiteSpace(stateName))
+            return false;
+
+        int fullPathHash = Animator.StringToHash($"Base Layer.{stateName}");
+
+        if (animator.HasState(0, fullPathHash))
+            return true;
+
+        return animator.HasState(0, Animator.StringToHash(stateName));
+    }
+
+    // 지원하는 Animator에만 Float 파라미터를 전달합니다.
+    private void SetFloatParameter(int parameterHash, float value)
+    {
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
+
+            if (animator != null && HasAnimatorParameter(animator, parameterHash))
+                animator.SetFloat(parameterHash, value);
+        }
+    }
+
+    // Animator Controller마다 파라미터가 없을 수 있으므로 지원 여부를 검사합니다.
+    private static bool HasAnimatorParameter(Animator animator, int parameterHash)
     {
         if (animator == null)
             return false;

@@ -92,6 +92,9 @@ public readonly struct BattleRuntimeTickResult
 // 표시 계층은 이 계약을 통해 프리팹 생성, 위치 갱신, 피해 연출, 풀 반납을 처리합니다.
 public interface IBattleCombatViewSink
 {
+    // 죽는 애니메이션처럼 아직 화면에서 정리 중인 적 표시물이 있는지 확인합니다.
+    bool HasPendingEnemyRemoval { get; }
+
     // 새 전투 세션을 시작할 때 기존 표시물을 정리합니다.
     void ClearBattleViews();
 
@@ -109,4 +112,7 @@ public interface IBattleCombatViewSink
 
     // 적 표시물을 제거하거나 풀로 반납합니다.
     void DespawnEnemyView(CombatEnemyRuntimeState enemy, CombatEnemyDespawnReason reason);
+
+    // 드래프트처럼 전투가 멈춘 동안 Unity 표시 계층 애니메이션도 함께 멈춥니다.
+    void SetBattleViewPaused(bool isPaused);
 }

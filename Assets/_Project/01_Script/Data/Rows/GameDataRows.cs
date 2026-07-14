@@ -337,11 +337,16 @@ public sealed class DraftCardDataRow : ITableRow
 {
     public int Id => CardId; // DataTable 기본 키
     public int CardId { get; private set; } // 카드 ID
+    public DraftCardType CardType { get; private set; } // 카드가 영웅 모집인지, 강화인지 구분하는 규칙 타입
     public string NameKey { get; private set; } // 로컬라이징 이름 키
     public string DescKey { get; private set; } // 로컬라이징 설명 키
     public CardGrade CardGrade { get; private set; } // 카드 등급
     public List<string> CardTagList { get; private set; } = new(); // 카드 태그
     public ElementType ElementType { get; private set; } // 속성
+    public int TargetHeroId { get; private set; } // 영웅 모집/영웅 강화 카드가 대상으로 삼는 HeroId, 없으면 0
+    public string UpgradeKey { get; private set; } // 같은 영웅 안에서 강화 라인을 구분하는 키
+    public int UpgradeStep { get; private set; } // 강화 단계, 단계가 없으면 0
+    public int MaxStep { get; private set; } // 이 강화 라인의 최대 단계, 제한이 없으면 0
     public int MaxStack { get; private set; } // 최대 중첩 수
     public bool IsUnique { get; private set; } // 고유 카드 여부
     public int Weight { get; private set; } // 기본 등장 가중치
@@ -352,11 +357,16 @@ public sealed class DraftCardDataRow : ITableRow
     public void Load(TsvRow row)
     {
         CardId = row.GetInt("CardId");
+        CardType = row.GetEnum<DraftCardType>("CardType");
         NameKey = row.GetString("NameKey");
         DescKey = row.GetString("DescKey");
         CardGrade = row.GetEnum<CardGrade>("CardGrade");
         CardTagList = row.GetStringList("CardTagList");
         ElementType = row.GetEnum<ElementType>("ElementType");
+        TargetHeroId = row.GetInt("TargetHeroId");
+        UpgradeKey = row.GetString("UpgradeKey");
+        UpgradeStep = row.GetInt("UpgradeStep");
+        MaxStep = row.GetInt("MaxStep");
         MaxStack = row.GetInt("MaxStack");
         IsUnique = row.GetBool("IsUnique");
         Weight = row.GetInt("Weight");

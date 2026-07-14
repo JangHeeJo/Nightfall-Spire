@@ -1,6 +1,33 @@
-CardId	NameKey	DescKey	CardGrade	CardTagList	ElementType	MaxStack	IsUnique	Weight	RequiredUnlockId	IconKey
-7101	card_attack_up	card_attack_up_desc	Common	Attack	None	5	FALSE	100	0	icon_card_attack
-7102	card_multi_shot	card_multi_shot_desc	Rare	Projectile|Attack	None	3	FALSE	40	0	icon_card_multishot
-7103	card_fire_burst	card_fire_burst_desc	Rare	Fire|Explosion	Fire	3	FALSE	35	600201	icon_card_fire
-7104	card_chain_spark	card_chain_spark_desc	Epic	Lightning|Chain	Lightning	2	FALSE	15	600201	icon_card_chain
-7105	card_boss_breaker	card_boss_breaker_desc	Rare	BossKiller|Attack	None	2	FALSE	20	0	icon_card_boss
+CardId	CardType	NameKey	DescKey	CardGrade	CardTagList	ElementType	TargetHeroId	UpgradeKey	UpgradeStep	MaxStep	MaxStack	IsUnique	Weight	RequiredUnlockId	IconKey
+7102	GlobalStatBuff	Multishot	Projectile attacks fire 1 extra shot.	Rare	FutureProjectile	None	0		0	0	3	FALSE	40	0	icon_card_multishot
+7103	GlobalStatBuff	Fire Burst	Fire attacks deal extra explosion damage on hit.	Rare	FutureFire	Fire	0		0	0	3	FALSE	35	600201	icon_card_fire
+7104	GlobalStatBuff	Chain Spark	Lightning attacks chain to extra targets.	Epic	FutureLightning	Lightning	0		0	0	2	FALSE	15	600201	icon_card_chain
+7105	GlobalStatBuff	Boss Breaker	Deal 30% more damage to bosses.	Rare	FutureBossKiller	None	0		0	0	2	FALSE	20	0	icon_card_boss
+8001	HeroRecruit	Recruit Swordsman	Add Swordsman to this battle.	Common	HeroRecruit|Melee	Physical	1001		0	0	1	TRUE	100	0	Player_Sword
+8002	HeroRecruit	Recruit Archer	Add Archer to this battle.	Rare	HeroRecruit|Ranged	Physical	1002		0	0	1	TRUE	100	0	Player_Archer
+8003	HeroRecruit	Recruit Mage	Add Mage to this battle.	Epic	HeroRecruit|Ranged	Lightning	1003		0	0	1	TRUE	90	0	Player_Magician
+8004	HeroRecruit	Recruit Axeman	Add Axeman to this battle.	Legendary	HeroRecruit|Melee	Physical	1004		0	0	1	TRUE	90	0	Player_Axe
+8101	SkillUpgrade	Swordsman Skill Lv.1	Swordsman's skill upgrade increases damage by 10%.	Common	Attack|SkillUpgrade|Sword	Physical	1001	Skill	1	4	1	TRUE	80	0	icon_skill_sword_1
+8102	SkillUpgrade	Swordsman Skill Lv.2	Swordsman's skill upgrade increases damage by 20%.	Rare	Attack|SkillUpgrade|Sword	Physical	1001	Skill	2	4	1	TRUE	60	0	icon_skill_sword_2
+8103	SkillUpgrade	Swordsman Skill Lv.3	Swordsman's skill upgrade increases damage by 30%.	Epic	Attack|SkillUpgrade|Sword	Physical	1001	Skill	3	4	1	TRUE	40	0	icon_skill_sword_3
+8104	SkillUpgrade	Swordsman Final Skill	Swordsman's final skill upgrade increases damage by 50%.	Legendary	Attack|SkillUpgrade|Sword	Physical	1001	Skill	4	4	1	TRUE	20	0	icon_skill_sword_final
+8111	SkillUpgrade	Archer Skill Lv.1	Archer's skill upgrade increases damage by 10%.	Common	Attack|SkillUpgrade|Bow	Physical	1002	Skill	1	4	1	TRUE	80	0	icon_skill_archer_1
+8112	SkillUpgrade	Archer Skill Lv.2	Archer's skill upgrade increases damage by 20%.	Rare	Attack|SkillUpgrade|Bow	Physical	1002	Skill	2	4	1	TRUE	60	0	icon_skill_archer_2
+8113	SkillUpgrade	Archer Skill Lv.3	Archer's skill upgrade increases damage by 30%.	Epic	Attack|SkillUpgrade|Bow	Physical	1002	Skill	3	4	1	TRUE	40	0	icon_skill_archer_3
+8114	SkillUpgrade	Archer Final Skill	Archer's final skill upgrade increases damage by 50%.	Legendary	Attack|SkillUpgrade|Bow	Physical	1002	Skill	4	4	1	TRUE	20	0	icon_skill_archer_final
+8121	SkillUpgrade	Mage Skill Lv.1	Mage's skill upgrade increases damage by 10%.	Common	Attack|SkillUpgrade|Mage	Lightning	1003	Skill	1	4	1	TRUE	80	0	icon_skill_magician_1
+8122	SkillUpgrade	Mage Skill Lv.2	Mage's skill upgrade increases damage by 20%.	Rare	Attack|SkillUpgrade|Mage	Lightning	1003	Skill	2	4	1	TRUE	60	0	icon_skill_magician_2
+8123	SkillUpgrade	Mage Skill Lv.3	Mage's skill upgrade increases damage by 30%.	Epic	Attack|SkillUpgrade|Mage	Lightning	1003	Skill	3	4	1	TRUE	40	0	icon_skill_magician_3
+8124	SkillUpgrade	Mage Final Skill	Mage's final skill upgrade increases damage by 50%.	Legendary	Attack|SkillUpgrade|Mage	Lightning	1003	Skill	4	4	1	TRUE	20	0	icon_skill_magician_final
+8131	SkillUpgrade	Axeman Skill Lv.1	Axeman's skill upgrade increases damage by 10%.	Common	Attack|SkillUpgrade|Axe	Physical	1004	Skill	1	4	1	TRUE	80	0	icon_skill_axe_1
+8132	SkillUpgrade	Axeman Skill Lv.2	Axeman's skill upgrade increases damage by 20%.	Rare	Attack|SkillUpgrade|Axe	Physical	1004	Skill	2	4	1	TRUE	60	0	icon_skill_axe_2
+8133	SkillUpgrade	Axeman Skill Lv.3	Axeman's skill upgrade increases damage by 30%.	Epic	Attack|SkillUpgrade|Axe	Physical	1004	Skill	3	4	1	TRUE	40	0	icon_skill_axe_3
+8134	SkillUpgrade	Axeman Final Skill	Axeman's final skill upgrade increases damage by 50%.	Legendary	Attack|SkillUpgrade|Axe	Physical	1004	Skill	4	4	1	TRUE	20	0	icon_skill_axe_final
+8201	HeroStatUpgrade	Swordsman Damage	Swordsman damage increases by 20%.	Common	Attack|Damage|Sword	Physical	1001	Damage	1	1	1	TRUE	90	0	icon_sword_damage
+8202	HeroStatUpgrade	Swordsman Attack Speed	Swordsman attack speed increases by 15%.	Common	Attack|Speed|Sword	Physical	1001	AttackSpeed	1	1	1	TRUE	85	0	icon_sword_attack_speed
+8211	HeroStatUpgrade	Archer Damage	Archer damage increases by 20%.	Common	Attack|Damage|Bow	Physical	1002	Damage	1	1	1	TRUE	90	0	icon_archer_damage
+8212	HeroStatUpgrade	Archer Attack Speed	Archer attack speed increases by 15%.	Common	Attack|Speed|Bow	Physical	1002	AttackSpeed	1	1	1	TRUE	85	0	icon_archer_attack_speed
+8221	HeroStatUpgrade	Mage Damage	Mage damage increases by 20%.	Common	Attack|Damage|Mage	Lightning	1003	Damage	1	1	1	TRUE	90	0	icon_magician_damage
+8222	HeroStatUpgrade	Mage Attack Speed	Mage attack speed increases by 15%.	Common	Attack|Speed|Mage	Lightning	1003	AttackSpeed	1	1	1	TRUE	85	0	icon_magician_attack_speed
+8231	HeroStatUpgrade	Axeman Damage	Axeman damage increases by 20%.	Common	Attack|Damage|Axe	Physical	1004	Damage	1	1	1	TRUE	90	0	icon_axe_damage
+8232	HeroStatUpgrade	Axeman Attack Speed	Axeman attack speed increases by 15%.	Common	Attack|Speed|Axe	Physical	1004	AttackSpeed	1	1	1	TRUE	85	0	icon_axe_attack_speed

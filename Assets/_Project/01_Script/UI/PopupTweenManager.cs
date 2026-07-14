@@ -58,6 +58,47 @@ public sealed class PopupTweenManager
         return WaitForTweenAsync(sequence);
     }
 
+    // BattleScene 시작 카메라 무빙을 DOTween 시퀀스로 재생합니다.
+    // 카메라 연출도 Tween 정책이므로 별도 MonoBehaviour가 아니라 TweenManager에서 한 번에 관리합니다.
+    public static Sequence PlayBattleCameraIntro(
+        Camera targetCamera,
+        Vector3 startPosition,
+        Vector3 rightLanePosition,
+        Vector3 leftLanePosition,
+        Vector2 castleCenterPosition,
+        Vector2 focusTargetPosition,
+        float startOrthographicSize,
+        float focusOrthographicSize,
+        float settleSeconds,
+        float laneMoveSeconds,
+        float focusMoveSeconds)
+    {
+        if (targetCamera == null)
+            return null;
+
+        Transform cameraTransform = targetCamera.transform;
+        DOTween.Kill(cameraTransform);
+        DOTween.Kill(targetCamera);
+
+        cameraTransform.position = startPosition;
+        targetCamera.orthographicSize = startOrthographicSize;
+
+        Vector3 focusPosition = CreateCastleHalfFocusPosition(
+            targetCamera,
+            startPosition.z,
+            castleCenterPosition,
+            focusTargetPosition,
+            focusOrthographicSize);
+
+        return DOTween.Sequence()
+            .SetTarget(targetCamera)
+            .AppendInterval(Mathf.Max(0f, settleSeconds))
+            .Append(cameraTransform.DOMove(rightLanePosition, Mathf.Max(0.01f, laneMoveSeconds)).SetEase(Ease.InOutSine))
+            .Append(cameraTransform.DOMove(leftLanePosition, Mathf.Max(0.01f, laneMoveSeconds)).SetEase(Ease.InOutSine))
+            .Append(cameraTransform.DOMove(focusPosition, Mathf.Max(0.01f, focusMoveSeconds)).SetEase(Ease.OutCubic))
+            .Join(targetCamera.DOOrthoSize(focusOrthographicSize, Mathf.Max(0.01f, focusMoveSeconds)).SetEase(Ease.OutCubic));
+    }
+
     // 팝업이 닫힐 때 실행되는 공통 연출 자리입니다.
     // 닫힘 연출이 끝난 뒤에는 입력 차단을 해제해서 Destroy 전 짧은 틈에도 뒤쪽 UI가 막히지 않게 합니다.
     public async UniTask PlayCloseAsync(BasePopup popup)
@@ -101,5 +142,14 @@ public sealed class PopupTweenManager
         tween.OnKill(Complete);
 
         return completionSource.Task;
+    }
+
+    // 카메라 반폭만큼 성채 중심에서 포커스 방향으로 밀어서 성채가 항상 화면에 반쯤 걸리게 만듭니다.
+    private static Vector3 CreateCastleHalfFocusPosition(Camera targetCamera, float z, Vector2 castleCenterPosition, Vector2 focusTargetPosition, float focusOrthographicSize)
+    {
+        float direction = focusTargetPosition.x >= castleCenterPosition.x ? 1f : -1f;
+        float halfWorldWidth = focusOrthographicSize * targetCamera.aspect;
+        float focusX = castleCenterPosition.x + halfWorldWidth * direction;
+        return new Vector3(focusX, focusTargetPosition.y, z);
     }
 }

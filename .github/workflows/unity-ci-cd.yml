@@ -1,0 +1,99 @@
+name: Unity CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build_android:
+        description: "Android APK 빌드를 실행할지 선택합니다."
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: unity-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 6000.2.4f1
+
+jobs:
+  test:
+    name: EditMode Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Unity Library 캐시를 재사용해서 매번 패키지를 다시 임포트하는 시간을 줄입니다.
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+
+      # Unity BatchMode로 EditMode 테스트를 실행합니다. UNITY_LICENSE 시크릿이 없으면 여기서 실패합니다.
+      - name: Run EditMode Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: editmode
+          artifactsPath: TestResults
+
+      # 실패해도 테스트 결과를 내려받을 수 있게 항상 업로드합니다.
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-editmode-test-results
+          path: TestResults
+
+  android-build:
+    name: Android Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.build_android == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # 수동 빌드도 같은 Library 캐시를 사용합니다.
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-android-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+
+      # 지금은 스토어 배포 전 단계라 APK 산출물까지만 만듭니다.
+      - name: Build Android APK
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          buildsPath: Build
+
+      - name: Upload Android Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightfall-spire-android
+          path: Build

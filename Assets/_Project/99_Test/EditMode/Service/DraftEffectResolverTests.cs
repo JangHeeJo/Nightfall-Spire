@@ -147,8 +147,8 @@ public sealed class DraftEffectResolverTests
             "1101\tenemy_shadow\tNormal\tDark\t25\t1.0\t3\t5\tWalker\t10\tEnemy_Shadow\n";
 
         private const string CombatSlotTsv =
-            "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "1001\t0\tFront\t1\tMelee|Ranged\t2001\t1\tSlot_Front_01\tTRUE\n";
+            "SlotId\tSlotIndex\tSlotType\tFloorId\tFloorSlotIndex\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tLocalPositionX\tLocalPositionY\tMinTargetProgress\tMaxTargetProgress\tIsDefaultUnlocked\n" +
+            "1001\t0\tFront\t1\t0\t1\tMelee|Ranged\t2001\t1\tSlot_Front_01\t-0.5\t-1.5\t0.00\t1.00\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

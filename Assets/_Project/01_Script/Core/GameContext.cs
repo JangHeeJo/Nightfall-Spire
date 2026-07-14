@@ -50,7 +50,8 @@ public sealed class GameContext
             NightDefenseSessionService = new NightDefenseSessionService(contentDataSource, this);
             RewardService = new RewardService(contentDataSource, RewardProgress);
             NightDefenseCompletionService = new NightDefenseCompletionService(contentDataSource, RewardService, GameProgress);
-            DraftService = new DraftService(contentDataSource, DraftProgress);
+            // DraftService는 해금된 영웅 목록까지 봐야 하므로 GameContext를 함께 넘깁니다.
+            DraftService = new DraftService(contentDataSource, DraftProgress, this);
             DraftEffectResolver = new DraftEffectResolver(contentDataSource, CombatRuntimeModifierSet);
             DayGrowthService = new DayGrowthService(contentDataSource, this);
             HeroRosterService = new HeroRosterService(contentDataSource, this, UnlockService);

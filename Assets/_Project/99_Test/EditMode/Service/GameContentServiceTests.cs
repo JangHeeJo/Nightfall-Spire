@@ -46,20 +46,105 @@ public sealed class GameContentServiceTests
         Assert.That(context.NightDefenseProgress.IsDefenseActive.Value, Is.False);
     }
 
-    // 드래프트 서비스는 풀의 태그 조건과 PickCount에 맞춰 후보를 열어야 합니다.
+    // 레벨업 드래프트는 풀 조건과 카드 타입 규칙에 맞춰 후보를 열어야 합니다.
     [Test]
-    public void DraftService_OpensOfferFromPoolRules()
+    public void DraftService_OpensLevelUpOfferFromTypedPoolRules()
     {
         FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
         DraftProgress draftProgress = new DraftProgress();
         DraftService service = new DraftService(dataSource, draftProgress);
 
-        DraftOfferResult result = service.TryOpenOffer(7001);
+        DraftOfferResult result = service.TryOpenLevelUpOffer(7001);
 
         Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.OfferedCardIds, Is.EquivalentTo(new[] { 7101, 7102, 7105 }));
+        Assert.That(result.OfferedCardIds, Is.EquivalentTo(new[] { 7101, 8001, 8002 }));
         Assert.That(draftProgress.IsDraftOpen.Value, Is.True);
         Assert.That(draftProgress.OfferedCardIds, Is.EquivalentTo(result.OfferedCardIds));
+        Assert.That(draftProgress.CurrentDeckType.Value, Is.EqualTo(DraftDeckType.LevelUp));
+    }
+
+    // 시작 영웅 모집은 2장만 제시하고, 선택한 영웅은 다음 모집 후보에서 제외해야 합니다.
+    [Test]
+    public void DraftService_OpeningHeroRecruitTracksPickedHeroes()
+    {
+        FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
+        DraftProgress draftProgress = new DraftProgress();
+        DraftService service = new DraftService(dataSource, draftProgress);
+
+        DraftOfferResult firstOffer = service.TryOpenOpeningHeroRecruitOffer();
+        bool selected = service.TrySelectOfferedCard(8001);
+        DraftOfferResult secondOffer = service.TryOpenOpeningHeroRecruitOffer();
+
+        Assert.That(firstOffer.IsSuccess, Is.True);
+        Assert.That(firstOffer.OfferedCardIds, Is.EquivalentTo(new[] { 8001, 8002 }));
+        Assert.That(selected, Is.True);
+        Assert.That(draftProgress.RecruitedHeroIds, Has.Member(1001));
+        Assert.That(draftProgress.OpeningHeroRecruitCount.Value, Is.EqualTo(1));
+        Assert.That(secondOffer.IsSuccess, Is.True);
+        Assert.That(secondOffer.OfferedCardIds, Has.No.Member(8001));
+        Assert.That(secondOffer.OfferedCardIds, Has.Member(8002));
+    }
+
+    // 레벨업 드래프트에는 시작 2회 이후에도 아직 이번 전투에서 모집하지 않은 해금 영웅 카드가 섞일 수 있어야 합니다.
+    [Test]
+    public void DraftService_LevelUpOfferIncludesUnrecruitedHeroesAfterOpeningPicks()
+    {
+        FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
+        DraftProgress draftProgress = new DraftProgress();
+        DraftService service = new DraftService(dataSource, draftProgress);
+        draftProgress.RecruitHero(1001);
+        draftProgress.CompleteOpeningHeroRecruit();
+        draftProgress.RecruitHero(1002);
+        draftProgress.CompleteOpeningHeroRecruit();
+
+        DraftOfferResult result = service.TryOpenLevelUpOffer(7001);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(draftProgress.OpeningHeroRecruitCount.Value, Is.EqualTo(DraftService.RequiredOpeningHeroRecruitCount));
+        Assert.That(result.OfferedCardIds, Has.Member(8003));
+        Assert.That(result.OfferedCardIds, Has.No.Member(8001));
+        Assert.That(result.OfferedCardIds, Has.No.Member(8002));
+        Assert.That(draftProgress.CurrentDeckType.Value, Is.EqualTo(DraftDeckType.LevelUp));
+    }
+
+    // 해금된 영웅을 모두 모집하면 레벨업 드래프트에서 HeroRecruit 카드는 더 이상 나오지 않아야 합니다.
+    [Test]
+    public void DraftService_LevelUpOfferStopsHeroRecruitWhenAllUnlockedHeroesAreRecruited()
+    {
+        FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
+        DraftProgress draftProgress = new DraftProgress();
+        DraftService service = new DraftService(dataSource, draftProgress);
+        draftProgress.RecruitHero(1001);
+        draftProgress.RecruitHero(1002);
+        draftProgress.RecruitHero(1003);
+
+        DraftOfferResult result = service.TryOpenLevelUpOffer(7001);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.OfferedCardIds, Has.No.Member(8001));
+        Assert.That(result.OfferedCardIds, Has.No.Member(8002));
+        Assert.That(result.OfferedCardIds, Has.No.Member(8003));
+    }
+
+    // 영웅 강화 카드는 모집된 영웅의 다음 단계만 후보로 나와야 합니다.
+    [Test]
+    public void DraftService_LevelUpOfferUsesNextHeroUpgradeStep()
+    {
+        FakeContentDataSource dataSource = FakeContentDataSource.CreateDefault();
+        DraftProgress draftProgress = new DraftProgress();
+        DraftService service = new DraftService(dataSource, draftProgress);
+        draftProgress.RecruitHero(1001);
+
+        DraftOfferResult firstOffer = service.TryOpenLevelUpOffer(7001);
+        bool selected = service.TrySelectOfferedCard(8201);
+        DraftOfferResult secondOffer = service.TryOpenLevelUpOffer(7001);
+
+        Assert.That(firstOffer.IsSuccess, Is.True);
+        Assert.That(firstOffer.OfferedCardIds, Has.Member(8201));
+        Assert.That(firstOffer.OfferedCardIds, Has.No.Member(8202));
+        Assert.That(selected, Is.True);
+        Assert.That(secondOffer.OfferedCardIds, Has.Member(8202));
+        Assert.That(secondOffer.OfferedCardIds, Has.No.Member(8201));
     }
 
     // 보상 서비스는 보상 그룹에서 지급 가능한 재화 합계를 계산하고 RewardProgress에 반영해야 합니다.
@@ -265,11 +350,16 @@ public sealed class GameContentServiceTests
             "7001\tdraft_pool_early\tAttack|Projectile|Element\t\t80\t18\t2\t3\t0\t0\n";
 
         private const string DraftCardTsv =
-            "CardId\tNameKey\tDescKey\tCardGrade\tCardTagList\tElementType\tMaxStack\tIsUnique\tWeight\tRequiredUnlockId\tIconKey\n" +
-            "7101\tcard_attack_up\tcard_attack_up_desc\tCommon\tAttack\tNone\t5\tFALSE\t100\t0\ticon_card_attack\n" +
-            "7102\tcard_multi_shot\tcard_multi_shot_desc\tRare\tProjectile|Attack\tNone\t3\tFALSE\t40\t0\ticon_card_multishot\n" +
-            "7105\tcard_boss_breaker\tcard_boss_breaker_desc\tRare\tBossKiller|Attack\tNone\t2\tFALSE\t20\t0\ticon_card_boss\n" +
-            "7199\tcard_utility\tcard_utility_desc\tCommon\tUtility\tNone\t1\tFALSE\t999\t0\ticon_card_utility\n";
+            "CardId\tCardType\tNameKey\tDescKey\tCardGrade\tCardTagList\tElementType\tTargetHeroId\tUpgradeKey\tUpgradeStep\tMaxStep\tMaxStack\tIsUnique\tWeight\tRequiredUnlockId\tIconKey\n" +
+            "7101\tGlobalStatBuff\tcard_attack_up\tcard_attack_up_desc\tCommon\tAttack\tNone\t0\t\t0\t0\t5\tFALSE\t100\t0\ticon_card_attack\n" +
+            "7102\tGlobalStatBuff\tcard_multi_shot\tcard_multi_shot_desc\tRare\tProjectile|Attack\tNone\t0\t\t0\t0\t3\tFALSE\t40\t0\ticon_card_multishot\n" +
+            "7105\tGlobalStatBuff\tcard_boss_breaker\tcard_boss_breaker_desc\tRare\tBossKiller|Attack\tNone\t0\t\t0\t0\t2\tFALSE\t20\t0\ticon_card_boss\n" +
+            "8001\tHeroRecruit\tcard_recruit_sword\tcard_recruit_sword_desc\tCommon\tHeroRecruit|Melee\tPhysical\t1001\t\t0\t0\t1\tTRUE\t100\t0\tPlayer_Sword\n" +
+            "8002\tHeroRecruit\tcard_recruit_archer\tcard_recruit_archer_desc\tRare\tHeroRecruit|Ranged\tPhysical\t1002\t\t0\t0\t1\tTRUE\t100\t0\tPlayer_Archer\n" +
+            "8003\tHeroRecruit\tcard_recruit_magician\tcard_recruit_magician_desc\tEpic\tHeroRecruit|Ranged\tLightning\t1003\t\t0\t0\t1\tTRUE\t90\t0\tPlayer_Magician\n" +
+            "8201\tSkillUpgrade\tcard_sword_skill_1\tcard_sword_skill_1_desc\tCommon\tAttack\tPhysical\t1001\tSkill\t1\t2\t1\tTRUE\t95\t0\tPlayer_Sword\n" +
+            "8202\tSkillUpgrade\tcard_sword_skill_2\tcard_sword_skill_2_desc\tRare\tAttack\tPhysical\t1001\tSkill\t2\t2\t1\tTRUE\t95\t0\tPlayer_Sword\n" +
+            "7199\tGlobalStatBuff\tcard_utility\tcard_utility_desc\tCommon\tUtility\tNone\t0\t\t0\t0\t1\tFALSE\t999\t0\ticon_card_utility\n";
 
         private const string RewardTsv =
             "RewardRowId\tRewardGroupId\tRewardItemType\tRewardItemId\tAmount\tChancePermille\tFirstClearOnly\tPreviewOrder\n" +
@@ -282,8 +372,8 @@ public sealed class GameContentServiceTests
             "2\tfloor_workshop\t101\t1\t150\t1\tBuildingModule\t5001\tfloor_workshop_visual\n";
 
         private const string CombatSlotTsv =
-            "SlotId\tSlotIndex\tSlotType\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tIsDefaultUnlocked\n" +
-            "2001\t0\tFront\t1\tMelee\t2101\t1001\tslot_front_01\tTRUE\n";
+            "SlotId\tSlotIndex\tSlotType\tFloorId\tFloorSlotIndex\tUnlockFloorId\tAllowedHeroRoleList\tUpgradeGroupId\tDefaultHeroId\tPositionKey\tLocalPositionX\tLocalPositionY\tMinTargetProgress\tMaxTargetProgress\tIsDefaultUnlocked\n" +
+            "2001\t0\tFront\t1\t0\t1\tMelee\t2101\t1001\tslot_front_01\t-0.5\t-1.5\t0.00\t1.00\tTRUE\n";
 
         private const string CombatSlotUpgradeTsv =
             "UpgradeId\tUpgradeGroupId\tLevel\tCostCurrencyId\tCostAmount\tAttackBonusPct\tAttackSpeedBonusPct\tRangeBonusPct\tSkillChargeBonusPct\tUnlockModuleSocket\n" +

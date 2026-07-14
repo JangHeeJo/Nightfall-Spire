@@ -100,7 +100,24 @@ public enum CardGrade
 {
     Common, // 일반 카드
     Rare, // 희귀 카드
-    Epic // 에픽 카드
+    Epic, // 에픽 카드
+    Legendary // 전설 카드
+}
+
+// 전투 중 드래프트가 어떤 흐름에서 열렸는지 구분합니다.
+public enum DraftDeckType
+{
+    LevelUp, // 전투 중 레벨업으로 열리는 3장 선택
+    OpeningHeroRecruit // 전투 시작 때만 2회 진행되는 영웅 모집 선택
+}
+
+// 드래프트 카드의 큰 규칙 분류입니다.
+public enum DraftCardType
+{
+    GlobalStatBuff, // 기존 전역 전투 보정 카드
+    HeroRecruit, // 전투 중 영웅 소환 카드
+    SkillUpgrade, // 소환된 영웅의 스킬 강화 카드
+    HeroStatUpgrade // 소환된 영웅의 능력치 강화 카드
 }
 
 // 효과 테이블에서 적용할 수 있는 효과 종류입니다.
